@@ -44,8 +44,10 @@ export interface Prospect {
   ville: string;
   specialite: string;
   phone: string;
+  email?: string;
   status: ProspectStatus;
   notes: string;
+  reponse?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -67,20 +67,18 @@ function parseCSV(text: string): string[][] {
 
 function detectColumns(headers: string[]): Record<string, number> {
   const map: Record<string, number> = {};
-  const rules: [string, string[]][] = [
-    ["name",       ["nom", "name", "contact", "prenom", "client"]],
-    ["ville",      ["ville", "city", "localite", "commune", "secteur"]],
-    ["specialite", ["specialite", "profession", "metier", "type", "activite"]],
-    ["phone",      ["telephone", "tel", "phone", "numero", "mobile", "portable", "gsm"]],
-    ["notes",      ["notes", "note", "commentaire", "remarque", "info"]],
-  ];
   headers.forEach((h, i) => {
     const n = normalizeHeader(h);
-    for (const [key, candidates] of rules) {
-      if (map[key] === undefined && candidates.some((c) => n.includes(c))) {
-        map[key] = i;
-      }
-    }
+    if (map.prenom === undefined && (n === "prenom" || n === "firstname")) { map.prenom = i; return; }
+    if (map.nom === undefined && (n === "nom" || n === "lastname" || n === "surname")) { map.nom = i; return; }
+    if (map.name === undefined && ["name", "contact", "client"].some((c) => n.includes(c))) map.name = i;
+    if (map.ville === undefined && ["ville", "city", "localite", "commune", "secteur"].some((c) => n.includes(c))) map.ville = i;
+    if (map.specialite === undefined && ["specialite", "profession", "metier", "activite"].some((c) => n.includes(c))) map.specialite = i;
+    if (map.phone === undefined && ["telephone", "tel", "phone", "numero", "mobile", "portable", "gsm"].some((c) => n.includes(c))) map.phone = i;
+    if (map.notes === undefined && ["commentaire", "remarque", "notes", "note", "info"].some((c) => n.includes(c))) map.notes = i;
+    if (map.reponse === undefined && ["reponse", "response"].some((c) => n.includes(c))) map.reponse = i;
+    if (map.statut === undefined && ["statut", "status", "etat"].some((c) => n.includes(c))) map.statut = i;
+    if (map.email === undefined && ["mail", "email", "courriel"].some((c) => n.includes(c))) map.email = i;
   });
   return map;
 }
@@ -98,23 +96,50 @@ function matchSpecialite(raw: string): string {
   return raw.trim() || "Autre";
 }
 
+function mapStatutToStatus(raw: string): ProspectStatus {
+  const v = (raw ?? "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (v.includes("no close") || v.includes("noclose")) return "perdu";
+  if (v.includes("vente") || v.includes("en cours")) return "demo";
+  if (v.includes("relance")) return "rappel";
+  if (v.includes("rdv") || v.includes("rendez")) return "rdv";
+  if (v.includes("vendu")) return "vendu";
+  return "a_appeler";
+}
+
 function parseProspects(text: string): { data: CsvProspect[]; error: string | null } {
   const rows = parseCSV(text);
   if (rows.length < 2) return { data: [], error: "Fichier vide ou invalide" };
   const cols = detectColumns(rows[0]);
-  if (cols.name === undefined) {
-    return { data: [], error: `Colonne «nom» introuvable. Colonnes détectées: ${rows[0].join(", ")}` };
+  const hasName = cols.prenom !== undefined || cols.nom !== undefined || cols.name !== undefined;
+  if (!hasName) {
+    return { data: [], error: `Colonne nom introuvable. Colonnes détectées: ${rows[0].join(", ")}` };
   }
+  const getName = (r: string[]) => {
+    if (cols.prenom !== undefined && cols.nom !== undefined) {
+      return `${r[cols.prenom] ?? ""} ${r[cols.nom] ?? ""}`.trim();
+    }
+    if (cols.prenom !== undefined) return r[cols.prenom] ?? "";
+    if (cols.nom !== undefined) return r[cols.nom] ?? "";
+    return r[cols.name!] ?? "";
+  };
   const data: CsvProspect[] = rows.slice(1)
-    .filter((r) => r[cols.name]?.trim())
-    .map((r) => ({
-      name: r[cols.name] ?? "",
-      ville: cols.ville !== undefined ? (r[cols.ville] ?? "") : "",
-      specialite: matchSpecialite(cols.specialite !== undefined ? (r[cols.specialite] ?? "") : ""),
-      phone: cols.phone !== undefined ? (r[cols.phone] ?? "") : "",
-      notes: cols.notes !== undefined ? (r[cols.notes] ?? "") : "",
-      status: "a_appeler" as ProspectStatus,
-    }));
+    .filter((r) => getName(r).trim())
+    .map((r) => {
+      const rawReponse = cols.reponse !== undefined ? (r[cols.reponse] ?? "").trim() : "";
+      const reponseNorm = rawReponse.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+      const reponse = reponseNorm === "oui" ? "Oui" : reponseNorm === "non" ? "Non" : rawReponse || undefined;
+      const rawStatut = cols.statut !== undefined ? (r[cols.statut] ?? "") : "";
+      return {
+        name: getName(r),
+        ville: cols.ville !== undefined ? (r[cols.ville] ?? "") : "",
+        specialite: matchSpecialite(cols.specialite !== undefined ? (r[cols.specialite] ?? "") : ""),
+        phone: cols.phone !== undefined ? (r[cols.phone] ?? "") : "",
+        email: cols.email !== undefined ? (r[cols.email] ?? "").trim() || undefined : undefined,
+        notes: cols.notes !== undefined ? (r[cols.notes] ?? "") : "",
+        status: rawStatut ? mapStatutToStatus(rawStatut) : "a_appeler",
+        reponse,
+      };
+    });
   return { data, error: null };
 }
 
@@ -329,8 +354,20 @@ function ProspectCard({ prospect }: { prospect: Prospect }) {
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: "0.9rem", lineHeight: 1.2 }}>
-              {prospect.name}
+            <div className="flex items-center gap-1.5 flex-wrap" style={{ lineHeight: 1.2 }}>
+              <span style={{ color: "#f1f5f9", fontWeight: 700, fontSize: "0.9rem" }}>
+                {prospect.name}
+              </span>
+              {prospect.reponse === "Oui" && (
+                <span style={{ fontSize: "0.6rem", fontWeight: 700, padding: "1px 6px", borderRadius: "4px", background: "#d4edbc", color: "#11734b", letterSpacing: "0.05em" }}>
+                  OUI
+                </span>
+              )}
+              {prospect.reponse === "Non" && (
+                <span style={{ fontSize: "0.6rem", fontWeight: 700, padding: "1px 6px", borderRadius: "4px", background: "#ffcfc9", color: "#b10202", letterSpacing: "0.05em" }}>
+                  NON
+                </span>
+              )}
             </div>
             <div style={{ color: "#64748b", fontSize: "0.72rem", marginTop: "0.15rem" }}>
               {prospect.specialite} · {prospect.ville}
@@ -377,11 +414,23 @@ function ProspectCard({ prospect }: { prospect: Prospect }) {
           {prospect.phone && (
             <a
               href={`tel:${prospect.phone.replace(/\s/g, "")}`}
-              className="flex items-center gap-2 mt-2 mb-2 px-3 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg transition-colors"
               style={{ background: "rgba(59,130,246,0.1)", border: "1px solid #1e3a8a", color: "#60a5fa", textDecoration: "none", fontSize: "0.85rem" }}
             >
               <span>📞</span>
               <span className="font-game text-sm tracking-wider">{prospect.phone}</span>
+            </a>
+          )}
+
+          {/* Email */}
+          {prospect.email && (
+            <a
+              href={`mailto:${prospect.email}`}
+              className="flex items-center gap-2 mt-1.5 mb-1 px-3 py-2 rounded-lg transition-colors"
+              style={{ background: "rgba(139,92,246,0.1)", border: "1px solid #5b21b640", color: "#a78bfa", textDecoration: "none", fontSize: "0.82rem" }}
+            >
+              <span>✉️</span>
+              <span className="font-game text-xs tracking-wider truncate">{prospect.email}</span>
             </a>
           )}
 
