@@ -5,19 +5,31 @@
 @tailwind utilities;
 
 :root {
-  --game-bg: #0f1117;
-  --game-card: #1a1d2e;
-  --game-border: #272d4a;
-  --game-border-light: #343c5e;
+  --fi-bg:           #111111;
+  --fi-bg-deep:      #0D0D0D;
+  --fi-card:         #1C1C1C;
+  --fi-card-hover:   #242424;
+  --fi-border:       #2A2A2A;
+  --fi-border-light: #383838;
+  --fi-orange:       #FF5500;
+  --fi-orange-hover: #FF6B1A;
+  --fi-orange-dim:   rgba(255, 85, 0, 0.12);
+  --fi-text:         #FFFFFF;
+  --fi-text-sec:     #9A9A9A;
+  --fi-text-muted:   #5A5A5A;
+
+  /* Legacy compat */
+  --game-bg:           var(--fi-bg);
+  --game-card:         var(--fi-card);
+  --game-border:       var(--fi-border);
+  --game-border-light: var(--fi-border-light);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
-  background-color: var(--game-bg);
-  color: #e2e8f0;
+  background-color: var(--fi-bg);
+  color: var(--fi-text);
   font-family: system-ui, -apple-system, sans-serif;
   margin: 0;
   padding: 0;
@@ -25,112 +37,13 @@ body {
   overflow-x: hidden;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0a0a12;
-}
-::-webkit-scrollbar-thumb {
-  background: #252540;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3b4080;
-}
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: var(--fi-bg-deep); }
+::-webkit-scrollbar-thumb  { background: #3A3A3A; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fi-orange); }
 
-/* Tier colors */
-.tier-bronze {
-  color: #cd7f32;
-  border-color: #cd7f32;
-}
-
-.tier-silver {
-  color: #c8d0e0;
-  border-color: #808090;
-}
-
-.tier-gold {
-  color: #ffd700;
-  border-color: #ffd700;
-}
-
-.bg-tier-bronze {
-  background-color: #2a1600;
-  border-color: #cd7f32;
-}
-
-.bg-tier-silver {
-  background-color: #1c1e38;
-  border-color: #808090;
-}
-
-.bg-tier-gold {
-  background-color: #2a2000;
-  border-color: #ffd700;
-}
-
-/* Glow effects */
-.glow-bronze {
-  box-shadow: 0 0 15px rgba(205, 127, 50, 0.4), 0 0 30px rgba(205, 127, 50, 0.1);
-}
-
-.glow-silver {
-  box-shadow: 0 0 12px rgba(200, 208, 224, 0.3), 0 0 25px rgba(200, 208, 224, 0.1);
-}
-
-.glow-gold {
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5), 0 0 30px rgba(255, 215, 0, 0.2);
-}
-
-.glow-blue {
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), 0 0 30px rgba(59, 130, 246, 0.2);
-}
-
-.glow-green {
-  box-shadow: 0 0 15px rgba(104, 211, 145, 0.5), 0 0 30px rgba(104, 211, 145, 0.2);
-}
-
-.glow-purple {
-  box-shadow: 0 0 15px rgba(183, 148, 244, 0.5), 0 0 30px rgba(183, 148, 244, 0.2);
-}
-
-/* XP bar glow */
-.xp-bar-fill {
-  background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
-  transition: width 0.5s ease;
-}
-
-/* Energy bar colors */
-.energy-bar-high {
-  background: linear-gradient(90deg, #16a34a, #22c55e, #4ade80);
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-}
-
-.energy-bar-medium {
-  background: linear-gradient(90deg, #ca8a04, #eab308, #facc15);
-  box-shadow: 0 0 8px rgba(234, 179, 8, 0.5);
-}
-
-.energy-bar-low {
-  background: linear-gradient(90deg, #dc2626, #ef4444, #f87171);
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
-}
-
-/* Progress bar */
-.progress-bar {
-  transition: width 0.4s ease;
-}
-
-/* Tab active indicator */
-.tab-active {
-  border-bottom: 2px solid #3b82f6;
-  color: #60a5fa;
-}
-
-/* Rajdhani font for headings */
+/* ── Font ──────────────────────────────────────────────────────────────────── */
 .font-game {
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
@@ -138,155 +51,141 @@ body {
   text-transform: uppercase;
 }
 
-/* Achievement toast animation */
+/* ── FACEIT level badge ────────────────────────────────────────────────────── */
+.fi-level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+}
+
+/* Level color helpers */
+.level-1, .level-2, .level-3  { color: #1CE400; }
+.level-4, .level-5, .level-6  { color: #5DC7E5; }
+.level-7, .level-8, .level-9  { color: #AE00FC; }
+.level-10                      { color: #FF5500; }
+
+/* ── Tier colors ───────────────────────────────────────────────────────────── */
+.tier-bronze { color: #cd7f32; border-color: #cd7f32; }
+.tier-silver { color: #c8d0e0; border-color: #808090; }
+.tier-gold   { color: #ffd700; border-color: #ffd700; }
+
+.bg-tier-bronze { background-color: rgba(205,127,50,0.07);  border-color: rgba(205,127,50,0.4);  }
+.bg-tier-silver { background-color: rgba(128,128,144,0.07); border-color: rgba(128,128,144,0.4); }
+.bg-tier-gold   { background-color: rgba(255,215,0,0.07);   border-color: rgba(255,215,0,0.4);   }
+
+/* ── Glow effects ──────────────────────────────────────────────────────────── */
+.glow-orange  { box-shadow: 0 0 14px rgba(255,85,0,0.5);    }
+.glow-green   { box-shadow: 0 0 12px rgba(28,228,0,0.4);    }
+.glow-blue    { box-shadow: 0 0 12px rgba(93,199,229,0.4);  }
+.glow-purple  { box-shadow: 0 0 12px rgba(174,0,252,0.4);   }
+.glow-gold    { box-shadow: 0 0 12px rgba(255,215,0,0.5);   }
+.glow-bronze  { box-shadow: 0 0 10px rgba(205,127,50,0.4);  }
+.glow-silver  { box-shadow: 0 0 10px rgba(200,208,224,0.3); }
+
+/* ── XP / progress bar ─────────────────────────────────────────────────────── */
+.xp-bar-fill {
+  background: linear-gradient(90deg, #CC4400, #FF5500, #FF7733);
+  box-shadow: 0 0 6px rgba(255,85,0,0.5);
+  transition: width 0.5s ease;
+}
+
+/* ── Energy bars ───────────────────────────────────────────────────────────── */
+.energy-bar-high   { background: linear-gradient(90deg,#16a34a,#22c55e); box-shadow: 0 0 6px rgba(34,197,94,0.4);  }
+.energy-bar-medium { background: linear-gradient(90deg,#ca8a04,#eab308); box-shadow: 0 0 6px rgba(234,179,8,0.4);  }
+.energy-bar-low    { background: linear-gradient(90deg,#dc2626,#ef4444); box-shadow: 0 0 6px rgba(239,68,68,0.4);  }
+
+/* ── Progress bars ─────────────────────────────────────────────────────────── */
+.progress-bar  { transition: width 0.4s ease; }
+.bar-chart-bar { transition: height 0.5s ease; }
+
+.mission-progress-bar {
+  background: linear-gradient(90deg,#CC4400,#FF5500);
+  box-shadow: 0 0 5px rgba(255,85,0,0.4);
+  transition: width 0.5s ease;
+}
+.mission-progress-complete {
+  background: linear-gradient(90deg,#15803d,#22c55e);
+  box-shadow: 0 0 5px rgba(34,197,94,0.4);
+}
+
+/* ── Gradient text ─────────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg,#FF5500,#FF9955,#FFD700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-gold {
+  background: linear-gradient(135deg,#ffd700,#f6ad55,#ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Toast animations ──────────────────────────────────────────────────────── */
 @keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
-
 @keyframes fadeOutDown {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(110%);
-    opacity: 0;
-  }
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(110%); opacity: 0; }
 }
+.toast-enter { animation: slideInRight 0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
+.toast-exit  { animation: fadeOutDown  0.35s ease-in forwards; }
 
-.toast-enter {
-  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* ── Rank glow ─────────────────────────────────────────────────────────────── */
+.rank-global   { color: #68d391; text-shadow: 0 0 10px rgba(104,211,145,0.8); }
+.rank-supreme  { color: #fc8181; text-shadow: 0 0 8px  rgba(252,129,129,0.6); }
+.rank-eagle    { color: #b794f4; text-shadow: 0 0 8px  rgba(183,148,244,0.6); }
+.rank-guardian { color: #63b3ed; text-shadow: 0 0 8px  rgba(99,179,237,0.6);  }
+.rank-gold     { color: #f6ad55; text-shadow: 0 0 8px  rgba(246,173,85,0.5);  }
+
+/* ── Pulse ─────────────────────────────────────────────────────────────────── */
+@keyframes orangePulse {
+  0%,100% { box-shadow: 0 0 0 0   rgba(255,85,0,0.4); }
+  50%     { box-shadow: 0 0 0 10px rgba(255,85,0,0);   }
 }
+.btn-pulse { animation: orangePulse 2s infinite; }
 
-.toast-exit {
-  animation: fadeOutDown 0.35s ease-in forwards;
-}
-
-/* CS:GO rank specific glow */
-.rank-global {
-  color: #68d391;
-  text-shadow: 0 0 10px rgba(104, 211, 145, 0.8);
-}
-
-.rank-supreme {
-  color: #fc8181;
-  text-shadow: 0 0 8px rgba(252, 129, 129, 0.6);
-}
-
-.rank-eagle {
-  color: #b794f4;
-  text-shadow: 0 0 8px rgba(183, 148, 244, 0.6);
-}
-
-.rank-guardian {
-  color: #63b3ed;
-  text-shadow: 0 0 8px rgba(99, 179, 237, 0.6);
-}
-
-.rank-gold {
-  color: #f6ad55;
-  text-shadow: 0 0 8px rgba(246, 173, 85, 0.5);
-}
-
-/* Hexagon-ish background pattern */
-.game-bg-pattern {
-  background-image:
-    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.02) 0%, transparent 50%);
-}
-
-/* Button pulse for main call button */
-@keyframes buttonPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
-  }
-}
-
-.btn-pulse {
-  animation: buttonPulse 2s infinite;
-}
-
-/* Level badge shimmer */
 @keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
 }
-
 .level-shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 30%,
-    rgba(255,255,255,0.1) 50%,
-    transparent 70%
-  );
+  background: linear-gradient(90deg,transparent 30%,rgba(255,255,255,0.06) 50%,transparent 70%);
   background-size: 200% 100%;
   animation: shimmer 3s infinite;
 }
 
-/* Achievement card hover */
-.achievement-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
+/* ── Achievement card ──────────────────────────────────────────────────────── */
+.achievement-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.achievement-card:hover { transform: translateY(-1px); }
 
-.achievement-card:hover {
-  transform: translateY(-2px);
-}
-
-/* Stat counter animation */
 @keyframes countUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+.stat-value { animation: countUp 0.3s ease-out; }
 
-.stat-value {
-  animation: countUp 0.3s ease-out;
-}
+.session-expired { color: #ef4444; animation: pulse 1s infinite; }
 
-/* Bar chart bars */
-.bar-chart-bar {
-  transition: height 0.5s ease;
-}
+/* ── Leaderboard ───────────────────────────────────────────────────────────── */
+.lb-row { transition: background 0.1s ease; }
+.lb-row:hover { background: rgba(255,255,255,0.03) !important; }
+.lb-row-self  { background: rgba(255,85,0,0.06) !important; border-left: 2px solid #FF5500 !important; }
 
-/* Session countdown */
-.session-expired {
-  color: #ef4444;
-  animation: pulse 1s infinite;
-}
-
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #60a5fa, #a78bfa, #34d399);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.gradient-text-gold {
-  background: linear-gradient(135deg, #ffd700, #f6ad55, #ffd700);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Mission progress bar */
-.mission-progress-bar {
-  background: linear-gradient(90deg, #1d4ed8, #3b82f6);
-  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
-  transition: width 0.5s ease;
-}
-
-.mission-progress-complete {
-  background: linear-gradient(90deg, #15803d, #22c55e);
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+/* ── Background pattern ────────────────────────────────────────────────────── */
+.game-bg-pattern {
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(255,85,0,0.025) 0%,transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255,85,0,0.015) 0%,transparent 50%);
 }

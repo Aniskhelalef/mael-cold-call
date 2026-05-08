@@ -6,380 +6,342 @@ import { ACHIEVEMENTS } from "@/lib/gameData";
 
 const MAX_ENERGY = 100;
 
-function formatCountdown(ms: number): string {
+function fmt(ms: number): string {
   if (ms <= 0) return "00:00";
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const s = Math.floor(ms / 1000);
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
+
+const CARD_BG   = "#1C1C1C";
+const BORDER    = "#2A2A2A";
 
 export default function HomeTab() {
   const { state, dispatch } = useGame();
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
   }, []);
 
-  const energyPercent = Math.round((state.dailyEnergyUsed / MAX_ENERGY) * 100);
-  const energyRemaining = MAX_ENERGY - state.dailyEnergyUsed;
-  const callsRemaining = Math.floor(energyRemaining / 2);
+  const energyPct   = Math.round((state.dailyEnergyUsed / MAX_ENERGY) * 100);
+  const energyLeft  = MAX_ENERGY - state.dailyEnergyUsed;
+  const callsLeft   = Math.floor(energyLeft / 2);
+  const depleted    = state.dailyEnergyUsed >= MAX_ENERGY;
 
-  const energyBarClass =
-    energyPercent > 60 ? "energy-bar-high" :
-    energyPercent > 30 ? "energy-bar-medium" :
+  const energyClass =
+    energyPct > 60 ? "energy-bar-high" :
+    energyPct > 30 ? "energy-bar-medium" :
     "energy-bar-low";
 
   const energyColor =
-    energyPercent > 60 ? "#22c55e" :
-    energyPercent > 30 ? "#eab308" :
-    "#ef4444";
+    energyPct > 60 ? "#22c55e" :
+    energyPct > 30 ? "#eab308" : "#ef4444";
 
-  // Session countdown
-  let sessionMsLeft = 0;
-  let sessionPercent = 0;
-  let sessionExpired = false;
+  // Session
+  let sessionMsLeft = 0, sessionPct = 0, sessionExpired = false;
   if (state.sessionActive && state.sessionStart) {
-    const sessionDurationMs = state.sessionTargetMinutes * 60 * 1000;
+    const dur     = state.sessionTargetMinutes * 60_000;
     const elapsed = now - state.sessionStart;
-    sessionMsLeft = Math.max(0, sessionDurationMs - elapsed);
-    sessionPercent = Math.min(100, Math.round((elapsed / sessionDurationMs) * 100));
-    sessionExpired = elapsed >= sessionDurationMs;
+    sessionMsLeft = Math.max(0, dur - elapsed);
+    sessionPct    = Math.min(100, Math.round((elapsed / dur) * 100));
+    sessionExpired = elapsed >= dur;
   }
 
-  // XP Buff countdown
-  let buffMsLeft = 0;
-  if (state.xpBuffActive && state.xpBuffEnd) {
-    buffMsLeft = Math.max(0, state.xpBuffEnd - now);
-  }
+  let buffLeft = 0;
+  if (state.xpBuffActive && state.xpBuffEnd) buffLeft = Math.max(0, state.xpBuffEnd - now);
 
-  // Recent achievements (last 3)
-  const recentAchievements = state.unlockedAchievements
-    .slice(-3)
-    .reverse()
+  const recentAch = state.unlockedAchievements
+    .slice(-3).reverse()
     .map((id) => ACHIEVEMENTS.find((a) => a.id === id))
     .filter(Boolean);
 
-  const dailyGoalProgress = Math.min(100, Math.round((state.dailyCalls / 20) * 100));
-  const dailyGoalMet = state.dailyCalls >= 20;
+  const goalPct  = Math.min(100, Math.round((state.dailyCalls / 20) * 100));
+  const goalMet  = state.dailyCalls >= 20;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 max-w-3xl mx-auto">
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          {
-            label: "Calls Aujourd'hui",
-            value: state.dailyCalls,
-            icon: "📞",
-            color: "#3b82f6",
-            sub: `/${state.dailyCalls >= 20 ? "✅ Objectif atteint" : "20 objectif"}`,
-          },
-          {
-            label: "RDV Aujourd'hui",
-            value: state.dailyBookings,
-            icon: "🎯",
-            color: "#22c55e",
-            sub: `Ventes: ${state.dailySales} • Total: ${state.totalBookings}`,
-          },
-          {
-            label: "Streak Actuel",
-            value: state.currentStreak,
-            icon: "🔥",
-            color: "#f97316",
-            sub: `Record: ${state.longestStreak}j`,
-          },
-          {
-            label: "XP Total",
-            value: state.totalXP.toLocaleString(),
-            icon: "⭐",
-            color: "#ffd700",
-            sub: `Lvl ${Math.floor(state.totalXP / 100) > 19 ? 20 : "→"}`,
-          },
-        ].map((card) => (
+      {/* ── KPI row ──────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {([
+          { label: "Calls",    value: state.dailyCalls,              sub: `Total: ${state.totalCalls}`,          color: "#FF5500", icon: "📞" },
+          { label: "RDV",      value: state.dailyBookings,           sub: `Ventes: ${state.dailySales}`,          color: "#1CE400", icon: "🎯" },
+          { label: "Streak",   value: `${state.currentStreak}J`,     sub: `Record: ${state.longestStreak}j`,     color: "#5DC7E5", icon: "🔥" },
+          { label: "XP Total", value: state.totalXP.toLocaleString(),sub: `+${state.dailyCalls * 10} aujourd'hui`, color: "#FF9500", icon: "⭐" },
+        ] as const).map((c) => (
           <div
-            key={card.label}
-            className="bg-game-card border border-game-border rounded-xl p-4 relative overflow-hidden"
+            key={c.label}
+            className="rounded-sm p-3 flex flex-col gap-1"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
           >
-            <div className="absolute top-0 right-0 w-16 h-16 opacity-10 flex items-end justify-end p-1">
-              <span className="text-3xl">{card.icon}</span>
+            <div className="flex items-center justify-between">
+              <span className="font-game text-[10px] tracking-widest" style={{ color: "#5A5A5A" }}>
+                {c.label.toUpperCase()}
+              </span>
+              <span style={{ fontSize: "0.75rem" }}>{c.icon}</span>
             </div>
-            <div className="text-xs text-gray-500 font-game tracking-wider mb-1">{card.label.toUpperCase()}</div>
-            <div className="font-game text-2xl sm:text-3xl stat-value" style={{ color: card.color }}>
-              {card.value}
+            <div className="font-game text-2xl sm:text-3xl stat-value leading-none" style={{ color: c.color }}>
+              {c.value}
             </div>
-            <div className="text-xs text-gray-600 mt-1">{card.sub}</div>
+            <div style={{ color: "#5A5A5A", fontSize: "0.68rem" }}>{c.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Daily goal progress */}
-      <div className={`bg-game-card border rounded-xl p-4 ${dailyGoalMet ? "border-green-700" : "border-game-border"}`}>
+      {/* ── Daily goal ───────────────────────────────────────────────────── */}
+      <div
+        className="rounded-sm px-4 py-3"
+        style={{
+          background: CARD_BG,
+          border: `1px solid ${goalMet ? "rgba(28,228,0,0.4)" : BORDER}`,
+        }}
+      >
         <div className="flex items-center justify-between mb-2">
-          <span className="font-game text-xs tracking-wider text-gray-400">OBJECTIF JOURNALIER — 20 CALLS</span>
-          <span className={`font-game text-sm ${dailyGoalMet ? "text-green-400" : "text-gray-400"}`}>
-            {dailyGoalMet ? "✅ COMPLÉTÉ +100 XP" : `${state.dailyCalls}/20`}
+          <span className="font-game text-[10px] tracking-widest" style={{ color: "#5A5A5A" }}>
+            OBJECTIF JOURNALIER
+          </span>
+          <span className="font-game text-xs" style={{ color: goalMet ? "#1CE400" : "#9A9A9A" }}>
+            {goalMet ? "✅ +100 XP" : `${state.dailyCalls} / 20 CALLS`}
           </span>
         </div>
-        <div className="h-2 bg-game-border rounded-full overflow-hidden">
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#2A2A2A" }}>
           <div
-            className="progress-bar h-full rounded-full"
+            className="h-full rounded-full progress-bar"
             style={{
-              width: `${dailyGoalProgress}%`,
-              background: dailyGoalMet
-                ? "linear-gradient(90deg, #15803d, #22c55e)"
-                : "linear-gradient(90deg, #1d4ed8, #3b82f6)",
-              boxShadow: dailyGoalMet
-                ? "0 0 8px rgba(34,197,94,0.5)"
-                : "0 0 8px rgba(59,130,246,0.4)",
+              width: `${goalPct}%`,
+              background: goalMet
+                ? "linear-gradient(90deg,#15803d,#22c55e)"
+                : "linear-gradient(90deg,#CC4400,#FF5500)",
+              boxShadow: goalMet
+                ? "0 0 6px rgba(34,197,94,0.5)"
+                : "0 0 6px rgba(255,85,0,0.4)",
             }}
           />
         </div>
       </div>
 
-      {/* Energy panel */}
-      <div className="bg-game-card border border-game-border rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="font-game text-xs tracking-widest text-gray-400">ÉNERGIE JOURNALIÈRE</div>
-          <div className="flex items-center gap-2">
-            <span className="font-game text-sm" style={{ color: energyColor }}>
-              {energyRemaining}/{MAX_ENERGY}
-            </span>
-            <span className="text-gray-600 text-xs">({callsRemaining} calls restants)</span>
-          </div>
+      {/* ── Action buttons ───────────────────────────────────────────────── */}
+      <div
+        className="rounded-sm p-4"
+        style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+      >
+        <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#5A5A5A" }}>
+          ACTIONS RAPIDES
         </div>
 
-        {/* Energy bar */}
-        <div className="h-4 bg-game-border rounded-full overflow-hidden mb-2 relative">
-          <div
-            className={`${energyBarClass} h-full rounded-full progress-bar`}
-            style={{ width: `${energyPercent}%` }}
-          />
-          {/* Markers */}
-          <div className="absolute inset-0 flex">
-            {[25, 50, 75].map((pct) => (
-              <div key={pct} className="absolute top-0 bottom-0 w-px bg-game-bg opacity-30"
-                style={{ left: `${pct}%` }} />
-            ))}
-          </div>
-        </div>
-
-        <div className="flex justify-between text-xs text-gray-600">
-          <span>0</span>
-          <span>25</span>
-          <span>50</span>
-          <span>75</span>
-          <span>100</span>
-        </div>
-
-        {state.dailyEnergyUsed >= MAX_ENERGY && (
-          <div className="mt-2 text-center font-game text-xs text-orange-400 border border-orange-800 rounded-lg py-1"
-            style={{ background: "rgba(124,45,18,0.2)" }}>
-            ⚡ ÉNERGIE ÉPUISÉE — Réinitialisation à minuit
-          </div>
-        )}
-      </div>
-
-      {/* Session panel */}
-      <div className="bg-game-card border border-game-border rounded-xl p-4">
-        <div className="font-game text-xs tracking-widest text-gray-400 mb-3">SESSION DE TRAVAIL</div>
-
-        {!state.sessionActive ? (
-          <div>
-            <p className="text-sm text-gray-500 mb-3">Démarre une session pour activer le buff XP ×1.5 à la fin.</p>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { minutes: 30, label: "30 MIN", icon: "⚡" },
-                { minutes: 60, label: "1 HEURE", icon: "🔥" },
-                { minutes: 120, label: "2 HEURES", icon: "💪" },
-              ].map((opt) => (
-                <button
-                  key={opt.minutes}
-                  onClick={() => dispatch({ type: "START_SESSION", minutes: opt.minutes })}
-                  className="py-3 rounded-lg border border-game-border-light text-center transition-all duration-150 hover:border-blue-500 active:scale-95"
-                  style={{ background: "rgba(14,14,26,0.8)" }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "rgba(30,58,138,0.3)";
-                    e.currentTarget.style.boxShadow = "0 0 15px rgba(59,130,246,0.3)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(14,14,26,0.8)";
-                    e.currentTarget.style.boxShadow = "";
-                  }}
-                >
-                  <div className="text-xl mb-1">{opt.icon}</div>
-                  <div className="font-game text-sm text-blue-400">{opt.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <div className={`font-game text-4xl ${sessionExpired ? "session-expired" : "text-white"}`}>
-                  {sessionExpired ? "TERMINÉ!" : formatCountdown(sessionMsLeft)}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Objectif: {state.sessionTargetMinutes} min • {state.sessionCalls} calls • {state.sessionBookings} bookings
-                </div>
-              </div>
-              <button
-                onClick={() => dispatch({ type: "END_SESSION" })}
-                className="px-4 py-2 rounded-lg font-game text-sm border transition-all active:scale-95"
-                style={{
-                  background: sessionExpired ? "rgba(21,128,61,0.3)" : "rgba(30,58,138,0.3)",
-                  borderColor: sessionExpired ? "#22c55e" : "#3b82f6",
-                  color: sessionExpired ? "#22c55e" : "#60a5fa",
-                }}
-              >
-                {sessionExpired ? "✅ Terminer" : "⏹ Terminer"}
-              </button>
-            </div>
-
-            {/* Session progress bar */}
-            <div className="h-2 bg-game-border rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full progress-bar"
-                style={{
-                  width: `${sessionPercent}%`,
-                  background: sessionExpired
-                    ? "linear-gradient(90deg, #15803d, #22c55e)"
-                    : "linear-gradient(90deg, #7c3aed, #8b5cf6)",
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* XP Buff indicator */}
-        {state.xpBuffActive && buffMsLeft > 0 && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg border border-yellow-600/50 px-3 py-2"
-            style={{ background: "rgba(113,63,18,0.3)" }}>
-            <span className="text-yellow-400 animate-pulse">⚡</span>
-            <span className="font-game text-sm text-yellow-300">BUFF XP ×1.5 ACTIF</span>
-            <span className="ml-auto font-game text-yellow-400">{formatCountdown(buffMsLeft)}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Quick actions */}
-      <div className="bg-game-card border border-game-border rounded-xl p-4">
-        <div className="font-game text-xs tracking-widest text-gray-400 mb-3">ACTIONS RAPIDES</div>
-
-        {/* LOG CALL — full width */}
+        {/* LOG CALL — primary orange */}
         <button
           onClick={() => dispatch({ type: "LOG_CALL" })}
-          disabled={state.dailyEnergyUsed >= MAX_ENERGY}
-          className="w-full py-5 rounded-xl font-game text-base tracking-wide transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed mb-3"
+          disabled={depleted}
+          className="w-full py-4 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed mb-3 btn-pulse"
           style={{
-            background: state.dailyEnergyUsed >= MAX_ENERGY
-              ? "rgba(30,41,59,0.5)"
-              : "linear-gradient(135deg, #1d4ed8, #2563eb)",
-            border: "1px solid",
-            borderColor: state.dailyEnergyUsed >= MAX_ENERGY ? "#334155" : "#3b82f6",
-            boxShadow: state.dailyEnergyUsed >= MAX_ENERGY ? "none" : "0 0 20px rgba(59,130,246,0.3)",
-            color: state.dailyEnergyUsed >= MAX_ENERGY ? "#64748b" : "#fff",
+            background: depleted ? "#1C1C1C" : "#FF5500",
+            border: `1px solid ${depleted ? "#2A2A2A" : "#FF5500"}`,
+            color: depleted ? "#5A5A5A" : "#FFF",
           }}
-          onMouseEnter={(e) => {
-            if (state.dailyEnergyUsed < MAX_ENERGY)
-              e.currentTarget.style.boxShadow = "0 0 30px rgba(59,130,246,0.6)";
-          }}
-          onMouseLeave={(e) => {
-            if (state.dailyEnergyUsed < MAX_ENERGY)
-              e.currentTarget.style.boxShadow = "0 0 20px rgba(59,130,246,0.3)";
-          }}
+          onMouseEnter={(e) => { if (!depleted) { e.currentTarget.style.background = "#FF6B1A"; e.currentTarget.style.borderColor = "#FF6B1A"; } }}
+          onMouseLeave={(e) => { if (!depleted) { e.currentTarget.style.background = "#FF5500"; e.currentTarget.style.borderColor = "#FF5500"; } }}
         >
-          <div className="text-2xl mb-1">📞</div>
-          <div>LOG CALL</div>
-          <div className="text-xs opacity-70 mt-0.5">+10 XP • -2 ⚡</div>
+          <span style={{ fontSize: "1.2rem" }}>📞</span>
+          {"  "}LOG CALL
+          <span style={{ opacity: 0.7, fontSize: "0.7rem", marginLeft: "8px" }}>+10 XP · -2⚡</span>
         </button>
 
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          {/* Log RDV */}
+        <div className="grid grid-cols-2 gap-2 mb-3">
           <button
             onClick={() => dispatch({ type: "LOG_BOOKING" })}
-            className="py-5 rounded-xl font-game text-base tracking-wide transition-all duration-150 active:scale-95"
-            style={{
-              background: "linear-gradient(135deg, #15803d, #16a34a)",
-              border: "1px solid #22c55e",
-              boxShadow: "0 0 20px rgba(34,197,94,0.3)",
-              color: "#fff",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 30px rgba(34,197,94,0.6)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 0 20px rgba(34,197,94,0.3)"; }}
+            className="py-4 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95"
+            style={{ background: "rgba(28,228,0,0.1)", border: "1px solid rgba(28,228,0,0.4)", color: "#1CE400" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.18)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.1)"; }}
           >
-            <div className="text-2xl mb-1">🎯</div>
-            <div>LOG RDV</div>
-            <div className="text-xs opacity-70 mt-0.5">+50 XP</div>
+            <div style={{ fontSize: "1.1rem" }}>🎯</div>
+            LOG RDV
+            <div style={{ opacity: 0.6, fontSize: "0.68rem" }}>+50 XP</div>
           </button>
 
-          {/* Log Vendu */}
           <button
             onClick={() => dispatch({ type: "LOG_SALE" })}
-            className="py-5 rounded-xl font-game text-base tracking-wide transition-all duration-150 active:scale-95"
-            style={{
-              background: "linear-gradient(135deg, #92400e, #b45309)",
-              border: "1px solid #f59e0b",
-              boxShadow: "0 0 20px rgba(245,158,11,0.3)",
-              color: "#fff",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 30px rgba(245,158,11,0.6)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 0 20px rgba(245,158,11,0.3)"; }}
+            className="py-4 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95"
+            style={{ background: "rgba(255,149,0,0.1)", border: "1px solid rgba(255,149,0,0.4)", color: "#FF9500" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,149,0,0.18)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,149,0,0.1)"; }}
           >
-            <div className="text-2xl mb-1">💰</div>
-            <div>VENDU</div>
-            <div className="text-xs opacity-70 mt-0.5">+100 XP</div>
+            <div style={{ fontSize: "1.1rem" }}>💰</div>
+            VENDU
+            <div style={{ opacity: 0.6, fontSize: "0.68rem" }}>+100 XP</div>
           </button>
         </div>
 
-        {/* Undo */}
         <button
           onClick={() => dispatch({ type: "UNDO_CALL" })}
           disabled={state.dailyCalls === 0}
-          className="w-full text-center text-xs text-gray-600 hover:text-gray-400 transition-colors py-1 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-full text-center text-xs transition-colors py-1 disabled:opacity-20 disabled:cursor-not-allowed"
+          style={{ color: "#5A5A5A" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#9A9A9A"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#5A5A5A"; }}
         >
           ↩ Annuler le dernier call
         </button>
       </div>
 
-      {/* Recent achievements */}
-      {recentAchievements.length > 0 && (
-        <div className="bg-game-card border border-game-border rounded-xl p-4">
-          <div className="font-game text-xs tracking-widest text-gray-400 mb-3">
+      {/* ── Energy + Session (side by side on sm+) ───────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+        {/* Energy */}
+        <div
+          className="rounded-sm p-4"
+          style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-game text-[10px] tracking-widest" style={{ color: "#5A5A5A" }}>ÉNERGIE</span>
+            <span className="font-game text-sm" style={{ color: energyColor }}>
+              {energyLeft} / {MAX_ENERGY}
+              <span style={{ color: "#5A5A5A", fontSize: "0.65rem", marginLeft: "4px" }}>
+                ({callsLeft} calls)
+              </span>
+            </span>
+          </div>
+          <div className="h-3 rounded-full overflow-hidden relative" style={{ background: "#2A2A2A" }}>
+            <div className={`${energyClass} h-full rounded-full progress-bar`} style={{ width: `${energyPct}%` }} />
+            {[25, 50, 75].map((p) => (
+              <div key={p} className="absolute top-0 bottom-0 w-px opacity-20"
+                style={{ left: `${p}%`, background: "#111" }} />
+            ))}
+          </div>
+          <div className="flex justify-between mt-1" style={{ fontSize: "0.6rem", color: "#3A3A3A" }}>
+            <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+          </div>
+          {depleted && (
+            <div
+              className="mt-2 font-game text-[10px] text-center py-1.5 rounded-sm tracking-widest"
+              style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.25)", color: "#FF5500" }}
+            >
+              ⚡ ÉPUISÉE — RESET À MINUIT
+            </div>
+          )}
+        </div>
+
+        {/* Session */}
+        <div
+          className="rounded-sm p-4"
+          style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+        >
+          <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#5A5A5A" }}>
+            SESSION DE TRAVAIL
+          </div>
+
+          {!state.sessionActive ? (
+            <div>
+              <p style={{ color: "#5A5A5A", fontSize: "0.75rem", marginBottom: "0.6rem" }}>
+                Buff XP ×1.5 à la fin de session.
+              </p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[
+                  { minutes: 30,  label: "30 MIN" },
+                  { minutes: 60,  label: "1H" },
+                  { minutes: 120, label: "2H" },
+                ].map((opt) => (
+                  <button
+                    key={opt.minutes}
+                    onClick={() => dispatch({ type: "START_SESSION", minutes: opt.minutes })}
+                    className="py-3 rounded-sm font-game text-xs tracking-wider transition-all duration-150 active:scale-95"
+                    style={{ background: "#242424", border: "1px solid #2A2A2A", color: "#9A9A9A" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = "#FF5500";
+                      e.currentTarget.style.color = "#FF5500";
+                      e.currentTarget.style.background = "rgba(255,85,0,0.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = "#2A2A2A";
+                      e.currentTarget.style.color = "#9A9A9A";
+                      e.currentTarget.style.background = "#242424";
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div
+                    className={`font-game text-3xl leading-none ${sessionExpired ? "session-expired" : "text-white"}`}
+                  >
+                    {sessionExpired ? "TERMINÉ!" : fmt(sessionMsLeft)}
+                  </div>
+                  <div style={{ color: "#5A5A5A", fontSize: "0.65rem", marginTop: "3px" }}>
+                    {state.sessionTargetMinutes}min · {state.sessionCalls} calls · {state.sessionBookings} RDV
+                  </div>
+                </div>
+                <button
+                  onClick={() => dispatch({ type: "END_SESSION" })}
+                  className="px-3 py-1.5 rounded-sm font-game text-xs tracking-wider transition-all active:scale-95"
+                  style={{
+                    background: sessionExpired ? "rgba(28,228,0,0.1)" : "rgba(255,85,0,0.1)",
+                    border:     sessionExpired ? "1px solid rgba(28,228,0,0.4)" : "1px solid rgba(255,85,0,0.4)",
+                    color:      sessionExpired ? "#1CE400" : "#FF5500",
+                  }}
+                >
+                  {sessionExpired ? "✅ CLORE" : "⏹ STOP"}
+                </button>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#2A2A2A" }}>
+                <div
+                  className="h-full rounded-full progress-bar"
+                  style={{
+                    width: `${sessionPct}%`,
+                    background: sessionExpired
+                      ? "linear-gradient(90deg,#15803d,#22c55e)"
+                      : "linear-gradient(90deg,#7c3aed,#8b5cf6)",
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* XP buff */}
+          {state.xpBuffActive && buffLeft > 0 && (
+            <div
+              className="mt-2.5 flex items-center gap-2 rounded-sm px-3 py-2"
+              style={{ background: "rgba(255,149,0,0.08)", border: "1px solid rgba(255,149,0,0.3)" }}
+            >
+              <span style={{ color: "#FF9500", fontSize: "0.8rem" }}>⚡</span>
+              <span className="font-game text-xs" style={{ color: "#FF9500" }}>BUFF XP ×1.5</span>
+              <span className="ml-auto font-game text-xs" style={{ color: "#FF9500" }}>{fmt(buffLeft)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Recent achievements ───────────────────────────────────────────── */}
+      {recentAch.length > 0 && (
+        <div
+          className="rounded-sm p-4"
+          style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+        >
+          <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#5A5A5A" }}>
             HAUTS FAITS RÉCENTS
           </div>
           <div className="space-y-2">
-            {recentAchievements.map((ach) => {
+            {recentAch.map((ach) => {
               if (!ach) return null;
-              const tierColor =
-                ach.tier === "gold" ? "#ffd700" :
-                ach.tier === "silver" ? "#c8d0e0" :
-                "#cd7f32";
-              const tierBg =
-                ach.tier === "gold" ? "rgba(26,20,0,0.8)" :
-                ach.tier === "silver" ? "rgba(20,20,32,0.8)" :
-                "rgba(26,13,0,0.8)";
-
+              const tc = ach.tier === "gold" ? "#ffd700" : ach.tier === "silver" ? "#c8d0e0" : "#cd7f32";
               return (
                 <div
                   key={ach.id}
-                  className="flex items-center gap-3 rounded-lg border px-3 py-2"
-                  style={{ background: tierBg, borderColor: tierColor + "40" }}
+                  className="flex items-center gap-3 rounded-sm px-3 py-2.5"
+                  style={{ background: "#242424", border: `1px solid ${tc}28` }}
                 >
-                  <span className="text-xl">{ach.icon}</span>
+                  <span style={{ fontSize: "1.1rem" }}>{ach.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-game text-sm" style={{ color: tierColor }}>
-                      {ach.title}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">{ach.description}</div>
+                    <div className="font-game text-xs" style={{ color: tc }}>{ach.title}</div>
+                    <div style={{ color: "#5A5A5A", fontSize: "0.68rem" }} className="truncate">{ach.description}</div>
                   </div>
-                  <div className="font-game text-xs" style={{ color: tierColor }}>
-                    +{ach.xpReward} XP
-                  </div>
+                  <div className="font-game text-xs flex-shrink-0" style={{ color: tc }}>+{ach.xpReward} XP</div>
                 </div>
               );
             })}
