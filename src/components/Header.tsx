@@ -60,7 +60,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
   return (
     <header
       className="sticky top-0 z-40"
-      style={{ background: "#181818", borderBottom: "1px solid #2A2A2A" }}
+      style={{ background: "#181818", borderBottom: "1px solid #383838" }}
     >
       <div className="max-w-6xl mx-auto">
 
@@ -75,10 +75,10 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
             >
               CCR
             </span>
-            <div style={{ width: "1px", height: "18px", background: "#2A2A2A" }} className="hidden sm:block" />
+            <div style={{ width: "1px", height: "18px", background: "#383838" }} className="hidden sm:block" />
             <span
               className="font-game text-xs tracking-widest hidden sm:block"
-              style={{ color: "#5A5A5A" }}
+              style={{ color: "#848484" }}
             >
               Cold Call RPG
             </span>
@@ -94,12 +94,12 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                   onClick={() => setActiveTab(tab.id)}
                   className="font-game text-xs tracking-wider px-4 h-full transition-colors duration-150 relative"
                   style={{
-                    color:      active ? "#FF5500" : "#9A9A9A",
+                    color:      active ? "#FF5500" : "#C0C0C0",
                     background: "transparent",
                     borderBottom: active ? "2px solid #FF5500" : "2px solid transparent",
                   }}
                   onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = "#FFFFFF"; }}
-                  onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "#9A9A9A"; }}
+                  onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "#C0C0C0"; }}
                 >
                   {tab.label.toUpperCase()}
                 </button>
@@ -137,7 +137,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
             )}
 
             {/* Divider */}
-            <div style={{ width: "1px", height: "20px", background: "#2A2A2A" }} className="hidden sm:block" />
+            <div style={{ width: "1px", height: "20px", background: "#383838" }} className="hidden sm:block" />
 
             {/* Avatar + name + xp */}
             <div className="flex items-center gap-2.5">
@@ -168,10 +168,10 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                   {state.playerName}
                 </div>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <div className="w-20 h-1 rounded-full overflow-hidden" style={{ background: "#2A2A2A" }}>
+                  <div className="w-20 h-1 rounded-full overflow-hidden" style={{ background: "#383838" }}>
                     <div className="xp-bar-fill h-full rounded-full" style={{ width: `${progress}%` }} />
                   </div>
-                  <span style={{ color: "#5A5A5A", fontSize: "0.58rem" }} className="font-game">
+                  <span style={{ color: "#848484", fontSize: "0.58rem" }} className="font-game">
                     {nextLevel ? `${state.totalXP} XP` : "MAX"}
                   </span>
                 </div>
@@ -183,14 +183,14 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
               onClick={handleLogout}
               title="Se déconnecter"
               className="w-7 h-7 rounded flex items-center justify-center transition-colors duration-150"
-              style={{ background: "transparent", border: "1px solid #2A2A2A", color: "#5A5A5A" }}
+              style={{ background: "transparent", border: "1px solid #383838", color: "#848484" }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = "#FF5500";
                 e.currentTarget.style.color = "#FF5500";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#2A2A2A";
-                e.currentTarget.style.color = "#5A5A5A";
+                e.currentTarget.style.borderColor = "#383838";
+                e.currentTarget.style.color = "#848484";
               }}
             >
               <span style={{ fontSize: "0.75rem" }}>🚪</span>
@@ -201,7 +201,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
         {/* ── Mobile / tablet tab strip ────────────────────────────────────── */}
         <nav
           className="lg:hidden flex overflow-x-auto"
-          style={{ borderTop: "1px solid #2A2A2A" }}
+          style={{ borderTop: "1px solid #383838" }}
         >
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
@@ -211,7 +211,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                 onClick={() => setActiveTab(tab.id)}
                 className="flex-shrink-0 px-3 py-2.5 font-game text-[10px] tracking-wider transition-colors duration-150"
                 style={{
-                  color:        active ? "#FF5500" : "#9A9A9A",
+                  color:        active ? "#FF5500" : "#C0C0C0",
                   borderBottom: active ? "2px solid #FF5500" : "2px solid transparent",
                   background:   "transparent",
                 }}

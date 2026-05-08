@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { fetchScriptVotes, castScriptVote, ScriptVote, isSupabaseConfigured } from "@/lib/supabase";
 
-const CARD_BG = "#1C1C1C";
-const BORDER  = "#2A2A2A";
+const CARD_BG = "#232323";
+const BORDER  = "#383838";
 
 // ── Votes ─────────────────────────────────────────────────────────────────────
 
@@ -87,8 +87,8 @@ function VoteBar({ id, votes, myVotes, vote }: {
         className="flex items-center gap-1 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
         style={{
           background: my === "like" ? "rgba(28,228,0,0.15)" : "rgba(255,255,255,0.03)",
-          border:     `1px solid ${my === "like" ? "rgba(28,228,0,0.5)" : "#2A2A2A"}`,
-          color:      my === "like" ? "#1CE400" : "#5A5A5A",
+          border:     `1px solid ${my === "like" ? "rgba(28,228,0,0.5)" : "#383838"}`,
+          color:      my === "like" ? "#1CE400" : "#848484",
         }}
       >
         👍 {v.likes > 0 ? v.likes : ""}
@@ -98,8 +98,8 @@ function VoteBar({ id, votes, myVotes, vote }: {
         className="flex items-center gap-1 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
         style={{
           background: my === "dislike" ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.03)",
-          border:     `1px solid ${my === "dislike" ? "rgba(239,68,68,0.45)" : "#2A2A2A"}`,
-          color:      my === "dislike" ? "#ef4444" : "#5A5A5A",
+          border:     `1px solid ${my === "dislike" ? "rgba(239,68,68,0.45)" : "#383838"}`,
+          color:      my === "dislike" ? "#ef4444" : "#848484",
         }}
       >
         👎 {v.dislikes > 0 ? v.dislikes : ""}
@@ -191,8 +191,8 @@ function CopyBtn({ text }: { text: string }) {
       className="flex-shrink-0 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
       style={{
         background: copied ? "rgba(28,228,0,0.12)" : "rgba(255,255,255,0.04)",
-        border:     `1px solid ${copied ? "rgba(28,228,0,0.4)" : "#2A2A2A"}`,
-        color:      copied ? "#1CE400" : "#5A5A5A",
+        border:     `1px solid ${copied ? "rgba(28,228,0,0.4)" : "#383838"}`,
+        color:      copied ? "#1CE400" : "#848484",
       }}
       title="Copier"
     >
@@ -232,7 +232,7 @@ function ScriptSection({ votes, myVotes, vote }: VoteProps) {
               {step.text}
             </p>
             {step.note && (
-              <p style={{ color: "#5A5A5A", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>
+              <p style={{ color: "#848484", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>
                 {step.note}
               </p>
             )}
@@ -288,7 +288,7 @@ function ObjectionsSection({ votes, myVotes, vote }: VoteProps) {
               <span style={{ color: open === realIdx ? "#FF7733" : "#FFFFFF", fontSize: "0.875rem", fontWeight: 600 }}>
                 {obj.trigger}
               </span>
-              <span style={{ color: "#5A5A5A", fontSize: "0.85rem" }}>{open === realIdx ? "▲" : "▼"}</span>
+              <span style={{ color: "#848484", fontSize: "0.85rem" }}>{open === realIdx ? "▲" : "▼"}</span>
             </button>
             {open === realIdx && (
               <div
@@ -312,7 +312,7 @@ function ObjectionsSection({ votes, myVotes, vote }: VoteProps) {
       })}
 
       {filtered.length === 0 && (
-        <div className="text-center py-8 font-game text-xs" style={{ color: "#5A5A5A" }}>
+        <div className="text-center py-8 font-game text-xs" style={{ color: "#848484" }}>
           Aucun résultat
         </div>
       )}
@@ -346,11 +346,11 @@ function VariantsSection({ votes, myVotes, vote }: VoteProps) {
               <div style={{ color: open === i ? "#86efac" : "#FFFFFF", fontSize: "0.875rem", fontWeight: 600 }}>
                 {v.name}
               </div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.68rem", marginTop: "1px" }}>
+              <div style={{ color: "#848484", fontSize: "0.68rem", marginTop: "1px" }}>
                 {v.profil}
               </div>
             </div>
-            <span style={{ color: "#5A5A5A", fontSize: "0.85rem" }}>{open === i ? "▲" : "▼"}</span>
+            <span style={{ color: "#848484", fontSize: "0.85rem" }}>{open === i ? "▲" : "▼"}</span>
           </button>
           {open === i && (
             <div
@@ -400,7 +400,7 @@ export default function ScriptTab() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-game text-lg text-white">SCRIPT THERALYS</h2>
-            <p style={{ color: "#5A5A5A", fontSize: "0.72rem" }}>Référence complète pour tes appels</p>
+            <p style={{ color: "#848484", fontSize: "0.72rem" }}>Référence complète pour tes appels</p>
           </div>
           <div className="flex items-center gap-2">
             {[
@@ -415,7 +415,7 @@ export default function ScriptTab() {
                   <span style={{ fontSize: "0.7rem" }}>{step.icon}</span>
                   <span className="font-game text-[10px]" style={{ color: step.color }}>{step.label}</span>
                 </div>
-                {i < 1 && <span style={{ color: "#3A3A3A", fontSize: "0.7rem" }}>→</span>}
+                {i < 1 && <span style={{ color: "#686868", fontSize: "0.7rem" }}>→</span>}
               </div>
             ))}
           </div>
@@ -432,7 +432,7 @@ export default function ScriptTab() {
             style={{
               background: activeSection === s.id ? s.color : CARD_BG,
               border:     `1px solid ${activeSection === s.id ? s.color : BORDER}`,
-              color:      activeSection === s.id ? "#000" : "#9A9A9A",
+              color:      activeSection === s.id ? "#000" : "#C0C0C0",
             }}
           >
             {s.icon} {s.label.toUpperCase()}

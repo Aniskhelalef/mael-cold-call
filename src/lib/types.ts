@@ -34,6 +34,7 @@ export interface GameState {
   totalSales: number;
   dailySales: number;
   prospects: Prospect[];
+  ranksRewarded?: string[];
 }
 
 export type ProspectStatus = "a_appeler" | "rappel" | "rdv" | "demo" | "vendu" | "perdu";

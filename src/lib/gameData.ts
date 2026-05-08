@@ -24,25 +24,43 @@ export const LEVELS: Level[] = [
 ];
 
 export const RANKS: Rank[] = [
-  { name: "Silver I", minBookings: 0, color: "#a0aec0", group: "silver" },
-  { name: "Silver II", minBookings: 5, color: "#a0aec0", group: "silver" },
-  { name: "Silver III", minBookings: 10, color: "#a0aec0", group: "silver" },
-  { name: "Silver IV", minBookings: 15, color: "#a0aec0", group: "silver" },
-  { name: "Silver Elite", minBookings: 25, color: "#a0aec0", group: "silver" },
-  { name: "Silver Elite Master", minBookings: 40, color: "#a0aec0", group: "silver" },
-  { name: "Gold Nova I", minBookings: 60, color: "#f6ad55", group: "gold" },
-  { name: "Gold Nova II", minBookings: 80, color: "#f6ad55", group: "gold" },
-  { name: "Gold Nova III", minBookings: 100, color: "#f6ad55", group: "gold" },
-  { name: "Gold Nova Master", minBookings: 125, color: "#f6ad55", group: "gold" },
-  { name: "Master Guardian I", minBookings: 150, color: "#63b3ed", group: "guardian" },
-  { name: "Master Guardian II", minBookings: 200, color: "#63b3ed", group: "guardian" },
-  { name: "Master Guardian Elite", minBookings: 250, color: "#63b3ed", group: "guardian" },
-  { name: "Distinguished Master Guardian", minBookings: 300, color: "#63b3ed", group: "guardian" },
-  { name: "Legendary Eagle", minBookings: 400, color: "#b794f4", group: "eagle" },
-  { name: "Legendary Eagle Master", minBookings: 500, color: "#b794f4", group: "eagle" },
-  { name: "Supreme Master First Class", minBookings: 650, color: "#fc8181", group: "supreme" },
-  { name: "Global Elite", minBookings: 800, color: "#68d391", group: "global" },
+  // 🟤 Silver — Accès au système
+  { name: "Silver I",            minBookings: 0,   color: "#a0aec0", group: "silver"   },
+  { name: "Silver II",           minBookings: 5,   color: "#a0aec0", group: "silver"   },
+  { name: "Silver III",          minBookings: 12,  color: "#a0aec0", group: "silver"   },
+  { name: "Silver IV",           minBookings: 22,  color: "#a0aec0", group: "silver"   },
+  { name: "Silver Elite",        minBookings: 36,  color: "#a0aec0", group: "silver"   },
+  { name: "Silver Elite Master", minBookings: 55,  color: "#a0aec0", group: "silver"   },
+  // 🟢 Gold Nova
+  { name: "Gold Nova I",         minBookings: 80,  color: "#f6ad55", group: "gold"     },
+  { name: "Gold Nova II",        minBookings: 110, color: "#f6ad55", group: "gold"     },
+  { name: "Gold Nova III",       minBookings: 145, color: "#f6ad55", group: "gold"     },
+  { name: "Gold Nova Master",    minBookings: 190, color: "#f6ad55", group: "gold"     },
+  // 🔵 Master Guardian
+  { name: "Master Guardian I",                    minBookings: 240, color: "#63b3ed", group: "guardian" },
+  { name: "Master Guardian II",                   minBookings: 300, color: "#63b3ed", group: "guardian" },
+  { name: "Master Guardian Elite",                minBookings: 370, color: "#63b3ed", group: "guardian" },
+  { name: "Distinguished Master Guardian",        minBookings: 450, color: "#63b3ed", group: "guardian" },
+  // 🟡 Global Elite
+  { name: "Global Elite",        minBookings: 550, color: "#68d391", group: "global"   },
 ];
+
+export const RANK_MONEY_REWARDS: Record<string, number> = {
+  "Silver II":                        10,
+  "Silver III":                       25,
+  "Silver IV":                        50,
+  "Silver Elite":                     80,
+  "Silver Elite Master":             120,
+  "Gold Nova I":                     160,
+  "Gold Nova II":                    200,
+  "Gold Nova III":                   260,
+  "Gold Nova Master":                320,
+  "Master Guardian I":               420,
+  "Master Guardian II":              550,
+  "Master Guardian Elite":           700,
+  "Distinguished Master Guardian":   900,
+  // Global Elite = MacBook Pro (not tracked as €, shown separately in UI)
+};
 
 export const ACHIEVEMENT_MONEY_REWARDS: Record<string, number> = {
   premier_rdv: 10,

@@ -7,8 +7,8 @@ import { Achievement } from "@/lib/types";
 
 const CATEGORIES = ["Tous", "Premiers Pas", "Calls", "Bookings", "Streaks", "Énergie", "Ratio", "Spécial"];
 
-const CARD_BG = "#1C1C1C";
-const BORDER  = "#2A2A2A";
+const CARD_BG = "#232323";
+const BORDER  = "#383838";
 
 function getTier(tier: string) {
   switch (tier) {
@@ -27,7 +27,7 @@ function AchievementCard({ achievement, unlocked }: { achievement: Achievement; 
       style={{
         background: CARD_BG,
         border:     `1px solid ${unlocked ? `${color}35` : BORDER}`,
-        borderLeft: `3px solid ${unlocked ? color : "#2A2A2A"}`,
+        borderLeft: `3px solid ${unlocked ? color : "#383838"}`,
         opacity:    unlocked ? 1 : 0.45,
       }}
     >
@@ -35,7 +35,7 @@ function AchievementCard({ achievement, unlocked }: { achievement: Achievement; 
       <div className="absolute top-2.5 right-2.5">
         {unlocked
           ? <span style={{ fontSize: "0.65rem", color, border: `1px solid ${color}`, borderRadius: "50%", padding: "1px 4px" }}>✓</span>
-          : <span style={{ fontSize: "0.75rem", color: "#3A3A3A" }}>🔒</span>
+          : <span style={{ fontSize: "0.75rem", color: "#686868" }}>🔒</span>
         }
       </div>
 
@@ -55,17 +55,17 @@ function AchievementCard({ achievement, unlocked }: { achievement: Achievement; 
       </div>
 
       {/* Title */}
-      <div className="font-game text-xs leading-tight" style={{ color: unlocked ? "#FFFFFF" : "#5A5A5A" }}>
+      <div className="font-game text-xs leading-tight" style={{ color: unlocked ? "#FFFFFF" : "#848484" }}>
         {unlocked ? achievement.title : "???"}
       </div>
 
       {/* Description / hint */}
-      <div style={{ color: unlocked ? "#9A9A9A" : "#5A5A5A", fontSize: "0.7rem", lineHeight: 1.5 }}>
+      <div style={{ color: unlocked ? "#C0C0C0" : "#848484", fontSize: "0.7rem", lineHeight: 1.5 }}>
         {unlocked ? achievement.description : achievement.hint}
       </div>
 
       {/* XP */}
-      <div className="font-game text-[10px] mt-auto pt-1" style={{ color: unlocked ? "#FF9500" : "#3A3A3A" }}>
+      <div className="font-game text-[10px] mt-auto pt-1" style={{ color: unlocked ? "#FF9500" : "#686868" }}>
         +{achievement.xpReward} XP
       </div>
     </div>
@@ -102,18 +102,18 @@ export default function AchievementsTab() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="font-game text-lg text-white">HAUTS FAITS</h2>
-            <p style={{ color: "#5A5A5A", fontSize: "0.72rem" }}>Accomplis des objectifs pour débloquer des récompenses XP</p>
+            <p style={{ color: "#848484", fontSize: "0.72rem" }}>Accomplis des objectifs pour débloquer des récompenses XP</p>
           </div>
           <div className="text-right">
             <div className="font-game text-2xl" style={{ color: "#FF9500" }}>
-              {unlocked}<span style={{ color: "#5A5A5A", fontSize: "0.9rem" }}>/{total}</span>
+              {unlocked}<span style={{ color: "#848484", fontSize: "0.9rem" }}>/{total}</span>
             </div>
-            <div style={{ color: "#5A5A5A", fontSize: "0.65rem" }}>débloqués</div>
+            <div style={{ color: "#848484", fontSize: "0.65rem" }}>débloqués</div>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#2A2A2A" }}>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
           <div
             className="h-full rounded-full progress-bar"
             style={{
@@ -123,7 +123,7 @@ export default function AchievementsTab() {
             }}
           />
         </div>
-        <div style={{ color: "#5A5A5A", fontSize: "0.63rem", marginTop: "4px" }}>{pct}% complété</div>
+        <div style={{ color: "#848484", fontSize: "0.63rem", marginTop: "4px" }}>{pct}% complété</div>
       </div>
 
       {/* Category filter */}
@@ -136,7 +136,7 @@ export default function AchievementsTab() {
             style={{
               background: cat === c ? "#FF5500" : CARD_BG,
               border:     `1px solid ${cat === c ? "#FF5500" : BORDER}`,
-              color:      cat === c ? "#FFF" : "#9A9A9A",
+              color:      cat === c ? "#FFF" : "#C0C0C0",
             }}
           >
             {c.toUpperCase()}
@@ -156,7 +156,7 @@ export default function AchievementsTab() {
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-12" style={{ color: "#5A5A5A" }}>
+        <div className="text-center py-12" style={{ color: "#848484" }}>
           <div style={{ fontSize: "2rem", marginBottom: "8px" }}>🔍</div>
           <p className="font-game text-xs">Aucun haut fait dans cette catégorie</p>
         </div>

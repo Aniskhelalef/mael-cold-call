@@ -5,18 +5,18 @@
 @tailwind utilities;
 
 :root {
-  --fi-bg:           #111111;
-  --fi-bg-deep:      #0D0D0D;
-  --fi-card:         #1C1C1C;
-  --fi-card-hover:   #242424;
-  --fi-border:       #2A2A2A;
-  --fi-border-light: #383838;
+  --fi-bg:           #181818;
+  --fi-bg-deep:      #141414;
+  --fi-card:         #232323;
+  --fi-card-hover:   #2D2D2D;
+  --fi-border:       #383838;
+  --fi-border-light: #474747;
   --fi-orange:       #FF5500;
   --fi-orange-hover: #FF6B1A;
-  --fi-orange-dim:   rgba(255, 85, 0, 0.12);
-  --fi-text:         #FFFFFF;
-  --fi-text-sec:     #9A9A9A;
-  --fi-text-muted:   #5A5A5A;
+  --fi-orange-dim:   rgba(255, 85, 0, 0.14);
+  --fi-text:         #F0F0F0;
+  --fi-text-sec:     #C0C0C0;
+  --fi-text-muted:   #848484;
 
   /* Legacy compat */
   --game-bg:           var(--fi-bg);
@@ -40,7 +40,7 @@ body {
 /* ── Scrollbar ─────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track  { background: var(--fi-bg-deep); }
-::-webkit-scrollbar-thumb  { background: #3A3A3A; border-radius: 2px; }
+::-webkit-scrollbar-thumb  { background: #4A4A4A; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--fi-orange); }
 
 /* ── Font ──────────────────────────────────────────────────────────────────── */

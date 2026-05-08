@@ -28,8 +28,8 @@ function timeAgo(iso: string): string {
 }
 
 const MEDAL = ["🥇", "🥈", "🥉"];
-const CARD_BG = "#1C1C1C";
-const BORDER  = "#2A2A2A";
+const CARD_BG = "#232323";
+const BORDER  = "#383838";
 
 export default function LeaderboardTab() {
   const { state } = useGame();
@@ -114,7 +114,7 @@ export default function LeaderboardTab() {
       >
         <div>
           <h2 className="font-game text-lg text-white">CLASSEMENT</h2>
-          <p style={{ color: "#5A5A5A", fontSize: "0.75rem" }}>
+          <p style={{ color: "#848484", fontSize: "0.75rem" }}>
             {loading ? "Chargement…" : `${displayList.length} joueur${displayList.length > 1 ? "s" : ""}`}
             {myRank > 0 && (
               <span style={{ color: "#FF5500" }}> · Ta position: #{myRank}</span>
@@ -134,9 +134,9 @@ export default function LeaderboardTab() {
             onClick={() => setRefreshed((n) => n + 1)}
             disabled={loading}
             className="px-3 py-1.5 rounded-sm font-game text-xs tracking-wider transition-all active:scale-95 disabled:opacity-40"
-            style={{ background: "#242424", border: "1px solid #383838", color: "#9A9A9A" }}
+            style={{ background: "#2D2D2D", border: "1px solid #383838", color: "#C0C0C0" }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF5500"; e.currentTarget.style.color = "#FF5500"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#9A9A9A"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#C0C0C0"; }}
           >
             {loading ? "…" : "⟳ REFRESH"}
           </button>
@@ -151,9 +151,9 @@ export default function LeaderboardTab() {
             onClick={() => setSortBy(s.key)}
             className="px-3 py-1.5 rounded-sm font-game text-[10px] tracking-wider transition-all duration-100"
             style={{
-              background:   sortBy === s.key ? "#FF5500" : "#1C1C1C",
-              border:       `1px solid ${sortBy === s.key ? "#FF5500" : "#2A2A2A"}`,
-              color:        sortBy === s.key ? "#FFF" : "#9A9A9A",
+              background:   sortBy === s.key ? "#FF5500" : "#232323",
+              border:       `1px solid ${sortBy === s.key ? "#FF5500" : "#383838"}`,
+              color:        sortBy === s.key ? "#FFF" : "#C0C0C0",
             }}
           >
             {s.label.toUpperCase()}
@@ -179,7 +179,7 @@ export default function LeaderboardTab() {
         >
           <div style={{ fontSize: "2rem", marginBottom: "8px" }}>🏆</div>
           <div className="font-game text-sm text-white mb-1">Classement multi-joueurs</div>
-          <div style={{ color: "#5A5A5A", fontSize: "0.75rem", maxWidth: "320px", margin: "0 auto" }}>
+          <div style={{ color: "#848484", fontSize: "0.75rem", maxWidth: "320px", margin: "0 auto" }}>
             Configure Supabase pour voir les autres joueurs. Pour l&apos;instant tu es seul en haut du tableau.
           </div>
         </div>
@@ -202,8 +202,8 @@ export default function LeaderboardTab() {
                 style={{
                   background: isSelf
                     ? "rgba(255,85,0,0.1)"
-                    : pos === 0 ? "rgba(255,215,0,0.06)" : "#1C1C1C",
-                  border: `1px solid ${isSelf ? "rgba(255,85,0,0.4)" : pos === 0 ? "rgba(255,215,0,0.25)" : "#2A2A2A"}`,
+                    : pos === 0 ? "rgba(255,215,0,0.06)" : "#232323",
+                  border: `1px solid ${isSelf ? "rgba(255,85,0,0.4)" : pos === 0 ? "rgba(255,215,0,0.25)" : "#383838"}`,
                 }}
               >
                 {/* Medal */}
@@ -225,7 +225,7 @@ export default function LeaderboardTab() {
                   {entry.name.split(" ")[0].toUpperCase()}
                 </div>
                 {/* XP */}
-                <div className="font-game text-[9px] mt-0.5" style={{ color: "#5A5A5A" }}>
+                <div className="font-game text-[9px] mt-0.5" style={{ color: "#848484" }}>
                   {sortBy === "xp"     ? `${entry.totalXP.toLocaleString()} XP` :
                    sortBy === "rdv"    ? `${entry.totalBookings} RDV` :
                    sortBy === "calls"  ? `${entry.totalCalls} calls` :
@@ -247,12 +247,12 @@ export default function LeaderboardTab() {
           className="grid px-4 py-2"
           style={{
             gridTemplateColumns: "36px 1fr 56px 80px 60px 50px",
-            borderBottom: "1px solid #2A2A2A",
+            borderBottom: "1px solid #383838",
             gap: "8px",
           }}
         >
           {["#", "JOUEUR", "NIVEAU", sortBy === "xp" ? "XP" : sortBy === "rdv" ? "RDV" : sortBy === "calls" ? "CALLS" : "STREAK", "RDV", "CALLS"].map((h, i) => (
-            <div key={i} className="font-game text-[10px] tracking-widest" style={{ color: "#5A5A5A", textAlign: i > 2 ? "right" : "left" }}>
+            <div key={i} className="font-game text-[10px] tracking-widest" style={{ color: "#848484", textAlign: i > 2 ? "right" : "left" }}>
               {h}
             </div>
           ))}
@@ -260,11 +260,11 @@ export default function LeaderboardTab() {
 
         {/* Rows */}
         {loading ? (
-          <div className="py-12 text-center font-game text-xs" style={{ color: "#5A5A5A" }}>
+          <div className="py-12 text-center font-game text-xs" style={{ color: "#848484" }}>
             CHARGEMENT…
           </div>
         ) : displayList.length === 0 ? (
-          <div className="py-12 text-center font-game text-xs" style={{ color: "#5A5A5A" }}>
+          <div className="py-12 text-center font-game text-xs" style={{ color: "#848484" }}>
             AUCUN JOUEUR
           </div>
         ) : (
@@ -286,11 +286,11 @@ export default function LeaderboardTab() {
                 style={{
                   gridTemplateColumns: "36px 1fr 56px 80px 60px 50px",
                   gap: "8px",
-                  borderBottom: "1px solid #242424",
+                  borderBottom: "1px solid #2D2D2D",
                 }}
               >
                 {/* Rank */}
-                <div className="font-game text-sm" style={{ color: rank <= 3 ? "#FF5500" : "#5A5A5A" }}>
+                <div className="font-game text-sm" style={{ color: rank <= 3 ? "#FF5500" : "#848484" }}>
                   {rank <= 3 ? MEDAL[rank - 1] : `#${rank}`}
                 </div>
 
@@ -315,7 +315,7 @@ export default function LeaderboardTab() {
                         </span>
                       )}
                     </div>
-                    <div style={{ color: "#5A5A5A", fontSize: "0.6rem" }}>{timeAgo(entry.updatedAt)}</div>
+                    <div style={{ color: "#848484", fontSize: "0.6rem" }}>{timeAgo(entry.updatedAt)}</div>
                   </div>
                 </div>
 
@@ -340,7 +340,7 @@ export default function LeaderboardTab() {
                 </div>
 
                 {/* Calls */}
-                <div className="font-game text-xs text-right" style={{ color: "#9A9A9A" }}>
+                <div className="font-game text-xs text-right" style={{ color: "#C0C0C0" }}>
                   {entry.totalCalls}
                 </div>
               </div>
@@ -350,7 +350,7 @@ export default function LeaderboardTab() {
       </div>
 
       {/* ── Footer note ──────────────────────────────────────────────────── */}
-      <p className="text-center" style={{ color: "#3A3A3A", fontSize: "0.65rem" }}>
+      <p className="text-center" style={{ color: "#686868", fontSize: "0.65rem" }}>
         Classement mis à jour en temps réel depuis Supabase · Tri par {sortBy === "xp" ? "XP total" : sortBy === "rdv" ? "RDV" : sortBy === "calls" ? "Calls" : "Streak"}
       </p>
     </div>

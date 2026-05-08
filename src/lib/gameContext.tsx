@@ -7,6 +7,8 @@ import {
   ACHIEVEMENTS,
   ACHIEVEMENT_MONEY_REWARDS,
   WEEKLY_MISSIONS,
+  RANKS,
+  RANK_MONEY_REWARDS,
   getTodayString,
   getISOWeekKey,
 } from "./gameData";
@@ -51,6 +53,7 @@ const defaultState: GameState = {
   totalSales: 0,
   dailySales: 0,
   prospects: [],
+  ranksRewarded: [],
 };
 
 function loadState(): GameState {
@@ -496,6 +499,24 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...newState,
           totalXP: newState.totalXP + missionXP,
           weeklyMissionsCompleted: [...newState.weeklyMissionsCompleted, ...newMissions],
+        };
+      }
+
+      // Rank money rewards
+      const ranksRewarded = newState.ranksRewarded ?? [];
+      let rankMoneyGain = 0;
+      const newRanksRewarded = [...ranksRewarded];
+      for (const rank of RANKS) {
+        if (newState.totalBookings >= rank.minBookings && !newRanksRewarded.includes(rank.name)) {
+          rankMoneyGain += RANK_MONEY_REWARDS[rank.name] ?? 0;
+          newRanksRewarded.push(rank.name);
+        }
+      }
+      if (rankMoneyGain > 0 || newRanksRewarded.length > ranksRewarded.length) {
+        newState = {
+          ...newState,
+          totalMoneyEarned: newState.totalMoneyEarned + rankMoneyGain,
+          ranksRewarded: newRanksRewarded,
         };
       }
 

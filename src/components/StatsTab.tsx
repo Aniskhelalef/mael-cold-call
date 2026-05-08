@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useGame } from "@/lib/gameContext";
-import { getRank, getNextRank, getLevel, getNextLevel, getLevelProgress } from "@/lib/gameData";
+import { getRank, getNextRank, getLevel, getNextLevel, getLevelProgress, RANKS, RANK_MONEY_REWARDS } from "@/lib/gameData";
 
 type Period = "jour" | "semaine" | "mois" | "annee";
 
-const CARD_BG = "#1C1C1C";
-const BORDER  = "#2A2A2A";
+const CARD_BG = "#232323";
+const BORDER  = "#383838";
 
 function rate(calls: number, bookings: number) {
   if (calls === 0) return "—";
@@ -54,7 +54,7 @@ function BarChart({ data }: {
                   bottom: "calc(100% + 6px)",
                   left: "50%",
                   transform: "translateX(-50%)",
-                  background: "#242424",
+                  background: "#2D2D2D",
                   border: "1px solid #383838",
                   color: "#FFFFFF",
                   fontSize: "0.65rem",
@@ -73,7 +73,7 @@ function BarChart({ data }: {
                   ? "linear-gradient(to top,#16a34a,#22c55e)"
                   : d.isHighlight
                   ? "linear-gradient(to top,#CC4400,#FF5500)"
-                  : "#2A2A2A",
+                  : "#383838",
                 opacity: isH ? 1 : 0.85,
                 transition: "opacity 0.15s",
                 boxShadow: d.isHighlight && d.calls > 0 ? "0 0 4px rgba(255,85,0,0.4)" : "none",
@@ -83,7 +83,7 @@ function BarChart({ data }: {
               className="font-game text-center"
               style={{
                 fontSize: "0.55rem",
-                color: d.isHighlight ? "#FF5500" : "#3A3A3A",
+                color: d.isHighlight ? "#FF5500" : "#686868",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 maxWidth: "100%",
@@ -112,7 +112,7 @@ function StatCards({ items }: {
           style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="font-game text-[10px] tracking-widest" style={{ color: "#5A5A5A" }}>
+            <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
               {s.label.toUpperCase()}
             </span>
             <span style={{ fontSize: "0.8rem" }}>{s.icon}</span>
@@ -142,7 +142,7 @@ function JourView() {
       ]} />
 
       <div className="rounded-sm p-4" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-        <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#5A5A5A" }}>
+        <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
           PROGRESSION JOURNALIÈRE
         </div>
         <div className="space-y-3">
@@ -151,11 +151,11 @@ function JourView() {
             { label: "Énergie utilisée",    value: state.dailyEnergyUsed, target: 100, color: "#FF9500" },
           ].map((item) => (
             <div key={item.label}>
-              <div className="flex justify-between text-xs mb-1" style={{ color: "#9A9A9A" }}>
+              <div className="flex justify-between text-xs mb-1" style={{ color: "#C0C0C0" }}>
                 <span>{item.label}</span>
                 <span style={{ color: item.color }}>{item.value} / {item.target}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#2A2A2A" }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
                 <div
                   className="h-full rounded-full progress-bar"
                   style={{
@@ -181,11 +181,11 @@ function JourView() {
           <div className="flex gap-6">
             <div>
               <div className="font-game text-2xl" style={{ color: "#AE00FC" }}>{state.sessionCalls}</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.68rem" }}>calls session</div>
+              <div style={{ color: "#848484", fontSize: "0.68rem" }}>calls session</div>
             </div>
             <div>
               <div className="font-game text-2xl" style={{ color: "#1CE400" }}>{state.sessionBookings}</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.68rem" }}>RDV session</div>
+              <div style={{ color: "#848484", fontSize: "0.68rem" }}>RDV session</div>
             </div>
           </div>
         </div>
@@ -229,7 +229,7 @@ function SemaineView() {
       ]} />
 
       <div className="rounded-sm p-4" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-        <div className="font-game text-[10px] tracking-widest mb-4" style={{ color: "#5A5A5A" }}>
+        <div className="font-game text-[10px] tracking-widest mb-4" style={{ color: "#848484" }}>
           CETTE SEMAINE — PAR JOUR
         </div>
         <BarChart data={days} />
@@ -244,17 +244,17 @@ function SemaineView() {
             <span style={{ fontSize: "1.4rem" }}>🏆</span>
             <div>
               <div className="font-game text-xs text-white">Meilleur jour</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.68rem" }}>{bestDay.label}</div>
+              <div style={{ color: "#848484", fontSize: "0.68rem" }}>{bestDay.label}</div>
             </div>
           </div>
           <div className="flex gap-4 text-center">
             <div>
               <div className="font-game text-lg" style={{ color: "#FF5500" }}>{bestDay.calls}</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.6rem" }}>calls</div>
+              <div style={{ color: "#848484", fontSize: "0.6rem" }}>calls</div>
             </div>
             <div>
               <div className="font-game text-lg" style={{ color: "#1CE400" }}>{bestDay.bookings}</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.6rem" }}>RDV</div>
+              <div style={{ color: "#848484", fontSize: "0.6rem" }}>RDV</div>
             </div>
           </div>
         </div>
@@ -298,7 +298,7 @@ function MoisView() {
       ]} />
 
       <div className="rounded-sm p-4" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-        <div className="font-game text-[10px] tracking-widest mb-4" style={{ color: "#5A5A5A" }}>
+        <div className="font-game text-[10px] tracking-widest mb-4" style={{ color: "#848484" }}>
           PAR JOUR — {monthName.toUpperCase()}
         </div>
         <BarChart data={monthDays} />
@@ -313,17 +313,17 @@ function MoisView() {
             <span style={{ fontSize: "1.4rem" }}>🏆</span>
             <div>
               <div className="font-game text-xs text-white">Meilleur jour du mois</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.68rem" }}>Jour {bestDay.label}</div>
+              <div style={{ color: "#848484", fontSize: "0.68rem" }}>Jour {bestDay.label}</div>
             </div>
           </div>
           <div className="flex gap-4 text-center">
             <div>
               <div className="font-game text-lg" style={{ color: "#FF5500" }}>{bestDay.calls}</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.6rem" }}>calls</div>
+              <div style={{ color: "#848484", fontSize: "0.6rem" }}>calls</div>
             </div>
             <div>
               <div className="font-game text-lg" style={{ color: "#1CE400" }}>{bestDay.bookings}</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.6rem" }}>RDV</div>
+              <div style={{ color: "#848484", fontSize: "0.6rem" }}>RDV</div>
             </div>
           </div>
         </div>
@@ -377,7 +377,7 @@ function AnneeView() {
       ]} />
 
       <div className="rounded-sm p-4" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-        <div className="font-game text-[10px] tracking-widest mb-4" style={{ color: "#5A5A5A" }}>
+        <div className="font-game text-[10px] tracking-widest mb-4" style={{ color: "#848484" }}>
           PAR MOIS — {currentYear}
         </div>
         <BarChart data={chartData} />
@@ -392,17 +392,17 @@ function AnneeView() {
             <span style={{ fontSize: "1.4rem" }}>🏆</span>
             <div>
               <div className="font-game text-xs text-white">Meilleur mois</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.68rem" }}>{bestMonth.label} {currentYear}</div>
+              <div style={{ color: "#848484", fontSize: "0.68rem" }}>{bestMonth.label} {currentYear}</div>
             </div>
           </div>
           <div className="flex gap-4 text-center">
             <div>
               <div className="font-game text-lg" style={{ color: "#FF5500" }}>{bestMonth.calls}</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.6rem" }}>calls</div>
+              <div style={{ color: "#848484", fontSize: "0.6rem" }}>calls</div>
             </div>
             <div>
               <div className="font-game text-lg" style={{ color: "#1CE400" }}>{bestMonth.bookings}</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.6rem" }}>RDV</div>
+              <div style={{ color: "#848484", fontSize: "0.6rem" }}>RDV</div>
             </div>
           </div>
         </div>
@@ -423,6 +423,7 @@ const PERIODS: { id: Period; label: string }[] = [
 export default function StatsTab() {
   const { state }  = useGame();
   const [period, setPeriod] = useState<Period>("semaine");
+  const [showRanks, setShowRanks] = useState(false);
 
   const rank      = getRank(state.totalBookings);
   const nextRank  = getNextRank(state.totalBookings);
@@ -450,7 +451,7 @@ export default function StatsTab() {
             style={{
               background: period === p.id ? "#FF5500" : CARD_BG,
               border:     `1px solid ${period === p.id ? "#FF5500" : BORDER}`,
-              color:      period === p.id ? "#FFF" : "#9A9A9A",
+              color:      period === p.id ? "#FFF" : "#C0C0C0",
             }}
           >
             {p.label.toUpperCase()}
@@ -469,7 +470,7 @@ export default function StatsTab() {
         <div className="absolute inset-0 opacity-[0.03]"
           style={{ background: `radial-gradient(circle at 80% 50%,${rank.color} 0%,transparent 60%)` }} />
         <div className="relative">
-          <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#5A5A5A" }}>
+          <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
             RANG CS:GO
           </div>
           <div className="flex items-center justify-between mb-3">
@@ -480,7 +481,7 @@ export default function StatsTab() {
               >
                 {rank.name}
               </div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.7rem", marginTop: "2px" }}>
+              <div style={{ color: "#848484", fontSize: "0.7rem", marginTop: "2px" }}>
                 {state.totalBookings} RDV au total
               </div>
             </div>
@@ -499,13 +500,34 @@ export default function StatsTab() {
               </span>
             </div>
           </div>
+          {/* Money reward for current rank */}
+          {RANK_MONEY_REWARDS[rank.name] !== undefined && (
+            <div
+              className="mb-2 flex items-center gap-1.5 rounded-sm px-2.5 py-1.5"
+              style={{ background: "rgba(28,228,0,0.07)", border: "1px solid rgba(28,228,0,0.2)" }}
+            >
+              <span style={{ fontSize: "0.75rem" }}>💰</span>
+              <span className="font-game text-xs" style={{ color: "#1CE400" }}>
+                {RANK_MONEY_REWARDS[rank.name]}€ débloqués à ce rang
+              </span>
+            </div>
+          )}
+
           {nextRank ? (
             <>
               <div className="flex justify-between mb-1.5" style={{ fontSize: "0.68rem" }}>
-                <span style={{ color: "#5A5A5A" }}>Prochain rang</span>
-                <span className="font-game" style={{ color: nextRank.color }}>{nextRank.name}</span>
+                <span style={{ color: "#848484" }}>Prochain rang</span>
+                <span className="font-game" style={{ color: nextRank.color }}>
+                  {nextRank.name}
+                  {RANK_MONEY_REWARDS[nextRank.name] !== undefined && (
+                    <span style={{ color: "#FF9500", marginLeft: "6px" }}>+{RANK_MONEY_REWARDS[nextRank.name]}€</span>
+                  )}
+                  {nextRank.group === "global" && (
+                    <span style={{ color: "#FF9500", marginLeft: "6px" }}>🎁 MacBook Pro</span>
+                  )}
+                </span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#2A2A2A" }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
                 <div
                   className="h-full rounded-full progress-bar"
                   style={{
@@ -515,19 +537,92 @@ export default function StatsTab() {
                   }}
                 />
               </div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.63rem", marginTop: "4px" }}>
+              <div style={{ color: "#848484", fontSize: "0.63rem", marginTop: "4px" }}>
                 {nextRank.minBookings - state.totalBookings} RDV manquants
               </div>
             </>
           ) : (
-            <div className="font-game text-xs text-center" style={{ color: "#1CE400" }}>🏆 GLOBAL ELITE</div>
+            <div
+              className="flex items-center gap-2 rounded-sm px-2.5 py-2"
+              style={{ background: "rgba(255,215,0,0.07)", border: "1px solid rgba(255,215,0,0.25)" }}
+            >
+              <span style={{ fontSize: "1rem" }}>🏆</span>
+              <span className="font-game text-xs" style={{ color: "#FFD700" }}>GLOBAL ELITE — MacBook Pro débloqué</span>
+            </div>
           )}
+
+          {/* Toggle rank table */}
+          <button
+            onClick={() => setShowRanks((v) => !v)}
+            className="w-full mt-3 py-1.5 rounded-sm font-game text-[10px] tracking-widest transition-colors"
+            style={{
+              background: "transparent",
+              border: `1px solid #383838`,
+              color: "#848484",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#686868"; e.currentTarget.style.color = "#C0C0C0"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
+          >
+            {showRanks ? "▲ MASQUER LES RANGS" : "▼ VOIR TOUS LES RANGS"}
+          </button>
+
+          {showRanks && (
+            <div className="mt-3 space-y-1">
+              {RANKS.map((r) => {
+                const isCurrent = r.name === rank.name;
+                const isUnlocked = state.totalBookings >= r.minBookings;
+                const reward = RANK_MONEY_REWARDS[r.name];
+                return (
+                  <div
+                    key={r.name}
+                    className="flex items-center gap-2 rounded-sm px-2.5 py-2"
+                    style={{
+                      background: isCurrent ? `${r.color}12` : "#1E1E1E",
+                      border: `1px solid ${isCurrent ? r.color + "50" : "#2D2D2D"}`,
+                    }}
+                  >
+                    <span style={{ fontSize: "0.7rem", opacity: isUnlocked ? 1 : 0.3 }}>
+                      {isUnlocked ? "✓" : "○"}
+                    </span>
+                    <span
+                      className="font-game text-xs flex-1"
+                      style={{ color: isUnlocked ? r.color : "#686868" }}
+                    >
+                      {r.name}
+                      {isCurrent && (
+                        <span
+                          className="ml-2 rounded-sm px-1"
+                          style={{ background: `${r.color}20`, fontSize: "0.6rem", color: r.color }}
+                        >
+                          ACTUEL
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ color: "#848484", fontSize: "0.62rem" }}>
+                      {r.minBookings} RDV
+                    </span>
+                    {r.group === "global" ? (
+                      <span style={{ color: isUnlocked ? "#FFD700" : "#686868", fontSize: "0.68rem" }}>🎁</span>
+                    ) : reward !== undefined ? (
+                      <span
+                        className="font-game text-[10px]"
+                        style={{ color: isUnlocked ? "#1CE400" : "#686868", minWidth: "36px", textAlign: "right" }}
+                      >
+                        +{reward}€
+                      </span>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
         </div>
       </div>
 
       {/* Level card */}
       <div className="rounded-sm p-4" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-        <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#5A5A5A" }}>
+        <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
           NIVEAU & XP
         </div>
         <div className="flex items-center justify-between mb-3">
@@ -536,7 +631,7 @@ export default function StatsTab() {
               className="w-11 h-11 rounded-sm fi-level-badge level-shimmer"
               style={{
                 width: "44px", height: "44px", fontSize: "1.1rem",
-                background: "#242424", border: "1px solid #383838",
+                background: "#2D2D2D", border: "1px solid #383838",
                 color: "#FF5500",
               }}
             >
@@ -544,22 +639,22 @@ export default function StatsTab() {
             </div>
             <div>
               <div className="font-game text-sm" style={{ color: "#FF5500" }}>{level.title}</div>
-              <div style={{ color: "#5A5A5A", fontSize: "0.68rem" }}>Niveau {level.level}</div>
+              <div style={{ color: "#848484", fontSize: "0.68rem" }}>Niveau {level.level}</div>
             </div>
           </div>
           <div className="text-right">
             <div className="font-game text-xl" style={{ color: "#FF9500" }}>
               {state.totalXP.toLocaleString("fr-FR")}
             </div>
-            <div style={{ color: "#5A5A5A", fontSize: "0.65rem" }}>XP total</div>
+            <div style={{ color: "#848484", fontSize: "0.65rem" }}>XP total</div>
           </div>
         </div>
         {nextLevel && (
           <>
-            <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: "#2A2A2A" }}>
+            <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: "#383838" }}>
               <div className="xp-bar-fill h-full rounded-full" style={{ width: `${lvlPct}%` }} />
             </div>
-            <div className="flex justify-between" style={{ fontSize: "0.6rem", color: "#5A5A5A" }}>
+            <div className="flex justify-between" style={{ fontSize: "0.6rem", color: "#848484" }}>
               <span>Niv. {level.level}</span>
               <span>{lvlPct}%</span>
               <span>Niv. {nextLevel.level} — {nextLevel.title}</span>
@@ -578,7 +673,7 @@ export default function StatsTab() {
         ].map((s) => (
           <div key={s.label} className="rounded-sm p-3" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
             <div className="flex items-center justify-between mb-1">
-              <span className="font-game text-[10px] tracking-widest" style={{ color: "#5A5A5A" }}>
+              <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
                 {s.label.toUpperCase()}
               </span>
               <span style={{ fontSize: "0.8rem" }}>{s.icon}</span>
