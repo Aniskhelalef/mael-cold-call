@@ -64,6 +64,8 @@ export default function HomeTab() {
     const d = new Date(); d.setDate(d.getDate() + 1);
     return d.toISOString().split("T")[0];
   });
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft,   setNotesDraft]   = useState("");
 
   const STATUS_LABEL: Record<string, string> = {
     a_appeler: "À APPELER", rappel: "RAPPEL", rdv: "RDV",
@@ -84,6 +86,13 @@ export default function HomeTab() {
     });
   const safeIdx = callableProspects.length > 0 ? prospectIdx % callableProspects.length : 0;
   const currentProspect = callableProspects[safeIdx] ?? null;
+
+  // Reset notes edit when prospect changes
+  useEffect(() => {
+    setEditingNotes(false);
+    setNotesDraft(currentProspect?.notes ?? "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safeIdx, prospectIdx]);
 
   function resetCallFlow() {
     setCallStage("idle");
@@ -222,44 +231,96 @@ export default function HomeTab() {
           >
             {/* Prospect card — always visible */}
             {currentProspect ? (
-              <div
-                className="rounded-sm p-3 mb-3 flex items-center justify-between gap-2"
-                style={{ background: "#1A1A1A", border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? BORDER}30` }}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className="w-9 h-9 rounded-sm flex items-center justify-center font-game text-sm flex-shrink-0"
-                    style={{ background: `${STATUS_COLOR[currentProspect.status] ?? "#848484"}18`, border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? BORDER}40`, color: STATUS_COLOR[currentProspect.status] ?? "#848484" }}
-                  >
-                    {currentProspect.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-game text-sm text-white leading-tight truncate">{currentProspect.name}</div>
-                    <div style={{ color: "#848484", fontSize: "0.65rem" }}>
-                      {[currentProspect.specialite, currentProspect.ville].filter(Boolean).join(" · ")}
-                      {currentProspect.rappelDate && (
-                        <span style={{ color: "#5DC7E5", marginLeft: "6px" }}>📅 {currentProspect.rappelDate}</span>
+              <div className="mb-3">
+                {/* Header row */}
+                <div
+                  className="rounded-sm p-3 flex items-center justify-between gap-2"
+                  style={{ background: "#1A1A1A", border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? BORDER}30` }}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div
+                      className="w-9 h-9 rounded-sm flex items-center justify-center font-game text-sm flex-shrink-0"
+                      style={{ background: `${STATUS_COLOR[currentProspect.status] ?? "#848484"}18`, border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? BORDER}40`, color: STATUS_COLOR[currentProspect.status] ?? "#848484" }}
+                    >
+                      {currentProspect.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-game text-sm text-white leading-tight truncate">{currentProspect.name}</div>
+                      <div style={{ color: "#848484", fontSize: "0.65rem", marginTop: "1px" }}>
+                        {[currentProspect.specialite, currentProspect.ville].filter(Boolean).join(" · ")}
+                        {currentProspect.rappelDate && (
+                          <span style={{ color: "#5DC7E5", marginLeft: "6px" }}>📅 {currentProspect.rappelDate}</span>
+                        )}
+                      </div>
+                      {currentProspect.phone && (
+                        <a
+                          href={`tel:${currentProspect.phone.replace(/\s/g, "")}`}
+                          style={{ color: "#60a5fa", fontSize: "0.68rem", textDecoration: "none", display: "block", marginTop: "2px" }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#93c5fd"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa"; }}
+                        >
+                          📞 {currentProspect.phone}
+                        </a>
                       )}
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span
-                    className="font-game text-[9px] tracking-widest px-1.5 py-0.5 rounded-sm"
-                    style={{ background: `${STATUS_COLOR[currentProspect.status] ?? "#848484"}18`, color: STATUS_COLOR[currentProspect.status] ?? "#848484", border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? "#848484"}30` }}
-                  >
-                    {STATUS_LABEL[currentProspect.status] ?? currentProspect.status}
-                  </span>
-                  {callableProspects.length > 1 && callStage === "idle" && (
-                    <button
-                      onClick={() => setProspectIdx((i) => i + 1)}
-                      className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
-                      style={{ color: "#848484", border: "1px solid #383838" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span
+                      className="font-game text-[9px] tracking-widest px-1.5 py-0.5 rounded-sm"
+                      style={{ background: `${STATUS_COLOR[currentProspect.status] ?? "#848484"}18`, color: STATUS_COLOR[currentProspect.status] ?? "#848484", border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? "#848484"}30` }}
                     >
-                      →
-                    </button>
+                      {STATUS_LABEL[currentProspect.status] ?? currentProspect.status}
+                    </span>
+                    {callableProspects.length > 1 && callStage === "idle" && (
+                      <button
+                        onClick={() => setProspectIdx((i) => i + 1)}
+                        className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
+                        style={{ color: "#848484", border: "1px solid #383838" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                      >
+                        →
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notes field */}
+                <div
+                  className="rounded-sm mt-1.5"
+                  style={{ background: "#1A1A1A", border: "1px solid #2D2D2D" }}
+                >
+                  {editingNotes ? (
+                    <textarea
+                      autoFocus
+                      value={notesDraft}
+                      onChange={(e) => setNotesDraft(e.target.value)}
+                      onBlur={() => {
+                        dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { notes: notesDraft } });
+                        setEditingNotes(false);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") { setNotesDraft(currentProspect.notes ?? ""); setEditingNotes(false); }
+                      }}
+                      rows={2}
+                      style={{
+                        width: "100%", background: "transparent", border: "none", outline: "none",
+                        color: "#D0D0D0", fontSize: "0.75rem", padding: "8px 10px",
+                        resize: "none", lineHeight: 1.5,
+                      }}
+                      placeholder="Ajouter un commentaire..."
+                    />
+                  ) : (
+                    <div
+                      onClick={() => { setNotesDraft(currentProspect.notes ?? ""); setEditingNotes(true); }}
+                      style={{
+                        padding: "8px 10px", cursor: "text", fontSize: "0.75rem", lineHeight: 1.5,
+                        color: currentProspect.notes ? "#848484" : "#383838",
+                        minHeight: "36px",
+                      }}
+                    >
+                      {currentProspect.notes || "Ajouter un commentaire..."}
+                    </div>
                   )}
                 </div>
               </div>
