@@ -12,20 +12,16 @@ const TABS = [
   { id: "home",         label: "Dashboard"   },
   { id: "leaderboard",  label: "Classement"  },
   { id: "achievements", label: "Hauts Faits" },
-  { id: "missions",     label: "Missions"    },
   { id: "stats",        label: "Stats"       },
   { id: "script",       label: "Script"      },
-  { id: "pipeline",     label: "Pipeline"    },
 ];
 
 const TAB_ICONS: Record<string, string> = {
   home:         "⚡",
   leaderboard:  "🏆",
   achievements: "🎖",
-  missions:     "⚔️",
   stats:        "📊",
   script:       "📋",
-  pipeline:     "🏗️",
 };
 
 function getLevelColor(lv: number): string {

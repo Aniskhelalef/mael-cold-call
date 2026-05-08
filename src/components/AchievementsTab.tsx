@@ -2,115 +2,71 @@
 
 import { useState } from "react";
 import { useGame } from "@/lib/gameContext";
-import { ACHIEVEMENTS, ACHIEVEMENT_MONEY_REWARDS } from "@/lib/gameData";
+import { ACHIEVEMENTS } from "@/lib/gameData";
 import { Achievement } from "@/lib/types";
 
-const CATEGORIES = ["Tous", "Premiers Pas", "Calls", "Bookings", "Ventes", "Streaks", "Énergie", "Ratio", "Spécial"];
+const CATEGORIES = ["Tous", "Premiers Pas", "Calls", "Bookings", "Streaks", "Énergie", "Ratio", "Spécial"];
 
-function getTierStyle(tier: string): { color: string; borderColor: string; bg: string; label: string; glowClass: string } {
+const CARD_BG = "#1C1C1C";
+const BORDER  = "#2A2A2A";
+
+function getTier(tier: string) {
   switch (tier) {
-    case "gold":
-      return { color: "#ffd700", borderColor: "#ffd700", bg: "rgba(42,32,0,0.95)", label: "OR", glowClass: "glow-gold" };
-    case "silver":
-      return { color: "#c8d0e0", borderColor: "#808090", bg: "rgba(28,30,56,0.95)", label: "ARGENT", glowClass: "glow-silver" };
-    default:
-      return { color: "#cd7f32", borderColor: "#cd7f32", bg: "rgba(42,22,0,0.95)", label: "BRONZE", glowClass: "glow-bronze" };
+    case "gold":   return { color: "#ffd700", label: "OR"     };
+    case "silver": return { color: "#c0c8d8", label: "ARGENT" };
+    default:       return { color: "#cd7f32", label: "BRONZE" };
   }
 }
 
-interface AchievementCardProps {
-  achievement: Achievement;
-  unlocked: boolean;
-}
+function AchievementCard({ achievement, unlocked }: { achievement: Achievement; unlocked: boolean }) {
+  const { color, label } = getTier(achievement.tier);
 
-function AchievementCard({ achievement, unlocked }: AchievementCardProps) {
-  const tierStyle = getTierStyle(achievement.tier);
-
-  if (unlocked) {
-    return (
-      <div
-        className={`achievement-card rounded-xl border p-4 relative overflow-hidden ${tierStyle.glowClass}`}
-        style={{ background: tierStyle.bg, borderColor: tierStyle.borderColor + "60" }}
-      >
-        {/* Glow overlay */}
-        <div className="absolute top-0 right-0 w-20 h-20 opacity-5"
-          style={{
-            background: `radial-gradient(circle, ${tierStyle.color} 0%, transparent 70%)`
-          }} />
-
-        {/* Checkmark */}
-        <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-          style={{ background: tierStyle.color + "20", border: `1px solid ${tierStyle.color}` }}>
-          <span className="text-[10px]" style={{ color: tierStyle.color }}>✓</span>
-        </div>
-
-        {/* Icon */}
-        <div className="text-3xl mb-2">{achievement.icon}</div>
-
-        {/* Tier badge */}
-        <div className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 mb-2"
-          style={{ background: tierStyle.color + "20", border: `1px solid ${tierStyle.color}40` }}>
-          <span className="font-game text-[10px] tracking-widest" style={{ color: tierStyle.color }}>
-            {tierStyle.label}
-          </span>
-        </div>
-
-        {/* Title */}
-        <div className="font-game text-sm mb-1" style={{ color: tierStyle.color }}>
-          {achievement.title}
-        </div>
-
-        {/* Description */}
-        <div className="text-xs text-gray-400 leading-relaxed mb-2">{achievement.description}</div>
-
-        {/* Rewards */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="font-game text-xs text-yellow-400">+{achievement.xpReward} XP</div>
-          {ACHIEVEMENT_MONEY_REWARDS[achievement.id] && (
-            <div className="font-game text-xs text-green-400">
-              +{ACHIEVEMENT_MONEY_REWARDS[achievement.id]}€ 💶
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Locked card
   return (
     <div
-      className="achievement-card rounded-xl border p-4 relative overflow-hidden opacity-50"
+      className="achievement-card rounded-sm p-3 relative flex flex-col gap-1.5"
       style={{
-        background: "rgba(22,24,40,0.9)",
-        borderColor: tierStyle.borderColor + "30",
-        borderStyle: "dashed"
+        background: CARD_BG,
+        border:     `1px solid ${unlocked ? `${color}35` : BORDER}`,
+        borderLeft: `3px solid ${unlocked ? color : "#2A2A2A"}`,
+        opacity:    unlocked ? 1 : 0.45,
       }}
     >
-      {/* Padlock */}
-      <div className="text-3xl mb-2 opacity-40">🔒</div>
+      {/* Status icon */}
+      <div className="absolute top-2.5 right-2.5">
+        {unlocked
+          ? <span style={{ fontSize: "0.65rem", color, border: `1px solid ${color}`, borderRadius: "50%", padding: "1px 4px" }}>✓</span>
+          : <span style={{ fontSize: "0.75rem", color: "#3A3A3A" }}>🔒</span>
+        }
+      </div>
+
+      {/* Icon */}
+      <div style={{ fontSize: "1.6rem", lineHeight: 1 }}>
+        {unlocked ? achievement.icon : "❓"}
+      </div>
 
       {/* Tier badge */}
-      <div className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 mb-2"
-        style={{ background: tierStyle.borderColor + "10", border: `1px solid ${tierStyle.borderColor}20` }}>
-        <span className="font-game text-[10px] tracking-widest" style={{ color: tierStyle.borderColor + "80" }}>
-          {tierStyle.label}
+      <div
+        className="inline-flex self-start rounded-sm px-1.5 py-0.5"
+        style={{ background: `${color}14`, border: `1px solid ${color}28` }}
+      >
+        <span className="font-game text-[9px] tracking-widest" style={{ color }}>
+          {label}
         </span>
       </div>
 
       {/* Title */}
-      <div className="font-game text-sm text-gray-600 mb-1">???</div>
+      <div className="font-game text-xs leading-tight" style={{ color: unlocked ? "#FFFFFF" : "#5A5A5A" }}>
+        {unlocked ? achievement.title : "???"}
+      </div>
 
-      {/* Hint */}
-      <div className="text-xs text-gray-600 leading-relaxed mb-2">{achievement.hint}</div>
+      {/* Description / hint */}
+      <div style={{ color: unlocked ? "#9A9A9A" : "#5A5A5A", fontSize: "0.7rem", lineHeight: 1.5 }}>
+        {unlocked ? achievement.description : achievement.hint}
+      </div>
 
-      {/* Rewards (hidden) */}
-      <div className="flex items-center gap-2">
-        <div className="font-game text-xs text-gray-700">+{achievement.xpReward} XP</div>
-        {ACHIEVEMENT_MONEY_REWARDS[achievement.id] && (
-          <div className="font-game text-xs text-gray-700">
-            +{ACHIEVEMENT_MONEY_REWARDS[achievement.id]}€
-          </div>
-        )}
+      {/* XP */}
+      <div className="font-game text-[10px] mt-auto pt-1" style={{ color: unlocked ? "#FF9500" : "#3A3A3A" }}>
+        +{achievement.xpReward} XP
       </div>
     </div>
   );
@@ -118,91 +74,91 @@ function AchievementCard({ achievement, unlocked }: AchievementCardProps) {
 
 export default function AchievementsTab() {
   const { state } = useGame();
-  const [activeCategory, setActiveCategory] = useState("Tous");
+  const [cat, setCat] = useState("Tous");
 
-  const filteredAchievements = ACHIEVEMENTS.filter(
-    (a) => activeCategory === "Tous" || a.category === activeCategory
-  );
+  const visible = ACHIEVEMENTS.filter((a) => a.category !== "Ventes");
 
-  // Sort: unlocked first
-  const sorted = [...filteredAchievements].sort((a, b) => {
-    const aUnlocked = state.unlockedAchievements.includes(a.id);
-    const bUnlocked = state.unlockedAchievements.includes(b.id);
-    if (aUnlocked && !bUnlocked) return -1;
-    if (!aUnlocked && bUnlocked) return 1;
-    return 0;
-  });
+  const filtered = visible
+    .filter((a) => cat === "Tous" || a.category === cat)
+    .sort((a, b) => {
+      const aU = state.unlockedAchievements.includes(a.id);
+      const bU = state.unlockedAchievements.includes(b.id);
+      if (aU && !bU) return -1;
+      if (!aU && bU) return 1;
+      return 0;
+    });
 
-  const unlockedCount = state.unlockedAchievements.length;
-  const totalCount = ACHIEVEMENTS.length;
+  const total    = visible.length;
+  const unlocked = state.unlockedAchievements.filter((id) =>
+    visible.some((a) => a.id === id)
+  ).length;
+  const pct = Math.round((unlocked / total) * 100);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 max-w-3xl mx-auto">
+
       {/* Header */}
-      <div className="bg-game-card border border-game-border rounded-xl p-4">
-        <div className="flex items-center justify-between">
+      <div className="rounded-sm p-4" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="font-game text-lg text-white">HAUTS FAITS</h2>
-            <p className="text-xs text-gray-500">WoW-style achievement system</p>
+            <p style={{ color: "#5A5A5A", fontSize: "0.72rem" }}>Accomplis des objectifs pour débloquer des récompenses XP</p>
           </div>
           <div className="text-right">
-            <div className="font-game text-2xl text-yellow-400">{unlockedCount}/{totalCount}</div>
-            <div className="text-xs text-gray-500">débloqués</div>
+            <div className="font-game text-2xl" style={{ color: "#FF9500" }}>
+              {unlocked}<span style={{ color: "#5A5A5A", fontSize: "0.9rem" }}>/{total}</span>
+            </div>
+            <div style={{ color: "#5A5A5A", fontSize: "0.65rem" }}>débloqués</div>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="mt-3 h-2 bg-game-border rounded-full overflow-hidden">
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#2A2A2A" }}>
           <div
             className="h-full rounded-full progress-bar"
             style={{
-              width: `${Math.round((unlockedCount / totalCount) * 100)}%`,
-              background: "linear-gradient(90deg, #d97706, #fbbf24, #ffd700)",
-              boxShadow: "0 0 8px rgba(255,215,0,0.4)"
+              width: `${pct}%`,
+              background: "linear-gradient(90deg,#CC7700,#FF9500)",
+              boxShadow: "0 0 5px rgba(255,149,0,0.4)",
             }}
           />
         </div>
-        <div className="text-xs text-gray-600 mt-1">
-          {Math.round((unlockedCount / totalCount) * 100)}% complété
-        </div>
+        <div style={{ color: "#5A5A5A", fontSize: "0.63rem", marginTop: "4px" }}>{pct}% complété</div>
       </div>
 
       {/* Category filter */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {CATEGORIES.map((cat) => (
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
+        {CATEGORIES.map((c) => (
           <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className="flex-shrink-0 px-3 py-1.5 rounded-lg font-game text-xs tracking-wider transition-all duration-150"
+            key={c}
+            onClick={() => setCat(c)}
+            className="flex-shrink-0 px-3 py-1.5 rounded-sm font-game text-[10px] tracking-wider transition-all duration-100"
             style={{
-              background: activeCategory === cat
-                ? "rgba(30,58,138,0.6)"
-                : "rgba(16,16,28,0.8)",
-              border: `1px solid ${activeCategory === cat ? "#3b82f6" : "#1a1a2e"}`,
-              color: activeCategory === cat ? "#60a5fa" : "#6b7280",
-              boxShadow: activeCategory === cat ? "0 0 10px rgba(59,130,246,0.3)" : "none",
+              background: cat === c ? "#FF5500" : CARD_BG,
+              border:     `1px solid ${cat === c ? "#FF5500" : BORDER}`,
+              color:      cat === c ? "#FFF" : "#9A9A9A",
             }}
           >
-            {cat.toUpperCase()}
+            {c.toUpperCase()}
           </button>
         ))}
       </div>
 
-      {/* Achievement grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {sorted.map((achievement) => (
+      {/* Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {filtered.map((a) => (
           <AchievementCard
-            key={achievement.id}
-            achievement={achievement}
-            unlocked={state.unlockedAchievements.includes(achievement.id)}
+            key={a.id}
+            achievement={a}
+            unlocked={state.unlockedAchievements.includes(a.id)}
           />
         ))}
       </div>
 
-      {sorted.length === 0 && (
-        <div className="text-center py-12 text-gray-600">
-          <div className="text-4xl mb-3">🔍</div>
-          <p className="font-game text-sm">Aucun haut fait dans cette catégorie</p>
+      {filtered.length === 0 && (
+        <div className="text-center py-12" style={{ color: "#5A5A5A" }}>
+          <div style={{ fontSize: "2rem", marginBottom: "8px" }}>🔍</div>
+          <p className="font-game text-xs">Aucun haut fait dans cette catégorie</p>
         </div>
       )}
     </div>
