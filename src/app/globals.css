@@ -1,0 +1,292 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --game-bg: #0c0e1a;
+  --game-card: #141628;
+  --game-border: #1e2040;
+  --game-border-light: #2a2d55;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--game-bg);
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a12;
+}
+::-webkit-scrollbar-thumb {
+  background: #252540;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3b4080;
+}
+
+/* Tier colors */
+.tier-bronze {
+  color: #cd7f32;
+  border-color: #cd7f32;
+}
+
+.tier-silver {
+  color: #c8d0e0;
+  border-color: #808090;
+}
+
+.tier-gold {
+  color: #ffd700;
+  border-color: #ffd700;
+}
+
+.bg-tier-bronze {
+  background-color: #211000;
+  border-color: #cd7f32;
+}
+
+.bg-tier-silver {
+  background-color: #18182e;
+  border-color: #808090;
+}
+
+.bg-tier-gold {
+  background-color: #211900;
+  border-color: #ffd700;
+}
+
+/* Glow effects */
+.glow-bronze {
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.4), 0 0 30px rgba(205, 127, 50, 0.1);
+}
+
+.glow-silver {
+  box-shadow: 0 0 12px rgba(200, 208, 224, 0.3), 0 0 25px rgba(200, 208, 224, 0.1);
+}
+
+.glow-gold {
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5), 0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+.glow-blue {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), 0 0 30px rgba(59, 130, 246, 0.2);
+}
+
+.glow-green {
+  box-shadow: 0 0 15px rgba(104, 211, 145, 0.5), 0 0 30px rgba(104, 211, 145, 0.2);
+}
+
+.glow-purple {
+  box-shadow: 0 0 15px rgba(183, 148, 244, 0.5), 0 0 30px rgba(183, 148, 244, 0.2);
+}
+
+/* XP bar glow */
+.xp-bar-fill {
+  background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+  transition: width 0.5s ease;
+}
+
+/* Energy bar colors */
+.energy-bar-high {
+  background: linear-gradient(90deg, #16a34a, #22c55e, #4ade80);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.energy-bar-medium {
+  background: linear-gradient(90deg, #ca8a04, #eab308, #facc15);
+  box-shadow: 0 0 8px rgba(234, 179, 8, 0.5);
+}
+
+.energy-bar-low {
+  background: linear-gradient(90deg, #dc2626, #ef4444, #f87171);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+/* Progress bar */
+.progress-bar {
+  transition: width 0.4s ease;
+}
+
+/* Tab active indicator */
+.tab-active {
+  border-bottom: 2px solid #3b82f6;
+  color: #60a5fa;
+}
+
+/* Rajdhani font for headings */
+.font-game {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Achievement toast animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOutDown {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(110%);
+    opacity: 0;
+  }
+}
+
+.toast-enter {
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-exit {
+  animation: fadeOutDown 0.35s ease-in forwards;
+}
+
+/* CS:GO rank specific glow */
+.rank-global {
+  color: #68d391;
+  text-shadow: 0 0 10px rgba(104, 211, 145, 0.8);
+}
+
+.rank-supreme {
+  color: #fc8181;
+  text-shadow: 0 0 8px rgba(252, 129, 129, 0.6);
+}
+
+.rank-eagle {
+  color: #b794f4;
+  text-shadow: 0 0 8px rgba(183, 148, 244, 0.6);
+}
+
+.rank-guardian {
+  color: #63b3ed;
+  text-shadow: 0 0 8px rgba(99, 179, 237, 0.6);
+}
+
+.rank-gold {
+  color: #f6ad55;
+  text-shadow: 0 0 8px rgba(246, 173, 85, 0.5);
+}
+
+/* Hexagon-ish background pattern */
+.game-bg-pattern {
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.02) 0%, transparent 50%);
+}
+
+/* Button pulse for main call button */
+@keyframes buttonPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+.btn-pulse {
+  animation: buttonPulse 2s infinite;
+}
+
+/* Level badge shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.level-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 30%,
+    rgba(255,255,255,0.1) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* Achievement card hover */
+.achievement-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.achievement-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Stat counter animation */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stat-value {
+  animation: countUp 0.3s ease-out;
+}
+
+/* Bar chart bars */
+.bar-chart-bar {
+  transition: height 0.5s ease;
+}
+
+/* Session countdown */
+.session-expired {
+  color: #ef4444;
+  animation: pulse 1s infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #60a5fa, #a78bfa, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, #ffd700, #f6ad55, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Mission progress bar */
+.mission-progress-bar {
+  background: linear-gradient(90deg, #1d4ed8, #3b82f6);
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+  transition: width 0.5s ease;
+}
+
+.mission-progress-complete {
+  background: linear-gradient(90deg, #15803d, #22c55e);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+}
