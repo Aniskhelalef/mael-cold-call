@@ -237,8 +237,8 @@ function performDailyReset(state: GameState, today: string): GameState {
     }
   }
 
-  // Keep only last 30 days
-  const trimmedHistory = newHistory.slice(-30);
+  // Keep only last 365 days
+  const trimmedHistory = newHistory.slice(-365);
 
   return {
     ...state,
