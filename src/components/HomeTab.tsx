@@ -3,8 +3,13 @@
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/gameContext";
 import { getRank, getNextRank, RANK_MONEY_REWARDS } from "@/lib/gameData";
+import { fetchLeaderboard, LeaderboardEntry } from "@/lib/supabase";
 
-const MAX_ENERGY = 100;
+const MEDAL = ["🥇", "🥈", "🥉"];
+
+function getInitials(name: string): string {
+  return name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+}
 
 function fmt(ms: number): string {
   if (ms <= 0) return "00:00";
@@ -23,20 +28,6 @@ export default function HomeTab() {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  const energyPct  = Math.round((state.dailyEnergyUsed / MAX_ENERGY) * 100);
-  const energyLeft = MAX_ENERGY - state.dailyEnergyUsed;
-  const callsLeft  = Math.floor(energyLeft / 2);
-  const depleted   = state.dailyEnergyUsed >= MAX_ENERGY;
-
-  const energyColor =
-    energyPct > 60 ? "#22c55e" :
-    energyPct > 30 ? "#eab308" : "#ef4444";
-
-  const energyClass =
-    energyPct > 60 ? "energy-bar-high" :
-    energyPct > 30 ? "energy-bar-medium" :
-    "energy-bar-low";
 
   // Session
   let sessionMsLeft = 0, sessionPct = 0, sessionExpired = false;
@@ -64,6 +55,24 @@ export default function HomeTab() {
     : 100;
 
   const nextRankReward = nextRank ? RANK_MONEY_REWARDS[nextRank.name] : null;
+
+  const totalCallsYes = state.totalCallsYes ?? 0;
+  const tauxReponse    = state.totalCalls > 0 ? Math.round((totalCallsYes / state.totalCalls) * 100) : 0;
+  const tauxConversion = state.totalCalls > 0 ? Math.round((state.totalBookings / state.totalCalls) * 100) : 0;
+
+  const [lbEntries, setLbEntries] = useState<LeaderboardEntry[]>([]);
+  useEffect(() => {
+    fetchLeaderboard().then(setLbEntries).catch(() => {});
+  }, []);
+
+  const myEmail = state.playerEmail;
+  const myOnLb  = lbEntries.some((e) => e.email === myEmail || e.name === state.playerName);
+  const localEntry: LeaderboardEntry | null = !myOnLb && state.playerName
+    ? { email: myEmail, name: state.playerName, totalXP: 0, totalCalls: state.totalCalls, totalBookings: state.totalBookings, currentStreak: state.currentStreak, totalSales: state.totalSales, updatedAt: new Date().toISOString() }
+    : null;
+  const lbSorted = [...lbEntries, ...(localEntry ? [localEntry] : [])]
+    .sort((a, b) => b.totalBookings - a.totalBookings);
+  const myLbPos = lbSorted.findIndex((e) => e.email === myEmail || e.name === state.playerName) + 1;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -144,56 +153,62 @@ export default function HomeTab() {
               {/* NON */}
               <button
                 onClick={() => dispatch({ type: "LOG_CALL" })}
-                disabled={depleted}
-                className="py-5 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed btn-pulse"
+                className="py-5 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95 btn-pulse"
                 style={{
-                  background: depleted ? "#232323" : "#FF5500",
-                  border: `1px solid ${depleted ? "#383838" : "#FF5500"}`,
-                  color: depleted ? "#848484" : "#FFF",
+                  background: "#FF5500",
+                  border: "1px solid #FF5500",
+                  color: "#FFF",
                 }}
-                onMouseEnter={(e) => { if (!depleted) { e.currentTarget.style.background = "#FF6B1A"; e.currentTarget.style.borderColor = "#FF6B1A"; } }}
-                onMouseLeave={(e) => { if (!depleted) { e.currentTarget.style.background = "#FF5500"; e.currentTarget.style.borderColor = "#FF5500"; } }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#FF6B1A"; e.currentTarget.style.borderColor = "#FF6B1A"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "#FF5500"; e.currentTarget.style.borderColor = "#FF5500"; }}
               >
                 <div style={{ fontSize: "1.3rem", marginBottom: "4px" }}>👎</div>
                 <div>A RÉPONDU NON</div>
-                <div style={{ opacity: 0.6, fontSize: "0.65rem", marginTop: "2px" }}>-2⚡</div>
               </button>
 
               {/* OUI */}
               <button
-                onClick={() => dispatch({ type: "LOG_CALL" })}
-                disabled={depleted}
-                className="py-5 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                onClick={() => dispatch({ type: "LOG_CALL_YES" })}
+                className="py-5 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95"
                 style={{
-                  background: depleted ? "#232323" : "rgba(93,199,229,0.1)",
-                  border: `1px solid ${depleted ? "#383838" : "rgba(93,199,229,0.4)"}`,
-                  color: depleted ? "#848484" : "#5DC7E5",
+                  background: "rgba(93,199,229,0.1)",
+                  border: "1px solid rgba(93,199,229,0.4)",
+                  color: "#5DC7E5",
                 }}
-                onMouseEnter={(e) => { if (!depleted) e.currentTarget.style.background = "rgba(93,199,229,0.18)"; }}
-                onMouseLeave={(e) => { if (!depleted) e.currentTarget.style.background = "rgba(93,199,229,0.1)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.18)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; }}
               >
                 <div style={{ fontSize: "1.3rem", marginBottom: "4px" }}>👍</div>
                 <div>A RÉPONDU OUI</div>
-                <div style={{ opacity: 0.6, fontSize: "0.65rem", marginTop: "2px" }}>-2⚡</div>
               </button>
             </div>
 
-            {/* CALL BOOKÉ — full width */}
-            <button
-              onClick={() => dispatch({ type: "LOG_BOOKING" })}
-              className="w-full py-3 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95 mb-3"
-              style={{
-                background: "rgba(28,228,0,0.08)",
-                border: "1px solid rgba(28,228,0,0.35)",
-                color: "#1CE400",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.16)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.08)"; }}
-            >
-              <span style={{ marginRight: "8px" }}>🎯</span>
-              CALL BOOKÉ
-              <span style={{ opacity: 0.6, fontSize: "0.65rem", marginLeft: "8px" }}>RDV CONFIRMÉ</span>
-            </button>
+            {/* CALL BOOKÉ — full width, only enabled after a OUI */}
+            {(() => {
+              const pendingOui = state.pendingOuiCount ?? 0;
+              return (
+                <button
+                  onClick={() => dispatch({ type: "LOG_BOOKING" })}
+                  disabled={pendingOui === 0}
+                  className="w-full py-3 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95 mb-3 disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: pendingOui > 0 ? "rgba(28,228,0,0.08)" : "#232323",
+                    border: pendingOui > 0 ? "1px solid rgba(28,228,0,0.35)" : "1px solid #383838",
+                    color: pendingOui > 0 ? "#1CE400" : "#848484",
+                  }}
+                  onMouseEnter={(e) => { if (pendingOui > 0) e.currentTarget.style.background = "rgba(28,228,0,0.16)"; }}
+                  onMouseLeave={(e) => { if (pendingOui > 0) e.currentTarget.style.background = "rgba(28,228,0,0.08)"; }}
+                >
+                  <span style={{ marginRight: "8px" }}>🎯</span>
+                  CALL BOOKÉ
+                  {pendingOui > 0 && (
+                    <span style={{ opacity: 0.7, fontSize: "0.65rem", marginLeft: "8px" }}>
+                      {pendingOui} OUI en attente
+                    </span>
+                  )}
+                </button>
+              );
+            })()}
 
             <button
               onClick={() => dispatch({ type: "UNDO_CALL" })}
@@ -207,126 +222,88 @@ export default function HomeTab() {
             </button>
           </div>
 
-          {/* ── Energy + Session ────────────────────────────────────────── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-
-            {/* Energy */}
-            <div
-              className="rounded-sm p-4"
-              style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>ÉNERGIE</span>
-                <span className="font-game text-sm" style={{ color: energyColor }}>
-                  {energyLeft} / {MAX_ENERGY}
-                  <span style={{ color: "#848484", fontSize: "0.65rem", marginLeft: "4px" }}>
-                    ({callsLeft} calls)
-                  </span>
-                </span>
-              </div>
-              <div className="h-3 rounded-full overflow-hidden relative" style={{ background: "#383838" }}>
-                <div className={`${energyClass} h-full rounded-full progress-bar`} style={{ width: `${energyPct}%` }} />
-                {[25, 50, 75].map((p) => (
-                  <div key={p} className="absolute top-0 bottom-0 w-px opacity-20"
-                    style={{ left: `${p}%`, background: "#111" }} />
-                ))}
-              </div>
-              <div className="flex justify-between mt-1" style={{ fontSize: "0.6rem", color: "#686868" }}>
-                <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
-              </div>
-              {depleted && (
-                <div
-                  className="mt-2 font-game text-[10px] text-center py-1.5 rounded-sm tracking-widest"
-                  style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.25)", color: "#FF5500" }}
-                >
-                  ⚡ ÉPUISÉE — RESET À MINUIT
-                </div>
-              )}
+          {/* ── Session ─────────────────────────────────────────────────── */}
+          <div
+            className="rounded-sm p-4"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+          >
+            <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
+              SESSION DE TRAVAIL
             </div>
 
-            {/* Session */}
-            <div
-              className="rounded-sm p-4"
-              style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
-            >
-              <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
-                SESSION DE TRAVAIL
-              </div>
-
-              {!state.sessionActive ? (
-                <div>
-                  <p style={{ color: "#848484", fontSize: "0.75rem", marginBottom: "0.6rem" }}>
-                    Reste focus pendant la session — timer visible pour tenir le rythme.
-                  </p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      { minutes: 30,  label: "30 MIN" },
-                      { minutes: 60,  label: "1H" },
-                      { minutes: 120, label: "2H" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.minutes}
-                        onClick={() => dispatch({ type: "START_SESSION", minutes: opt.minutes })}
-                        className="py-3 rounded-sm font-game text-xs tracking-wider transition-all duration-150 active:scale-95"
-                        style={{ background: "#2D2D2D", border: "1px solid #383838", color: "#C0C0C0" }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = "#FF5500";
-                          e.currentTarget.style.color = "#FF5500";
-                          e.currentTarget.style.background = "rgba(255,85,0,0.08)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = "#383838";
-                          e.currentTarget.style.color = "#C0C0C0";
-                          e.currentTarget.style.background = "#2D2D2D";
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <div className={`font-game text-3xl leading-none ${sessionExpired ? "session-expired" : "text-white"}`}>
-                        {sessionExpired ? "TERMINÉ!" : fmt(sessionMsLeft)}
-                      </div>
-                      <div style={{ color: "#848484", fontSize: "0.65rem", marginTop: "3px" }}>
-                        {state.sessionTargetMinutes}min · {state.sessionCalls} calls · {state.sessionBookings} RDV
-                      </div>
-                    </div>
+            {!state.sessionActive ? (
+              <div>
+                <p style={{ color: "#848484", fontSize: "0.75rem", marginBottom: "0.6rem" }}>
+                  Reste focus pendant la session — timer visible pour tenir le rythme.
+                </p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { minutes: 30,  label: "30 MIN" },
+                    { minutes: 60,  label: "1H" },
+                    { minutes: 120, label: "2H" },
+                  ].map((opt) => (
                     <button
-                      onClick={() => dispatch({ type: "END_SESSION" })}
-                      className="px-3 py-1.5 rounded-sm font-game text-xs tracking-wider transition-all active:scale-95"
-                      style={{
-                        background: sessionExpired ? "rgba(28,228,0,0.1)" : "rgba(255,85,0,0.1)",
-                        border:     sessionExpired ? "1px solid rgba(28,228,0,0.4)" : "1px solid rgba(255,85,0,0.4)",
-                        color:      sessionExpired ? "#1CE400" : "#FF5500",
+                      key={opt.minutes}
+                      onClick={() => dispatch({ type: "START_SESSION", minutes: opt.minutes })}
+                      className="py-3 rounded-sm font-game text-xs tracking-wider transition-all duration-150 active:scale-95"
+                      style={{ background: "#2D2D2D", border: "1px solid #383838", color: "#C0C0C0" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#FF5500";
+                        e.currentTarget.style.color = "#FF5500";
+                        e.currentTarget.style.background = "rgba(255,85,0,0.08)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "#383838";
+                        e.currentTarget.style.color = "#C0C0C0";
+                        e.currentTarget.style.background = "#2D2D2D";
                       }}
                     >
-                      {sessionExpired ? "✅ CLORE" : "⏹ STOP"}
+                      {opt.label}
                     </button>
-                  </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
-                    <div
-                      className="h-full rounded-full progress-bar"
-                      style={{
-                        width: `${sessionPct}%`,
-                        background: sessionExpired
-                          ? "linear-gradient(90deg,#15803d,#22c55e)"
-                          : "linear-gradient(90deg,#7c3aed,#8b5cf6)",
-                      }}
-                    />
-                  </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <div className={`font-game text-3xl leading-none ${sessionExpired ? "session-expired" : "text-white"}`}>
+                      {sessionExpired ? "TERMINÉ!" : fmt(sessionMsLeft)}
+                    </div>
+                    <div style={{ color: "#848484", fontSize: "0.65rem", marginTop: "3px" }}>
+                      {state.sessionTargetMinutes}min · {state.sessionCalls} calls · {state.sessionBookings} RDV
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => dispatch({ type: "END_SESSION" })}
+                    className="px-3 py-1.5 rounded-sm font-game text-xs tracking-wider transition-all active:scale-95"
+                    style={{
+                      background: sessionExpired ? "rgba(28,228,0,0.1)" : "rgba(255,85,0,0.1)",
+                      border:     sessionExpired ? "1px solid rgba(28,228,0,0.4)" : "1px solid rgba(255,85,0,0.4)",
+                      color:      sessionExpired ? "#1CE400" : "#FF5500",
+                    }}
+                  >
+                    {sessionExpired ? "✅ CLORE" : "⏹ STOP"}
+                  </button>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
+                  <div
+                    className="h-full rounded-full progress-bar"
+                    style={{
+                      width: `${sessionPct}%`,
+                      background: sessionExpired
+                        ? "linear-gradient(90deg,#15803d,#22c55e)"
+                        : "linear-gradient(90deg,#7c3aed,#8b5cf6)",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
         </div>
 
-        {/* ── RIGHT COLUMN — Rank ─────────────────────────────────────────── */}
+        {/* ── RIGHT COLUMN ────────────────────────────────────────────────── */}
         <div className="mt-3 lg:mt-0 space-y-3">
 
           {/* Rank card */}
@@ -334,7 +311,6 @@ export default function HomeTab() {
             className="rounded-sm p-4 relative overflow-hidden"
             style={{ background: CARD_BG, border: `1px solid ${rank.color}40` }}
           >
-            {/* Glow */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{ background: `radial-gradient(ellipse at top right, ${rank.color}0d 0%, transparent 65%)` }}
@@ -345,7 +321,6 @@ export default function HomeTab() {
                 RANG ACTUEL
               </div>
 
-              {/* Rank icon + name */}
               <div className="flex items-center gap-3 mb-4">
                 <div
                   className="w-12 h-12 rounded-sm flex items-center justify-center text-2xl flex-shrink-0"
@@ -363,7 +338,6 @@ export default function HomeTab() {
                 </div>
               </div>
 
-              {/* Progress to next rank */}
               {nextRank ? (
                 <>
                   <div className="flex items-center justify-between mb-1.5">
@@ -384,7 +358,6 @@ export default function HomeTab() {
                     encore {nextRank.minBookings - state.totalBookings} RDV
                   </div>
 
-                  {/* Next rank reward */}
                   {(nextRankReward || nextRank.group === "global") && (
                     <div
                       className="mt-3 px-3 py-2 rounded-sm"
@@ -410,10 +383,8 @@ export default function HomeTab() {
                 </div>
               )}
 
-              {/* Divider */}
               <div className="my-4" style={{ height: "1px", background: "#383838" }} />
 
-              {/* Money earned */}
               <div className="flex items-center justify-between">
                 <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
                   GAINS DÉBLOQUÉS
@@ -425,23 +396,125 @@ export default function HomeTab() {
             </div>
           </div>
 
-          {/* Conversion rate mini card */}
+          {/* Stats cards */}
           {state.totalCalls > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              {/* Taux de réponse */}
+              <div
+                className="rounded-sm px-3 py-3"
+                style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+              >
+                <div className="font-game text-[9px] tracking-widest mb-1.5" style={{ color: "#848484" }}>
+                  TX. RÉPONSE
+                </div>
+                <div className="font-game text-2xl leading-none" style={{ color: "#5DC7E5" }}>
+                  {tauxReponse}%
+                </div>
+                <div style={{ color: "#686868", fontSize: "0.6rem", marginTop: "3px" }}>
+                  {totalCallsYes} OUI / {state.totalCalls} calls
+                </div>
+              </div>
+
+              {/* Taux de conversion */}
+              <div
+                className="rounded-sm px-3 py-3"
+                style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
+              >
+                <div className="font-game text-[9px] tracking-widest mb-1.5" style={{ color: "#848484" }}>
+                  TX. CONVERSION
+                </div>
+                <div className="font-game text-2xl leading-none" style={{ color: "#FF5500" }}>
+                  {tauxConversion}%
+                </div>
+                <div style={{ color: "#686868", fontSize: "0.6rem", marginTop: "3px" }}>
+                  {state.totalBookings} RDV / {state.totalCalls} calls
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mini-leaderboard */}
+          {lbSorted.length > 0 && (
             <div
-              className="rounded-sm px-4 py-3"
+              className="rounded-sm overflow-hidden"
               style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
             >
-              <div className="font-game text-[10px] tracking-widest mb-2" style={{ color: "#848484" }}>
-                TAUX DE CONVERSION
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="font-game text-2xl leading-none" style={{ color: "#FF5500" }}>
-                  {Math.round((state.totalBookings / state.totalCalls) * 100)}%
+              <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #383838" }}>
+                <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
+                  CLASSEMENT
                 </span>
-                <span style={{ color: "#686868", fontSize: "0.68rem", marginBottom: "2px" }}>
-                  {state.totalBookings} / {state.totalCalls} calls
-                </span>
+                {myLbPos > 0 && (
+                  <span className="font-game text-[10px]" style={{ color: "#FF5500" }}>
+                    #{myLbPos}
+                  </span>
+                )}
               </div>
+
+              {lbSorted.slice(0, 5).map((entry, idx) => {
+                const isSelf = entry.email === myEmail || entry.name === state.playerName;
+                const entryRankColor = getRank(entry.totalBookings).color;
+                return (
+                  <div
+                    key={entry.email || entry.name}
+                    className="flex items-center gap-2 px-3 py-2"
+                    style={{
+                      borderBottom: idx < Math.min(lbSorted.length, 5) - 1 ? "1px solid #2D2D2D" : "none",
+                      background: isSelf ? "rgba(255,85,0,0.06)" : "transparent",
+                    }}
+                  >
+                    <span className="font-game text-xs w-5 text-center flex-shrink-0" style={{ color: idx < 3 ? "#FF5500" : "#686868" }}>
+                      {idx < 3 ? MEDAL[idx] : `#${idx + 1}`}
+                    </span>
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center font-game text-[9px] flex-shrink-0"
+                      style={{ background: `${entryRankColor}18`, border: `1.5px solid ${entryRankColor}`, color: entryRankColor }}
+                    >
+                      {getInitials(entry.name)}
+                    </div>
+                    <span
+                      className="font-game text-[10px] truncate flex-1"
+                      style={{ color: isSelf ? "#FF5500" : "#C0C0C0" }}
+                    >
+                      {entry.name.split(" ")[0]}
+                    </span>
+                    <span className="font-game text-[10px] flex-shrink-0" style={{ color: "#1CE400" }}>
+                      {entry.totalBookings} RDV
+                    </span>
+                  </div>
+                );
+              })}
+
+              {/* Show self if outside top 5 */}
+              {myLbPos > 5 && localEntry === null && (() => {
+                const selfEntry = lbSorted[myLbPos - 1];
+                return selfEntry ? (
+                  <>
+                    <div className="px-3 py-1 text-center font-game text-[9px]" style={{ color: "#484848", borderTop: "1px solid #2D2D2D" }}>
+                      ···
+                    </div>
+                    <div
+                      className="flex items-center gap-2 px-3 py-2"
+                      style={{ background: "rgba(255,85,0,0.06)" }}
+                    >
+                      <span className="font-game text-xs w-5 text-center flex-shrink-0" style={{ color: "#848484" }}>
+                        #{myLbPos}
+                      </span>
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center font-game text-[9px] flex-shrink-0"
+                        style={{ background: `${getRank(selfEntry.totalBookings).color}18`, border: `1.5px solid ${getRank(selfEntry.totalBookings).color}`, color: getRank(selfEntry.totalBookings).color }}
+                      >
+                        {getInitials(selfEntry.name)}
+                      </div>
+                      <span className="font-game text-[10px] truncate flex-1" style={{ color: "#FF5500" }}>
+                        {selfEntry.name.split(" ")[0]}
+                      </span>
+                      <span className="font-game text-[10px] flex-shrink-0" style={{ color: "#1CE400" }}>
+                        {selfEntry.totalBookings} RDV
+                      </span>
+                    </div>
+                  </>
+                ) : null;
+              })()}
             </div>
           )}
 

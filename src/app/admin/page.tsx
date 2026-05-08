@@ -335,7 +335,7 @@ function AdminDashboard({
             { label: "📞 Calls", value: state.dailyCalls, accent: true },
             { label: "🎯 RDV", value: state.dailyBookings },
             { label: "💰 Sites vendus", value: state.dailySales ?? 0 },
-            { label: "⚡ Énergie restante", value: `${100 - state.dailyEnergyUsed} / 100` },
+            { label: "👍 OUI aujourd'hui", value: state.dailyCallsYes ?? 0 },
           ]} />
           <StatCard title="CETTE SEMAINE" icon="📆" rows={[
             { label: "📞 Calls", value: weeklyCalls, accent: true },

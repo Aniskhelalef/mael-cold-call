@@ -5,12 +5,13 @@ export interface GameState {
   totalBookings: number;
   dailyCalls: number;
   dailyBookings: number;
-  dailyEnergyUsed: number;
   lastResetDate: string;
   currentStreak: number;
   longestStreak: number;
   lastActivityDate: string;
-  fullEnergyCount: number;
+  totalCallsYes: number;
+  dailyCallsYes: number;
+  pendingOuiCount: number;
   history: { date: string; calls: number; bookings: number }[];
   unlockedAchievements: string[];
   pendingToasts: string[];
@@ -54,6 +55,7 @@ export type GameAction =
   | { type: "SETUP_PLAYER"; name: string; email: string }
   | { type: "RESTORE_STATE"; state: GameState }
   | { type: "LOG_CALL" }
+  | { type: "LOG_CALL_YES" }
   | { type: "LOG_BOOKING" }
   | { type: "UNDO_CALL" }
   | { type: "START_SESSION"; minutes: number }

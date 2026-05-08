@@ -24,12 +24,13 @@ const defaultState: GameState = {
   totalBookings: 0,
   dailyCalls: 0,
   dailyBookings: 0,
-  dailyEnergyUsed: 0,
   lastResetDate: getTodayString(),
   currentStreak: 0,
   longestStreak: 0,
   lastActivityDate: "",
-  fullEnergyCount: 0,
+  totalCallsYes: 0,
+  dailyCallsYes: 0,
+  pendingOuiCount: 0,
   history: [],
   unlockedAchievements: [],
   pendingToasts: [],
@@ -155,13 +156,9 @@ function checkAchievements(state: GameState): { newAchievements: string[]; money
         shouldUnlock = state.currentStreak >= 60;
         break;
       case "pleine_puissance":
-        shouldUnlock = state.fullEnergyCount >= 1;
-        break;
       case "hyperactif":
-        shouldUnlock = state.fullEnergyCount >= 7;
-        break;
       case "reacteur":
-        shouldUnlock = state.fullEnergyCount >= 30;
+        // energy achievements removed
         break;
       case "tireur_elite":
         shouldUnlock =
@@ -256,7 +253,8 @@ function performDailyReset(state: GameState, today: string): GameState {
     ...state,
     dailyCalls: 0,
     dailyBookings: 0,
-    dailyEnergyUsed: 0,
+    dailyCallsYes: 0,
+    pendingOuiCount: 0,
     dailySales: 0,
     lastResetDate: today,
     history: trimmedHistory,
@@ -364,17 +362,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "LOG_CALL": {
-      if (currentState.dailyEnergyUsed >= MAX_ENERGY) return currentState;
-
       const isFirstCallOfDay = currentState.dailyCalls === 0;
-      const newEnergyUsed = Math.min(MAX_ENERGY, currentState.dailyEnergyUsed + ENERGY_PER_CALL);
-      const energyFullyUsed = newEnergyUsed >= MAX_ENERGY && currentState.dailyEnergyUsed < MAX_ENERGY;
 
       let newState: GameState = {
         ...currentState,
         totalCalls: currentState.totalCalls + 1,
         dailyCalls: currentState.dailyCalls + 1,
-        dailyEnergyUsed: newEnergyUsed,
         sessionCalls: currentState.sessionActive
           ? currentState.sessionCalls + 1
           : currentState.sessionCalls,
@@ -383,11 +376,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       // no_scope eligibility
       if (newState.dailyCalls > 5 && newState.dailyBookings === 0) {
         newState = { ...newState, noScopeEligible: false };
-      }
-
-      // Energy full bonus
-      if (energyFullyUsed) {
-        newState = { ...newState, fullEnergyCount: newState.fullEnergyCount + 1 };
       }
 
       // Streak update
@@ -421,13 +409,54 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return newState;
     }
 
+    case "LOG_CALL_YES": {
+      const isFirstCallOfDay = currentState.dailyCalls === 0;
+
+      let newState: GameState = {
+        ...currentState,
+        totalCalls: currentState.totalCalls + 1,
+        dailyCalls: currentState.dailyCalls + 1,
+        totalCallsYes: (currentState.totalCallsYes ?? 0) + 1,
+        dailyCallsYes: (currentState.dailyCallsYes ?? 0) + 1,
+        pendingOuiCount: (currentState.pendingOuiCount ?? 0) + 1,
+        sessionCalls: currentState.sessionActive
+          ? currentState.sessionCalls + 1
+          : currentState.sessionCalls,
+      };
+
+      newState = updateStreak(newState, today);
+
+      if (isFirstCallOfDay) {
+        newState = { ...newState, weeklyDaysActive: newState.weeklyDaysActive + 1 };
+      }
+
+      const { newAchievements, moneyGain: achMoney } = checkAchievements(newState);
+      if (newAchievements.length > 0) {
+        newState = {
+          ...newState,
+          totalMoneyEarned: newState.totalMoneyEarned + achMoney,
+          unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
+        };
+      }
+
+      const { newMissions } = checkWeeklyMissions(newState);
+      if (newMissions.length > 0) {
+        newState = { ...newState, weeklyMissionsCompleted: [...newState.weeklyMissionsCompleted, ...newMissions] };
+      }
+
+      return newState;
+    }
+
     case "LOG_BOOKING": {
+      if ((currentState.pendingOuiCount ?? 0) <= 0) return currentState;
+
       const isFirstBooking = currentState.totalBookings === 0;
 
       let newState: GameState = {
         ...currentState,
         totalBookings: currentState.totalBookings + 1,
         dailyBookings: currentState.dailyBookings + 1,
+        pendingOuiCount: (currentState.pendingOuiCount ?? 1) - 1,
         sessionBookings: currentState.sessionActive
           ? currentState.sessionBookings + 1
           : currentState.sessionBookings,
@@ -480,12 +509,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "UNDO_CALL": {
       if (currentState.dailyCalls <= 0) return currentState;
-      const newEnergy = Math.max(0, currentState.dailyEnergyUsed - ENERGY_PER_CALL);
       return {
         ...currentState,
         totalCalls: Math.max(0, currentState.totalCalls - 1),
         dailyCalls: Math.max(0, currentState.dailyCalls - 1),
-        dailyEnergyUsed: newEnergy,
         sessionCalls: currentState.sessionActive
           ? Math.max(0, currentState.sessionCalls - 1)
           : currentState.sessionCalls,

@@ -130,15 +130,13 @@ function StatCards({ items }: {
 
 function JourView() {
   const { state } = useGame();
-  const energy = 100 - state.dailyEnergyUsed;
-
   return (
     <div className="space-y-3">
       <StatCards items={[
         { label: "Calls",    value: state.dailyCalls,    icon: "📞", color: "#FF5500" },
         { label: "RDV",      value: state.dailyBookings, icon: "🎯", color: "#1CE400" },
         { label: "Taux",     value: rate(state.dailyCalls, state.dailyBookings), icon: "📊", color: "#FF9500" },
-        { label: "Énergie",  value: `${energy}%`,        icon: "⚡", color: energy > 60 ? "#1CE400" : energy > 30 ? "#eab308" : "#ef4444" },
+        { label: "OUI",      value: state.dailyCallsYes ?? 0, icon: "👍", color: "#5DC7E5" },
       ]} />
 
       <div className="rounded-sm p-4" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
@@ -147,8 +145,7 @@ function JourView() {
         </div>
         <div className="space-y-3">
           {[
-            { label: "Objectif calls (20)", value: state.dailyCalls,      target: 20,  color: "#FF5500" },
-            { label: "Énergie utilisée",    value: state.dailyEnergyUsed, target: 100, color: "#FF9500" },
+            { label: "Objectif calls (20)", value: state.dailyCalls, target: 20, color: "#FF5500" },
           ].map((item) => (
             <div key={item.label}>
               <div className="flex justify-between text-xs mb-1" style={{ color: "#C0C0C0" }}>
@@ -659,7 +656,7 @@ export default function StatsTab() {
         {[
           { label: "Streak actuel", value: `${state.currentStreak}j`, icon: "🔥", color: "#FF5500"  },
           { label: "Record streak", value: `${state.longestStreak}j`, icon: "🏅", color: "#FF9500"  },
-          { label: "Full énergie",  value: `${state.fullEnergyCount}x`, icon: "⚡", color: "#5DC7E5" },
+          { label: "OUI total",  value: `${state.totalCallsYes ?? 0}`, icon: "👍", color: "#5DC7E5" },
           { label: "Hauts faits",   value: `${state.unlockedAchievements.length}`, icon: "🎖", color: "#AE00FC" },
         ].map((s) => (
           <div key={s.label} className="rounded-sm p-3" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
