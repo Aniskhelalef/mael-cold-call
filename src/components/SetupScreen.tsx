@@ -4,31 +4,19 @@ import { useState } from "react";
 import { useGame } from "@/lib/gameContext";
 import { fetchStateFromSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
-const INPUT_STYLE: React.CSSProperties = {
-  width: "100%",
-  boxSizing: "border-box",
-  padding: "0.75rem 1rem",
-  background: "#0f1117",
-  border: "1px solid #343c5e",
-  borderRadius: "0.5rem",
-  color: "#f1f5f9",
-  outline: "none",
-  fontFamily: "'Rajdhani', sans-serif",
-  fontSize: "1.05rem",
-  letterSpacing: "0.04em",
-  transition: "border-color 0.15s",
-};
+const CARD_BG = "#232323";
+const BORDER  = "#383838";
 
 export default function SetupScreen() {
   const { dispatch } = useGame();
-  const [name, setName] = useState("");
+  const [name, setName]   = useState("");
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const e: { name?: string; email?: string } = {};
-    if (!name.trim()) e.name = "Ton prénom est requis";
+    if (!name.trim())  e.name  = "Ton prénom est requis";
     if (!email.trim()) e.email = "Ton email est requis";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) e.email = "Email invalide";
     setErrors(e);
@@ -38,7 +26,7 @@ export default function SetupScreen() {
   const handleStart = async () => {
     if (!validate()) return;
     const trimmedEmail = email.trim().toLowerCase();
-    const trimmedName = name.trim();
+    const trimmedName  = name.trim();
     setLoading(true);
     try {
       if (isSupabaseConfigured) {
@@ -54,91 +42,99 @@ export default function SetupScreen() {
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "0.75rem 1rem",
+    background: "#181818",
+    border: `1px solid ${BORDER}`,
+    borderRadius: "2px",
+    color: "#F0F0F0",
+    outline: "none",
+    fontFamily: "'Rajdhani', sans-serif",
+    fontSize: "1rem",
+    letterSpacing: "0.04em",
+    transition: "border-color 0.15s",
+  };
+
   return (
     <div
       className="min-h-screen flex items-center justify-center relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #0a0c14 0%, #0d1020 50%, #0a0c14 100%)" }}
+      style={{ background: "#181818" }}
     >
-      {/* Grid background */}
-      <div className="absolute inset-0 pointer-events-none" style={{
-        backgroundImage: "linear-gradient(rgba(59,130,246,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.08) 1px, transparent 1px)",
-        backgroundSize: "50px 50px",
-      }} />
-      {/* Glows */}
-      <div className="absolute top-0 left-0 w-72 h-72 opacity-20 pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(59,130,246,0.5) 0%, transparent 70%)" }} />
-      <div className="absolute bottom-0 right-0 w-72 h-72 opacity-20 pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(139,92,246,0.5) 0%, transparent 70%)" }} />
+      {/* Subtle orange glow top-left */}
+      <div
+        className="absolute top-0 left-0 w-96 h-96 pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(255,85,0,0.06) 0%, transparent 70%)" }}
+      />
 
-      <div className="relative z-10 w-full max-w-md mx-4">
+      <div className="relative z-10 w-full max-w-sm mx-4">
+
         {/* Logo */}
         <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center justify-center w-20 h-20 rounded-full border-2 border-blue-500 mb-5 glow-blue"
-            style={{ background: "radial-gradient(circle, #1e3a8a 0%, #0a0c14 100%)" }}
-          >
-            <span className="text-4xl">🎮</span>
+          <div className="font-game text-[11px] tracking-[0.25em] mb-3" style={{ color: "#848484" }}>
+            COLD CALL RPG
           </div>
-          <div className="font-game text-xs tracking-widest text-blue-400 mb-2">
-            COLD CALL RPG — SAISON 1
-          </div>
-          <h1 className="font-game text-4xl md:text-5xl gradient-text mb-3">
-            CRÉE TON<br />COMPTE
+          <h1 className="font-game leading-none mb-2" style={{ fontSize: "clamp(2.5rem,8vw,3.5rem)", color: "#FF5500" }}>
+            CCR
           </h1>
-          <p style={{ color: "#94a3b8", fontSize: "0.875rem", maxWidth: "20rem", margin: "0 auto" }}>
-            Transforme chaque appel en victoire. Gagne de l'XP, monte en level, débloque des hauts faits.
+          <p style={{ color: "#848484", fontSize: "0.8rem" }}>
+            Gamifie ta prospection. Rank up en bookant des RDV.
           </p>
         </div>
 
-        {/* Preview badges */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        {/* Feature pills */}
+        <div className="flex gap-2 justify-center mb-6 flex-wrap">
           {[
-            { icon: "⚡", label: "XP & Niveaux", desc: "20 niveaux" },
-            { icon: "🏆", label: "Hauts Faits", desc: "31 achievements" },
-            { icon: "🎖️", label: "Rangs CS:GO", desc: "18 rangs" },
-          ].map((item) => (
+            { icon: "📞", text: "20 calls/jour" },
+            { icon: "🏅", text: "15 rangs" },
+            { icon: "💰", text: "Jusqu'à 900€" },
+          ].map((f) => (
             <div
-              key={item.label}
-              className="rounded-xl border p-3 text-center"
-              style={{ background: "#1a1d2e", borderColor: "#272d4a" }}
+              key={f.text}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm"
+              style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
             >
-              <div className="text-2xl mb-1">{item.icon}</div>
-              <div className="font-game text-xs text-blue-400">{item.label}</div>
-              <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{item.desc}</div>
+              <span style={{ fontSize: "0.75rem" }}>{f.icon}</span>
+              <span className="font-game text-[10px] tracking-wider" style={{ color: "#C0C0C0" }}>{f.text}</span>
             </div>
           ))}
         </div>
 
-        {/* Form */}
+        {/* Form card */}
         <div
-          className="rounded-2xl border p-6"
-          style={{ background: "rgba(26,29,46,0.95)", borderColor: "#343c5e", backdropFilter: "blur(10px)" }}
+          className="rounded-sm p-5"
+          style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
         >
+          <div className="font-game text-[10px] tracking-widest mb-4" style={{ color: "#848484" }}>
+            CRÉER / REJOINDRE
+          </div>
+
           {/* Name */}
           <div className="mb-4">
-            <label style={{ display: "block", fontSize: "0.7rem", color: "#94a3b8", letterSpacing: "0.15em", marginBottom: "0.5rem", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700 }}>
-              PRÉNOM DU JOUEUR
+            <label className="font-game text-[10px] tracking-widest block mb-1.5" style={{ color: "#848484" }}>
+              PRÉNOM
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: undefined })); }}
               onKeyDown={(e) => e.key === "Enter" && handleStart()}
-              placeholder="Ex: Mael"
+              placeholder="Mael"
               maxLength={20}
               autoFocus
-              style={{ ...INPUT_STYLE, borderColor: errors.name ? "#ef4444" : "#343c5e" }}
-              onFocus={(e) => { if (!errors.name) e.target.style.borderColor = "#3b82f6"; }}
-              onBlur={(e) => { if (!errors.name) e.target.style.borderColor = "#343c5e"; }}
+              style={{ ...inputStyle, borderColor: errors.name ? "#ef4444" : BORDER }}
+              onFocus={(e) => { if (!errors.name) e.target.style.borderColor = "#FF5500"; }}
+              onBlur={(e)  => { if (!errors.name) e.target.style.borderColor = BORDER; }}
             />
             {errors.name && (
-              <p style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "0.25rem" }}>{errors.name}</p>
+              <p style={{ color: "#ef4444", fontSize: "0.72rem", marginTop: "0.25rem" }}>{errors.name}</p>
             )}
           </div>
 
           {/* Email */}
           <div className="mb-5">
-            <label style={{ display: "block", fontSize: "0.7rem", color: "#94a3b8", letterSpacing: "0.15em", marginBottom: "0.5rem", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700 }}>
+            <label className="font-game text-[10px] tracking-widest block mb-1.5" style={{ color: "#848484" }}>
               EMAIL
             </label>
             <input
@@ -147,38 +143,37 @@ export default function SetupScreen() {
               onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
               onKeyDown={(e) => e.key === "Enter" && handleStart()}
               placeholder="ton@email.com"
-              style={{ ...INPUT_STYLE, borderColor: errors.email ? "#ef4444" : "#343c5e" }}
-              onFocus={(e) => { if (!errors.email) e.target.style.borderColor = "#3b82f6"; }}
-              onBlur={(e) => { if (!errors.email) e.target.style.borderColor = "#343c5e"; }}
+              style={{ ...inputStyle, borderColor: errors.email ? "#ef4444" : BORDER }}
+              onFocus={(e) => { if (!errors.email) e.target.style.borderColor = "#FF5500"; }}
+              onBlur={(e)  => { if (!errors.email) e.target.style.borderColor = BORDER; }}
             />
             {errors.email && (
-              <p style={{ color: "#f87171", fontSize: "0.75rem", marginTop: "0.25rem" }}>{errors.email}</p>
+              <p style={{ color: "#ef4444", fontSize: "0.72rem", marginTop: "0.25rem" }}>{errors.email}</p>
             )}
-            <p style={{ color: "#475569", fontSize: "0.7rem", marginTop: "0.375rem" }}>
-              Utilisé pour t'identifier dans le tableau de bord admin
+            <p style={{ color: "#686868", fontSize: "0.68rem", marginTop: "0.35rem" }}>
+              Sert à retrouver ta progression si tu te reconnectes
             </p>
           </div>
 
           <button
             onClick={handleStart}
             disabled={loading}
-            className="w-full py-4 rounded-xl font-game text-lg tracking-widest transition-all duration-150 active:scale-95 btn-pulse"
+            className="w-full py-3.5 rounded-sm font-game text-sm tracking-widest transition-all duration-150 active:scale-95 btn-pulse"
             style={{
-              background: loading ? "#1e3a8a" : "linear-gradient(135deg, #1d4ed8, #2563eb)",
-              color: loading ? "#60a5fa" : "#fff",
-              border: "1px solid #3b82f6",
-              boxShadow: "0 0 20px rgba(59,130,246,0.4)",
-              cursor: loading ? "not-allowed" : "pointer",
+              background:    loading ? "#2A2A2A" : "#FF5500",
+              color:         loading ? "#848484" : "#FFFFFF",
+              border:        `1px solid ${loading ? BORDER : "#FF5500"}`,
+              cursor:        loading ? "not-allowed" : "pointer",
             }}
-            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.boxShadow = "0 0 30px rgba(59,130,246,0.65)"; }}
-            onMouseLeave={(e) => { if (!loading) e.currentTarget.style.boxShadow = "0 0 20px rgba(59,130,246,0.4)"; }}
+            onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.background = "#FF6B1A"; e.currentTarget.style.borderColor = "#FF6B1A"; } }}
+            onMouseLeave={(e) => { if (!loading) { e.currentTarget.style.background = "#FF5500"; e.currentTarget.style.borderColor = "#FF5500"; } }}
           >
-            {loading ? "VÉRIFICATION..." : "⚔️ COMMENCER L'AVENTURE"}
+            {loading ? "VÉRIFICATION…" : "COMMENCER →"}
           </button>
         </div>
 
-        <p style={{ textAlign: "center", color: "#334155", fontSize: "0.7rem", marginTop: "1.25rem" }}>
-          Données sauvegardées localement • Visible dans l'admin
+        <p className="text-center mt-3" style={{ color: "#484848", fontSize: "0.65rem" }}>
+          Progression sauvegardée localement + cloud
         </p>
       </div>
     </div>
