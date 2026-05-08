@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useGame } from "@/lib/gameContext";
+import { fetchStateFromSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
@@ -23,6 +24,7 @@ export default function SetupScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const e: { name?: string; email?: string } = {};
@@ -33,9 +35,23 @@ export default function SetupScreen() {
     return Object.keys(e).length === 0;
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!validate()) return;
-    dispatch({ type: "SETUP_PLAYER", name: name.trim(), email: email.trim().toLowerCase() });
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = name.trim();
+    setLoading(true);
+    try {
+      if (isSupabaseConfigured) {
+        const result = await fetchStateFromSupabase();
+        if (result && result.state.playerEmail === trimmedEmail) {
+          dispatch({ type: "RESTORE_STATE", state: { ...result.state, playerName: trimmedName } });
+          return;
+        }
+      }
+      dispatch({ type: "SETUP_PLAYER", name: trimmedName, email: trimmedEmail });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -145,17 +161,19 @@ export default function SetupScreen() {
 
           <button
             onClick={handleStart}
+            disabled={loading}
             className="w-full py-4 rounded-xl font-game text-lg tracking-widest transition-all duration-150 active:scale-95 btn-pulse"
             style={{
-              background: "linear-gradient(135deg, #1d4ed8, #2563eb)",
-              color: "#fff",
+              background: loading ? "#1e3a8a" : "linear-gradient(135deg, #1d4ed8, #2563eb)",
+              color: loading ? "#60a5fa" : "#fff",
               border: "1px solid #3b82f6",
               boxShadow: "0 0 20px rgba(59,130,246,0.4)",
+              cursor: loading ? "not-allowed" : "pointer",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 30px rgba(59,130,246,0.65)")}
-            onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 20px rgba(59,130,246,0.4)")}
+            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.boxShadow = "0 0 30px rgba(59,130,246,0.65)"; }}
+            onMouseLeave={(e) => { if (!loading) e.currentTarget.style.boxShadow = "0 0 20px rgba(59,130,246,0.4)"; }}
           >
-            ⚔️ COMMENCER L'AVENTURE
+            {loading ? "VÉRIFICATION..." : "⚔️ COMMENCER L'AVENTURE"}
           </button>
         </div>
 

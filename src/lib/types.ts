@@ -35,6 +35,7 @@ export interface GameState {
 
 export type GameAction =
   | { type: "SETUP_PLAYER"; name: string; email: string }
+  | { type: "RESTORE_STATE"; state: GameState }
   | { type: "LOG_CALL" }
   | { type: "LOG_BOOKING" }
   | { type: "UNDO_CALL" }

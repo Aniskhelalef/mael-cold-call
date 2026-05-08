@@ -322,6 +322,17 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return newState;
     }
 
+    case "RESTORE_STATE": {
+      let restored = { ...action.state };
+      if (restored.lastResetDate !== today) {
+        restored = performDailyReset(restored, today);
+      }
+      if (restored.weeklyKey !== currentWeekKey) {
+        restored = performWeeklyReset(restored, currentWeekKey);
+      }
+      return restored;
+    }
+
     case "LOG_CALL": {
       if (currentState.dailyEnergyUsed >= MAX_ENERGY) return currentState;
 
