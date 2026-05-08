@@ -8,6 +8,7 @@ import HomeTab from "./HomeTab";
 import AchievementsTab from "./AchievementsTab";
 import MissionsTab from "./MissionsTab";
 import StatsTab from "./StatsTab";
+import ScriptTab from "./ScriptTab";
 import AchievementToast from "./AchievementToast";
 
 export default function GameApp() {
@@ -28,6 +29,7 @@ export default function GameApp() {
         {activeTab === "achievements" && <AchievementsTab />}
         {activeTab === "missions" && <MissionsTab />}
         {activeTab === "stats" && <StatsTab />}
+        {activeTab === "script" && <ScriptTab />}
       </main>
 
       <AchievementToast />

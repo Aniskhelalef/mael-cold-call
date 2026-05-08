@@ -70,6 +70,10 @@ export const ACHIEVEMENT_MONEY_REWARDS: Record<string, number> = {
   clutch: 40,
   ace: 80,
   first_blood: 20,
+  premier_site: 50,
+  vendeur_confirme: 250,
+  closer_elite: 1000,
+  sales_legend: 5000,
 };
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -397,6 +401,48 @@ export const ACHIEVEMENTS: Achievement[] = [
     xpReward: 200,
     icon: "🎮",
     hint: "Obtiens un booking avec ≤5 calls le même jour",
+  },
+
+  // VENTES THERALYS
+  {
+    id: "premier_site",
+    title: "Premier Site Vendu",
+    description: "Closer ton tout premier site Theralys",
+    category: "Ventes",
+    tier: "gold",
+    xpReward: 150,
+    icon: "💰",
+    hint: "Vends ton premier site pour débloquer",
+  },
+  {
+    id: "vendeur_confirme",
+    title: "Vendeur Confirmé",
+    description: "Vendre 5 sites Theralys",
+    category: "Ventes",
+    tier: "gold",
+    xpReward: 300,
+    icon: "🤝",
+    hint: "Vends 5 sites pour débloquer",
+  },
+  {
+    id: "closer_elite",
+    title: "Closer Élite",
+    description: "Vendre 20 sites Theralys",
+    category: "Ventes",
+    tier: "gold",
+    xpReward: 750,
+    icon: "💎",
+    hint: "Vends 20 sites pour débloquer",
+  },
+  {
+    id: "sales_legend",
+    title: "Sales Legend",
+    description: "Vendre 50 sites Theralys",
+    category: "Ventes",
+    tier: "gold",
+    xpReward: 1500,
+    icon: "👑",
+    hint: "Vends 50 sites pour débloquer",
   },
 ];
 

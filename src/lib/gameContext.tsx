@@ -48,6 +48,8 @@ const defaultState: GameState = {
   firstDayCalls: 0,
   noScopeEligible: true,
   totalMoneyEarned: 0,
+  totalSales: 0,
+  dailySales: 0,
 };
 
 function loadState(): GameState {
@@ -187,6 +189,18 @@ function checkAchievements(state: GameState): { newAchievements: string[]; bonus
         shouldUnlock =
           state.noScopeEligible && state.dailyCalls <= 5 && state.dailyBookings >= 1;
         break;
+      case "premier_site":
+        shouldUnlock = state.totalSales >= 1;
+        break;
+      case "vendeur_confirme":
+        shouldUnlock = state.totalSales >= 5;
+        break;
+      case "closer_elite":
+        shouldUnlock = state.totalSales >= 20;
+        break;
+      case "sales_legend":
+        shouldUnlock = state.totalSales >= 50;
+        break;
     }
 
     if (shouldUnlock) {
@@ -246,6 +260,7 @@ function performDailyReset(state: GameState, today: string): GameState {
     dailyCalls: 0,
     dailyBookings: 0,
     dailyEnergyUsed: 0,
+    dailySales: 0,
     lastResetDate: today,
     history: trimmedHistory,
     noScopeEligible: true,
@@ -319,6 +334,33 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         weeklyBookingsAtStart: 0,
         lastResetDate: today,
       };
+      return newState;
+    }
+
+    case "LOG_SALE": {
+      let xpGain = 100;
+      if (currentState.xpBuffActive) xpGain = Math.floor(xpGain * 1.5);
+
+      let newState: GameState = {
+        ...currentState,
+        totalSales: currentState.totalSales + 1,
+        dailySales: currentState.dailySales + 1,
+        totalXP: currentState.totalXP + xpGain,
+      };
+
+      newState = updateStreak(newState, today);
+
+      const { newAchievements, bonusXP: achXP, moneyGain: achMoney } = checkAchievements(newState);
+      if (newAchievements.length > 0) {
+        newState = {
+          ...newState,
+          totalXP: newState.totalXP + achXP,
+          totalMoneyEarned: newState.totalMoneyEarned + achMoney,
+          unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
+          pendingToasts: [...newState.pendingToasts, ...newAchievements],
+        };
+      }
+
       return newState;
     }
 

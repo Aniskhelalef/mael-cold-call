@@ -349,8 +349,8 @@ function AdminDashboard({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
           <StatCard title="AUJOURD'HUI" icon="📅" rows={[
             { label: "📞 Calls", value: state.dailyCalls, accent: true },
-            { label: "🎯 Bookings", value: state.dailyBookings },
-            { label: "📊 Conversion", value: convRate(state.dailyCalls, state.dailyBookings) },
+            { label: "🎯 RDV", value: state.dailyBookings },
+            { label: "💰 Sites vendus", value: state.dailySales ?? 0 },
             { label: "⚡ Énergie restante", value: `${100 - state.dailyEnergyUsed} / 100` },
           ]} />
           <StatCard title="CETTE SEMAINE" icon="📆" rows={[
@@ -361,8 +361,8 @@ function AdminDashboard({
           ]} />
           <StatCard title="TOTAL" icon="🏆" rows={[
             { label: "📞 Calls", value: state.totalCalls.toLocaleString("fr-FR"), accent: true },
-            { label: "🎯 Bookings", value: state.totalBookings.toLocaleString("fr-FR") },
-            { label: "📊 Conversion", value: convRate(state.totalCalls, state.totalBookings) },
+            { label: "🎯 RDV", value: state.totalBookings.toLocaleString("fr-FR") },
+            { label: "💰 Sites vendus", value: (state.totalSales ?? 0).toLocaleString("fr-FR") },
             { label: "⭐ XP total", value: state.totalXP.toLocaleString("fr-FR") },
           ]} />
         </div>

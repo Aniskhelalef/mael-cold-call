@@ -79,11 +79,11 @@ export default function HomeTab() {
             sub: `/${state.dailyCalls >= 20 ? "✅ Objectif atteint" : "20 objectif"}`,
           },
           {
-            label: "Bookings Today",
+            label: "RDV Aujourd'hui",
             value: state.dailyBookings,
             icon: "🎯",
             color: "#22c55e",
-            sub: `Total: ${state.totalBookings}`,
+            sub: `Ventes: ${state.dailySales} • Total: ${state.totalBookings}`,
           },
           {
             label: "Streak Actuel",
@@ -270,38 +270,36 @@ export default function HomeTab() {
       <div className="bg-game-card border border-game-border rounded-xl p-4">
         <div className="font-game text-xs tracking-widest text-gray-400 mb-3">ACTIONS RAPIDES</div>
 
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          {/* Log Call */}
-          <button
-            onClick={() => dispatch({ type: "LOG_CALL" })}
-            disabled={state.dailyEnergyUsed >= MAX_ENERGY}
-            className="py-5 rounded-xl font-game text-base tracking-wide transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{
-              background: state.dailyEnergyUsed >= MAX_ENERGY
-                ? "rgba(30,41,59,0.5)"
-                : "linear-gradient(135deg, #1d4ed8, #2563eb)",
-              border: "1px solid",
-              borderColor: state.dailyEnergyUsed >= MAX_ENERGY ? "#334155" : "#3b82f6",
-              boxShadow: state.dailyEnergyUsed >= MAX_ENERGY ? "none" : "0 0 20px rgba(59,130,246,0.3)",
-              color: state.dailyEnergyUsed >= MAX_ENERGY ? "#64748b" : "#fff",
-            }}
-            onMouseEnter={(e) => {
-              if (state.dailyEnergyUsed < MAX_ENERGY) {
-                e.currentTarget.style.boxShadow = "0 0 30px rgba(59,130,246,0.6)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (state.dailyEnergyUsed < MAX_ENERGY) {
-                e.currentTarget.style.boxShadow = "0 0 20px rgba(59,130,246,0.3)";
-              }
-            }}
-          >
-            <div className="text-2xl mb-1">📞</div>
-            <div>LOG CALL</div>
-            <div className="text-xs opacity-70 mt-0.5">+10 XP • -2 ⚡</div>
-          </button>
+        {/* LOG CALL — full width */}
+        <button
+          onClick={() => dispatch({ type: "LOG_CALL" })}
+          disabled={state.dailyEnergyUsed >= MAX_ENERGY}
+          className="w-full py-5 rounded-xl font-game text-base tracking-wide transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed mb-3"
+          style={{
+            background: state.dailyEnergyUsed >= MAX_ENERGY
+              ? "rgba(30,41,59,0.5)"
+              : "linear-gradient(135deg, #1d4ed8, #2563eb)",
+            border: "1px solid",
+            borderColor: state.dailyEnergyUsed >= MAX_ENERGY ? "#334155" : "#3b82f6",
+            boxShadow: state.dailyEnergyUsed >= MAX_ENERGY ? "none" : "0 0 20px rgba(59,130,246,0.3)",
+            color: state.dailyEnergyUsed >= MAX_ENERGY ? "#64748b" : "#fff",
+          }}
+          onMouseEnter={(e) => {
+            if (state.dailyEnergyUsed < MAX_ENERGY)
+              e.currentTarget.style.boxShadow = "0 0 30px rgba(59,130,246,0.6)";
+          }}
+          onMouseLeave={(e) => {
+            if (state.dailyEnergyUsed < MAX_ENERGY)
+              e.currentTarget.style.boxShadow = "0 0 20px rgba(59,130,246,0.3)";
+          }}
+        >
+          <div className="text-2xl mb-1">📞</div>
+          <div>LOG CALL</div>
+          <div className="text-xs opacity-70 mt-0.5">+10 XP • -2 ⚡</div>
+        </button>
 
-          {/* Log Booking */}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          {/* Log RDV */}
           <button
             onClick={() => dispatch({ type: "LOG_BOOKING" })}
             className="py-5 rounded-xl font-game text-base tracking-wide transition-all duration-150 active:scale-95"
@@ -311,16 +309,30 @@ export default function HomeTab() {
               boxShadow: "0 0 20px rgba(34,197,94,0.3)",
               color: "#fff",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = "0 0 30px rgba(34,197,94,0.6)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = "0 0 20px rgba(34,197,94,0.3)";
-            }}
+            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 30px rgba(34,197,94,0.6)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 0 20px rgba(34,197,94,0.3)"; }}
           >
             <div className="text-2xl mb-1">🎯</div>
-            <div>LOG BOOKING</div>
+            <div>LOG RDV</div>
             <div className="text-xs opacity-70 mt-0.5">+50 XP</div>
+          </button>
+
+          {/* Log Vendu */}
+          <button
+            onClick={() => dispatch({ type: "LOG_SALE" })}
+            className="py-5 rounded-xl font-game text-base tracking-wide transition-all duration-150 active:scale-95"
+            style={{
+              background: "linear-gradient(135deg, #92400e, #b45309)",
+              border: "1px solid #f59e0b",
+              boxShadow: "0 0 20px rgba(245,158,11,0.3)",
+              color: "#fff",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 30px rgba(245,158,11,0.6)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 0 20px rgba(245,158,11,0.3)"; }}
+          >
+            <div className="text-2xl mb-1">💰</div>
+            <div>VENDU</div>
+            <div className="text-xs opacity-70 mt-0.5">+100 XP</div>
           </button>
         </div>
 

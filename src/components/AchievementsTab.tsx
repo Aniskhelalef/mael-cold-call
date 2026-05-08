@@ -5,7 +5,7 @@ import { useGame } from "@/lib/gameContext";
 import { ACHIEVEMENTS, ACHIEVEMENT_MONEY_REWARDS } from "@/lib/gameData";
 import { Achievement } from "@/lib/types";
 
-const CATEGORIES = ["Tous", "Premiers Pas", "Calls", "Bookings", "Streaks", "Énergie", "Ratio", "Spécial"];
+const CATEGORIES = ["Tous", "Premiers Pas", "Calls", "Bookings", "Ventes", "Streaks", "Énergie", "Ratio", "Spécial"];
 
 function getTierStyle(tier: string): { color: string; borderColor: string; bg: string; label: string; glowClass: string } {
   switch (tier) {

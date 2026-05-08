@@ -31,6 +31,8 @@ export interface GameState {
   firstDayCalls: number;
   noScopeEligible: boolean;
   totalMoneyEarned: number;
+  totalSales: number;
+  dailySales: number;
 }
 
 export type GameAction =
@@ -43,6 +45,7 @@ export type GameAction =
   | { type: "END_SESSION" }
   | { type: "DISMISS_TOAST"; id: string }
   | { type: "DISMISS_ALL_TOASTS" }
+  | { type: "LOG_SALE" }
   | { type: "TICK" }
   | { type: "LOGOUT" };
 
