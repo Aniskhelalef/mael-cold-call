@@ -520,6 +520,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...currentState, pendingToasts: [] };
     }
 
+    case "LOGOUT": {
+      return { ...defaultState };
+    }
+
     case "TICK": {
       // Just triggers a re-render for timer updates
       if (currentState.xpBuffActive && currentState.xpBuffEnd && now > currentState.xpBuffEnd) {

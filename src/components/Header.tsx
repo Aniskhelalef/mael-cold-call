@@ -16,7 +16,13 @@ const TABS = [
 ];
 
 export default function Header({ activeTab, setActiveTab }: HeaderProps) {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
+
+  const handleLogout = () => {
+    if (window.confirm("Se déconnecter ? Ta progression reste sauvegardée dans le cloud.")) {
+      dispatch({ type: "LOGOUT" });
+    }
+  };
   const level = getLevel(state.totalXP);
   const nextLevel = getNextLevel(state.totalXP);
   const progress = getLevelProgress(state.totalXP);
@@ -97,6 +103,18 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                 {rank.name}
               </div>
             </div>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              title="Se déconnecter"
+              className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150"
+              style={{ background: "transparent", border: "1px solid #1f2937", color: "#374151" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#ef4444"; e.currentTarget.style.color = "#ef4444"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#1f2937"; e.currentTarget.style.color = "#374151"; }}
+            >
+              <span style={{ fontSize: "0.9rem" }}>🚪</span>
+            </button>
           </div>
         </div>
       </div>

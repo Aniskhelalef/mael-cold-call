@@ -43,7 +43,8 @@ export type GameAction =
   | { type: "END_SESSION" }
   | { type: "DISMISS_TOAST"; id: string }
   | { type: "DISMISS_ALL_TOASTS" }
-  | { type: "TICK" };
+  | { type: "TICK" }
+  | { type: "LOGOUT" };
 
 export interface Level {
   level: number;
