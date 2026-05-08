@@ -56,7 +56,72 @@ export default function HomeTab() {
 
   const nextRankReward = nextRank ? RANK_MONEY_REWARDS[nextRank.name] : null;
 
-  const [callStep, setCallStep] = useState<"idle" | "choosing">("idle");
+  type CallStage = "idle" | "answered_q" | "booked_q" | "relance_q" | "relance_date";
+  const [callStage, setCallStage] = useState<CallStage>("idle");
+  const [callAnsweredYes, setCallAnsweredYes] = useState(false);
+  const [prospectIdx, setProspectIdx] = useState(0);
+  const [relanceDate, setRelanceDate] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 1);
+    return d.toISOString().split("T")[0];
+  });
+
+  const STATUS_LABEL: Record<string, string> = {
+    a_appeler: "À APPELER", rappel: "RAPPEL", rdv: "RDV",
+    demo: "DÉMO", vendu: "VENDU", perdu: "PERDU",
+  };
+  const STATUS_COLOR: Record<string, string> = {
+    a_appeler: "#FF5500", rappel: "#5DC7E5", rdv: "#1CE400",
+    demo: "#a855f7", vendu: "#f6ad55", perdu: "#ef4444",
+  };
+
+  const callableProspects = (state.prospects ?? [])
+    .filter((p) => p.status === "a_appeler" || p.status === "rappel")
+    .sort((a, b) => {
+      if (a.rappelDate && b.rappelDate) return a.rappelDate.localeCompare(b.rappelDate);
+      if (a.rappelDate) return -1;
+      if (b.rappelDate) return 1;
+      return a.createdAt.localeCompare(b.createdAt);
+    });
+  const safeIdx = callableProspects.length > 0 ? prospectIdx % callableProspects.length : 0;
+  const currentProspect = callableProspects[safeIdx] ?? null;
+
+  function resetCallFlow() {
+    setCallStage("idle");
+    setCallAnsweredYes(false);
+  }
+
+  function handleNon() {
+    dispatch({ type: "LOG_CALL" });
+    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { reponse: "non" } });
+    setCallAnsweredYes(false);
+    setCallStage("relance_q");
+  }
+  function handleOui() {
+    setCallAnsweredYes(true);
+    setCallStage("booked_q");
+  }
+  function handleBooked() {
+    dispatch({ type: "LOG_CALL_BOOKING" });
+    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "rdv", reponse: "rdv" } });
+    setProspectIdx((i) => i + 1);
+    resetCallFlow();
+  }
+  function handleNotBooked() {
+    dispatch({ type: "LOG_CALL_YES" });
+    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { reponse: "oui_non_booké" } });
+    setCallStage("relance_q");
+  }
+  function handleRelanceOui() { setCallStage("relance_date"); }
+  function handleRelanceNon() {
+    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "perdu" } });
+    setProspectIdx((i) => i + 1);
+    resetCallFlow();
+  }
+  function handleRelanceConfirm() {
+    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "rappel", rappelDate: relanceDate } });
+    setProspectIdx((i) => i + 1);
+    resetCallFlow();
+  }
 
   const totalCallsYes = state.totalCallsYes ?? 0;
   const tauxReponse    = state.totalCalls > 0 ? Math.round((totalCallsYes / state.totalCalls) * 100) : 0;
@@ -150,20 +215,68 @@ export default function HomeTab() {
             </div>
           </div>
 
-          {/* ── Action buttons ──────────────────────────────────────────── */}
+          {/* ── Call flow ───────────────────────────────────────────────── */}
           <div
             className="rounded-sm p-4"
             style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
           >
-            <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
-              ACTIONS RAPIDES
-            </div>
+            {/* Prospect card — always visible */}
+            {currentProspect ? (
+              <div
+                className="rounded-sm p-3 mb-3 flex items-center justify-between gap-2"
+                style={{ background: "#1A1A1A", border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? BORDER}30` }}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className="w-9 h-9 rounded-sm flex items-center justify-center font-game text-sm flex-shrink-0"
+                    style={{ background: `${STATUS_COLOR[currentProspect.status] ?? "#848484"}18`, border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? BORDER}40`, color: STATUS_COLOR[currentProspect.status] ?? "#848484" }}
+                  >
+                    {currentProspect.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-game text-sm text-white leading-tight truncate">{currentProspect.name}</div>
+                    <div style={{ color: "#848484", fontSize: "0.65rem" }}>
+                      {[currentProspect.specialite, currentProspect.ville].filter(Boolean).join(" · ")}
+                      {currentProspect.rappelDate && (
+                        <span style={{ color: "#5DC7E5", marginLeft: "6px" }}>📅 {currentProspect.rappelDate}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span
+                    className="font-game text-[9px] tracking-widest px-1.5 py-0.5 rounded-sm"
+                    style={{ background: `${STATUS_COLOR[currentProspect.status] ?? "#848484"}18`, color: STATUS_COLOR[currentProspect.status] ?? "#848484", border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? "#848484"}30` }}
+                  >
+                    {STATUS_LABEL[currentProspect.status] ?? currentProspect.status}
+                  </span>
+                  {callableProspects.length > 1 && callStage === "idle" && (
+                    <button
+                      onClick={() => setProspectIdx((i) => i + 1)}
+                      className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
+                      style={{ color: "#848484", border: "1px solid #383838" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                    >
+                      →
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div
+                className="rounded-sm p-3 mb-3 text-center"
+                style={{ background: "#1A1A1A", border: "1px solid #2D2D2D" }}
+              >
+                <div style={{ color: "#484848", fontSize: "0.7rem" }}>Aucun prospect à appeler — ajoute-en dans Script</div>
+              </div>
+            )}
 
-            {callStep === "idle" ? (
-              /* Step 1 — CALL LANCÉ */
+            {/* ── Step machine ── */}
+            {callStage === "idle" && (
               <button
-                onClick={() => setCallStep("choosing")}
-                className="w-full py-7 rounded-sm font-game text-base tracking-widest transition-all duration-150 active:scale-95 btn-pulse"
+                onClick={() => setCallStage("answered_q")}
+                className="w-full py-6 rounded-sm font-game text-base tracking-widest transition-all duration-150 active:scale-95 btn-pulse"
                 style={{ background: "#FF5500", border: "1px solid #FF5500", color: "#FFF" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#FF6B1A"; e.currentTarget.style.borderColor = "#FF6B1A"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "#FF5500"; e.currentTarget.style.borderColor = "#FF5500"; }}
@@ -171,74 +284,136 @@ export default function HomeTab() {
                 <div style={{ fontSize: "1.5rem", marginBottom: "6px" }}>📞</div>
                 CALL LANCÉ
               </button>
-            ) : (
-              /* Step 2 — résultat */
-              <div className="space-y-2">
+            )}
+
+            {callStage === "answered_q" && (
+              <div>
                 <div className="font-game text-[10px] tracking-widest text-center mb-3" style={{ color: "#848484" }}>
-                  RÉSULTAT DU CALL
+                  LA PERSONNE A-T-ELLE RÉPONDU ?
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {/* NON */}
-                  <button
-                    onClick={() => { dispatch({ type: "LOG_CALL" }); setCallStep("idle"); }}
-                    className="py-6 rounded-sm font-game text-xs tracking-wide transition-all duration-150 active:scale-95"
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={handleNon}
+                    className="py-6 rounded-sm font-game text-sm tracking-wide transition-all active:scale-95"
                     style={{ background: "rgba(255,85,0,0.1)", border: "1px solid rgba(255,85,0,0.4)", color: "#FF5500" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,85,0,0.2)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,85,0,0.1)"; }}
                   >
-                    <div style={{ fontSize: "1.4rem", marginBottom: "6px" }}>👎</div>
-                    NON
+                    <div style={{ fontSize: "1.4rem", marginBottom: "4px" }}>👎</div>NON
                   </button>
-
-                  {/* OUI */}
-                  <button
-                    onClick={() => { dispatch({ type: "LOG_CALL_YES" }); setCallStep("idle"); }}
-                    className="py-6 rounded-sm font-game text-xs tracking-wide transition-all duration-150 active:scale-95"
+                  <button onClick={handleOui}
+                    className="py-6 rounded-sm font-game text-sm tracking-wide transition-all active:scale-95"
                     style={{ background: "rgba(93,199,229,0.1)", border: "1px solid rgba(93,199,229,0.4)", color: "#5DC7E5" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.2)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; }}
                   >
-                    <div style={{ fontSize: "1.4rem", marginBottom: "6px" }}>👍</div>
-                    OUI
+                    <div style={{ fontSize: "1.4rem", marginBottom: "4px" }}>👍</div>OUI
                   </button>
+                </div>
+              </div>
+            )}
 
-                  {/* BOOKÉ */}
-                  <button
-                    onClick={() => { dispatch({ type: "LOG_CALL_BOOKING" }); setCallStep("idle"); }}
-                    className="py-6 rounded-sm font-game text-xs tracking-wide transition-all duration-150 active:scale-95"
+            {callStage === "booked_q" && (
+              <div>
+                <div className="font-game text-[10px] tracking-widest text-center mb-3" style={{ color: "#848484" }}>
+                  LE CALL EST BOOKÉ ?
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={handleBooked}
+                    className="py-6 rounded-sm font-game text-sm tracking-wide transition-all active:scale-95"
                     style={{ background: "rgba(28,228,0,0.1)", border: "1px solid rgba(28,228,0,0.4)", color: "#1CE400" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.2)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.1)"; }}
                   >
-                    <div style={{ fontSize: "1.4rem", marginBottom: "6px" }}>🎯</div>
-                    BOOKÉ
+                    <div style={{ fontSize: "1.4rem", marginBottom: "4px" }}>🎯</div>BOOKÉ
+                  </button>
+                  <button onClick={handleNotBooked}
+                    className="py-6 rounded-sm font-game text-sm tracking-wide transition-all active:scale-95"
+                    style={{ background: "rgba(255,85,0,0.1)", border: "1px solid rgba(255,85,0,0.4)", color: "#FF5500" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,85,0,0.2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,85,0,0.1)"; }}
+                  >
+                    <div style={{ fontSize: "1.4rem", marginBottom: "4px" }}>❌</div>PAS BOOKÉ
                   </button>
                 </div>
+              </div>
+            )}
 
-                <button
-                  onClick={() => setCallStep("idle")}
-                  className="w-full text-center text-xs py-1.5 transition-colors"
+            {callStage === "relance_q" && (
+              <div>
+                <div className="font-game text-[10px] tracking-widest text-center mb-3" style={{ color: "#848484" }}>
+                  ON LE RELANCE ?
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={handleRelanceOui}
+                    className="py-6 rounded-sm font-game text-sm tracking-wide transition-all active:scale-95"
+                    style={{ background: "rgba(93,199,229,0.1)", border: "1px solid rgba(93,199,229,0.4)", color: "#5DC7E5" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; }}
+                  >
+                    <div style={{ fontSize: "1.4rem", marginBottom: "4px" }}>🔄</div>OUI
+                  </button>
+                  <button onClick={handleRelanceNon}
+                    className="py-6 rounded-sm font-game text-sm tracking-wide transition-all active:scale-95"
+                    style={{ background: "#1A1A1A", border: "1px solid #383838", color: "#848484" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#2D2D2D"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#1A1A1A"; }}
+                  >
+                    <div style={{ fontSize: "1.4rem", marginBottom: "4px" }}>🗑</div>NON
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {callStage === "relance_date" && (
+              <div>
+                <div className="font-game text-[10px] tracking-widest text-center mb-3" style={{ color: "#848484" }}>
+                  QUAND LE RELANCER ?
+                </div>
+                <input
+                  type="date"
+                  value={relanceDate}
+                  onChange={(e) => setRelanceDate(e.target.value)}
+                  className="w-full mb-3 rounded-sm px-3 py-2.5 font-game text-sm"
+                  style={{ background: "#1A1A1A", border: "1px solid #5DC7E5", color: "#F0F0F0", outline: "none" }}
+                />
+                <button onClick={handleRelanceConfirm}
+                  className="w-full py-3 rounded-sm font-game text-sm tracking-widest transition-all active:scale-95"
+                  style={{ background: "#5DC7E5", border: "1px solid #5DC7E5", color: "#000" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#7DD8EC"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "#5DC7E5"; }}
+                >
+                  CONFIRMER
+                </button>
+              </div>
+            )}
+
+            {/* Cancel + undo */}
+            <div className="flex items-center justify-between mt-2">
+              {callStage !== "idle" ? (
+                <button onClick={resetCallFlow}
+                  className="text-xs transition-colors py-1"
                   style={{ color: "#484848" }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#848484"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#484848"; }}
                 >
                   ← annuler
                 </button>
-              </div>
-            )}
-
-            {callStep === "idle" && (
-              <button
-                onClick={() => dispatch({ type: "UNDO_CALL" })}
-                disabled={state.dailyCalls === 0}
-                className="w-full text-center text-xs transition-colors py-1.5 mt-2 disabled:opacity-20 disabled:cursor-not-allowed"
-                style={{ color: "#848484" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#C0C0C0"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#848484"; }}
-              >
-                ↩ Annuler le dernier call
-              </button>
-            )}
+              ) : (
+                <button
+                  onClick={() => dispatch({ type: "UNDO_CALL" })}
+                  disabled={state.dailyCalls === 0}
+                  className="text-xs transition-colors py-1 disabled:opacity-20 disabled:cursor-not-allowed"
+                  style={{ color: "#848484" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#C0C0C0"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#848484"; }}
+                >
+                  ↩ Annuler le dernier call
+                </button>
+              )}
+              <span style={{ color: "#484848", fontSize: "0.65rem" }}>
+                {callableProspects.length} prospect{callableProspects.length !== 1 ? "s" : ""} en attente
+              </span>
+            </div>
           </div>
 
           {/* ── Session ─────────────────────────────────────────────────── */}

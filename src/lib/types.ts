@@ -46,6 +46,7 @@ export interface Prospect {
   status: ProspectStatus;
   notes: string;
   reponse?: string;
+  rappelDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -64,7 +65,7 @@ export type GameAction =
   | { type: "DISMISS_ALL_TOASTS" }
   | { type: "LOG_SALE" }
   | { type: "ADD_PROSPECT"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt"> }
-  | { type: "UPDATE_PROSPECT"; id: string; changes: Partial<Pick<Prospect, "status" | "notes">> }
+  | { type: "UPDATE_PROSPECT"; id: string; changes: Partial<Pick<Prospect, "status" | "notes" | "rappelDate" | "reponse">> }
   | { type: "DELETE_PROSPECT"; id: string }
   | { type: "IMPORT_PROSPECTS"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt">[] }
   | { type: "TICK" }
