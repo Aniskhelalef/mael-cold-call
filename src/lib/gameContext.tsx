@@ -50,6 +50,7 @@ const defaultState: GameState = {
   totalMoneyEarned: 0,
   totalSales: 0,
   dailySales: 0,
+  prospects: [],
 };
 
 function loadState(): GameState {
@@ -560,6 +561,34 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "DISMISS_ALL_TOASTS": {
       return { ...currentState, pendingToasts: [] };
+    }
+
+    case "ADD_PROSPECT": {
+      const now = new Date().toISOString();
+      const newProspect = {
+        ...action.data,
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        createdAt: now,
+        updatedAt: now,
+      };
+      return { ...currentState, prospects: [...(currentState.prospects ?? []), newProspect] };
+    }
+
+    case "UPDATE_PROSPECT": {
+      const now = new Date().toISOString();
+      return {
+        ...currentState,
+        prospects: (currentState.prospects ?? []).map((p) =>
+          p.id === action.id ? { ...p, ...action.changes, updatedAt: now } : p
+        ),
+      };
+    }
+
+    case "DELETE_PROSPECT": {
+      return {
+        ...currentState,
+        prospects: (currentState.prospects ?? []).filter((p) => p.id !== action.id),
+      };
     }
 
     case "LOGOUT": {

@@ -14,6 +14,7 @@ const TABS = [
   { id: "missions", label: "Missions", icon: "⚔️" },
   { id: "stats", label: "Stats", icon: "📊" },
   { id: "script", label: "Script", icon: "📋" },
+  { id: "pipeline", label: "Pipeline", icon: "🏗️" },
 ];
 
 export default function Header({ activeTab, setActiveTab }: HeaderProps) {

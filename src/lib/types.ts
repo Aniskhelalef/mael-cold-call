@@ -33,6 +33,21 @@ export interface GameState {
   totalMoneyEarned: number;
   totalSales: number;
   dailySales: number;
+  prospects: Prospect[];
+}
+
+export type ProspectStatus = "a_appeler" | "rappel" | "rdv" | "demo" | "vendu" | "perdu";
+
+export interface Prospect {
+  id: string;
+  name: string;
+  ville: string;
+  specialite: string;
+  phone: string;
+  status: ProspectStatus;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type GameAction =
@@ -46,6 +61,9 @@ export type GameAction =
   | { type: "DISMISS_TOAST"; id: string }
   | { type: "DISMISS_ALL_TOASTS" }
   | { type: "LOG_SALE" }
+  | { type: "ADD_PROSPECT"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt"> }
+  | { type: "UPDATE_PROSPECT"; id: string; changes: Partial<Pick<Prospect, "status" | "notes">> }
+  | { type: "DELETE_PROSPECT"; id: string }
   | { type: "TICK" }
   | { type: "LOGOUT" };
 
