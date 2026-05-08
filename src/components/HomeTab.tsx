@@ -56,6 +56,8 @@ export default function HomeTab() {
 
   const nextRankReward = nextRank ? RANK_MONEY_REWARDS[nextRank.name] : null;
 
+  const [callStep, setCallStep] = useState<"idle" | "choosing">("idle");
+
   const totalCallsYes = state.totalCallsYes ?? 0;
   const tauxReponse    = state.totalCalls > 0 ? Math.round((totalCallsYes / state.totalCalls) * 100) : 0;
   const tauxConversion = state.totalCalls > 0 ? Math.round((state.totalBookings / state.totalCalls) * 100) : 0;
@@ -64,6 +66,15 @@ export default function HomeTab() {
   useEffect(() => {
     fetchLeaderboard().then(setLbEntries).catch(() => {});
   }, []);
+
+  // End-of-month countdown
+  const endOfMonth = (() => {
+    const d = new Date(now);
+    return new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime();
+  })();
+  const msLeft = endOfMonth - now;
+  const daysLeft  = Math.floor(msLeft / 86_400_000);
+  const hoursLeft = Math.floor((msLeft % 86_400_000) / 3_600_000);
 
   const myEmail = state.playerEmail;
   const myOnLb  = lbEntries.some((e) => e.email === myEmail || e.name === state.playerName);
@@ -148,78 +159,86 @@ export default function HomeTab() {
               ACTIONS RAPIDES
             </div>
 
-            {/* NON / OUI side by side */}
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {/* NON */}
+            {callStep === "idle" ? (
+              /* Step 1 — CALL LANCÉ */
               <button
-                onClick={() => dispatch({ type: "LOG_CALL" })}
-                className="py-5 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95 btn-pulse"
-                style={{
-                  background: "#FF5500",
-                  border: "1px solid #FF5500",
-                  color: "#FFF",
-                }}
+                onClick={() => setCallStep("choosing")}
+                className="w-full py-7 rounded-sm font-game text-base tracking-widest transition-all duration-150 active:scale-95 btn-pulse"
+                style={{ background: "#FF5500", border: "1px solid #FF5500", color: "#FFF" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = "#FF6B1A"; e.currentTarget.style.borderColor = "#FF6B1A"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "#FF5500"; e.currentTarget.style.borderColor = "#FF5500"; }}
               >
-                <div style={{ fontSize: "1.3rem", marginBottom: "4px" }}>👎</div>
-                <div>A RÉPONDU NON</div>
+                <div style={{ fontSize: "1.5rem", marginBottom: "6px" }}>📞</div>
+                CALL LANCÉ
               </button>
+            ) : (
+              /* Step 2 — résultat */
+              <div className="space-y-2">
+                <div className="font-game text-[10px] tracking-widest text-center mb-3" style={{ color: "#848484" }}>
+                  RÉSULTAT DU CALL
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {/* NON */}
+                  <button
+                    onClick={() => { dispatch({ type: "LOG_CALL" }); setCallStep("idle"); }}
+                    className="py-6 rounded-sm font-game text-xs tracking-wide transition-all duration-150 active:scale-95"
+                    style={{ background: "rgba(255,85,0,0.1)", border: "1px solid rgba(255,85,0,0.4)", color: "#FF5500" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,85,0,0.2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,85,0,0.1)"; }}
+                  >
+                    <div style={{ fontSize: "1.4rem", marginBottom: "6px" }}>👎</div>
+                    NON
+                  </button>
 
-              {/* OUI */}
-              <button
-                onClick={() => dispatch({ type: "LOG_CALL_YES" })}
-                className="py-5 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95"
-                style={{
-                  background: "rgba(93,199,229,0.1)",
-                  border: "1px solid rgba(93,199,229,0.4)",
-                  color: "#5DC7E5",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.18)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; }}
-              >
-                <div style={{ fontSize: "1.3rem", marginBottom: "4px" }}>👍</div>
-                <div>A RÉPONDU OUI</div>
-              </button>
-            </div>
+                  {/* OUI */}
+                  <button
+                    onClick={() => { dispatch({ type: "LOG_CALL_YES" }); setCallStep("idle"); }}
+                    className="py-6 rounded-sm font-game text-xs tracking-wide transition-all duration-150 active:scale-95"
+                    style={{ background: "rgba(93,199,229,0.1)", border: "1px solid rgba(93,199,229,0.4)", color: "#5DC7E5" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; }}
+                  >
+                    <div style={{ fontSize: "1.4rem", marginBottom: "6px" }}>👍</div>
+                    OUI
+                  </button>
 
-            {/* CALL BOOKÉ — full width, only enabled after a OUI */}
-            {(() => {
-              const pendingOui = state.pendingOuiCount ?? 0;
-              return (
+                  {/* BOOKÉ */}
+                  <button
+                    onClick={() => { dispatch({ type: "LOG_CALL_BOOKING" }); setCallStep("idle"); }}
+                    className="py-6 rounded-sm font-game text-xs tracking-wide transition-all duration-150 active:scale-95"
+                    style={{ background: "rgba(28,228,0,0.1)", border: "1px solid rgba(28,228,0,0.4)", color: "#1CE400" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.1)"; }}
+                  >
+                    <div style={{ fontSize: "1.4rem", marginBottom: "6px" }}>🎯</div>
+                    BOOKÉ
+                  </button>
+                </div>
+
                 <button
-                  onClick={() => dispatch({ type: "LOG_BOOKING" })}
-                  disabled={pendingOui === 0}
-                  className="w-full py-3 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95 mb-3 disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{
-                    background: pendingOui > 0 ? "rgba(28,228,0,0.08)" : "#232323",
-                    border: pendingOui > 0 ? "1px solid rgba(28,228,0,0.35)" : "1px solid #383838",
-                    color: pendingOui > 0 ? "#1CE400" : "#848484",
-                  }}
-                  onMouseEnter={(e) => { if (pendingOui > 0) e.currentTarget.style.background = "rgba(28,228,0,0.16)"; }}
-                  onMouseLeave={(e) => { if (pendingOui > 0) e.currentTarget.style.background = "rgba(28,228,0,0.08)"; }}
+                  onClick={() => setCallStep("idle")}
+                  className="w-full text-center text-xs py-1.5 transition-colors"
+                  style={{ color: "#484848" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#848484"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#484848"; }}
                 >
-                  <span style={{ marginRight: "8px" }}>🎯</span>
-                  CALL BOOKÉ
-                  {pendingOui > 0 && (
-                    <span style={{ opacity: 0.7, fontSize: "0.65rem", marginLeft: "8px" }}>
-                      {pendingOui} OUI en attente
-                    </span>
-                  )}
+                  ← annuler
                 </button>
-              );
-            })()}
+              </div>
+            )}
 
-            <button
-              onClick={() => dispatch({ type: "UNDO_CALL" })}
-              disabled={state.dailyCalls === 0}
-              className="w-full text-center text-xs transition-colors py-1 disabled:opacity-20 disabled:cursor-not-allowed"
-              style={{ color: "#848484" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#C0C0C0"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#848484"; }}
-            >
-              ↩ Annuler le dernier call
-            </button>
+            {callStep === "idle" && (
+              <button
+                onClick={() => dispatch({ type: "UNDO_CALL" })}
+                disabled={state.dailyCalls === 0}
+                className="w-full text-center text-xs transition-colors py-1.5 mt-2 disabled:opacity-20 disabled:cursor-not-allowed"
+                style={{ color: "#848484" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#C0C0C0"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#848484"; }}
+              >
+                ↩ Annuler le dernier call
+              </button>
+            )}
           </div>
 
           {/* ── Session ─────────────────────────────────────────────────── */}
@@ -517,6 +536,27 @@ export default function HomeTab() {
               })()}
             </div>
           )}
+
+          {/* End-of-month countdown */}
+          <div
+            className="rounded-sm px-4 py-3"
+            style={{ background: CARD_BG, border: "1px solid rgba(246,173,85,0.3)" }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
+                FIN DU MOIS
+              </span>
+              <span className="font-game text-[10px]" style={{ color: "#f6ad55" }}>
+                🏆 BONUS 50€
+              </span>
+            </div>
+            <div className="font-game text-xl leading-none" style={{ color: "#f6ad55" }}>
+              {daysLeft}j {hoursLeft}h
+            </div>
+            <div style={{ color: "#686868", fontSize: "0.6rem", marginTop: "3px" }}>
+              Le #1 du classement remporte 50€ bonus
+            </div>
+          </div>
 
         </div>
 

@@ -30,7 +30,6 @@ const defaultState: GameState = {
   lastActivityDate: "",
   totalCallsYes: 0,
   dailyCallsYes: 0,
-  pendingOuiCount: 0,
   history: [],
   unlockedAchievements: [],
   pendingToasts: [],
@@ -254,7 +253,6 @@ function performDailyReset(state: GameState, today: string): GameState {
     dailyCalls: 0,
     dailyBookings: 0,
     dailyCallsYes: 0,
-    pendingOuiCount: 0,
     dailySales: 0,
     lastResetDate: today,
     history: trimmedHistory,
@@ -418,7 +416,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         dailyCalls: currentState.dailyCalls + 1,
         totalCallsYes: (currentState.totalCallsYes ?? 0) + 1,
         dailyCallsYes: (currentState.dailyCallsYes ?? 0) + 1,
-        pendingOuiCount: (currentState.pendingOuiCount ?? 0) + 1,
         sessionCalls: currentState.sessionActive
           ? currentState.sessionCalls + 1
           : currentState.sessionCalls,
@@ -448,15 +445,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "LOG_BOOKING": {
-      if ((currentState.pendingOuiCount ?? 0) <= 0) return currentState;
-
       const isFirstBooking = currentState.totalBookings === 0;
 
       let newState: GameState = {
         ...currentState,
         totalBookings: currentState.totalBookings + 1,
         dailyBookings: currentState.dailyBookings + 1,
-        pendingOuiCount: (currentState.pendingOuiCount ?? 1) - 1,
         sessionBookings: currentState.sessionActive
           ? currentState.sessionBookings + 1
           : currentState.sessionBookings,
@@ -502,6 +496,60 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           totalMoneyEarned: newState.totalMoneyEarned + rankMoneyGain,
           ranksRewarded: newRanksRewarded,
         };
+      }
+
+      return newState;
+    }
+
+    case "LOG_CALL_BOOKING": {
+      // OUI + BOOKING in one action (call resulted in immediate booking)
+      const isFirstBooking = currentState.totalBookings === 0;
+      const isFirstCallOfDay = currentState.dailyCalls === 0;
+
+      let newState: GameState = {
+        ...currentState,
+        totalCalls: currentState.totalCalls + 1,
+        dailyCalls: currentState.dailyCalls + 1,
+        totalCallsYes: (currentState.totalCallsYes ?? 0) + 1,
+        dailyCallsYes: (currentState.dailyCallsYes ?? 0) + 1,
+        totalBookings: currentState.totalBookings + 1,
+        dailyBookings: currentState.dailyBookings + 1,
+        sessionCalls: currentState.sessionActive ? currentState.sessionCalls + 1 : currentState.sessionCalls,
+        sessionBookings: currentState.sessionActive ? currentState.sessionBookings + 1 : currentState.sessionBookings,
+        firstBookingDate: isFirstBooking ? today : currentState.firstBookingDate,
+      };
+
+      newState = updateStreak(newState, today);
+
+      if (isFirstCallOfDay) {
+        newState = { ...newState, weeklyDaysActive: newState.weeklyDaysActive + 1 };
+      }
+
+      const { newAchievements: achIds, moneyGain: achMoney } = checkAchievements(newState);
+      if (achIds.length > 0) {
+        newState = {
+          ...newState,
+          totalMoneyEarned: newState.totalMoneyEarned + achMoney,
+          unlockedAchievements: [...newState.unlockedAchievements, ...achIds],
+        };
+      }
+
+      const { newMissions } = checkWeeklyMissions(newState);
+      if (newMissions.length > 0) {
+        newState = { ...newState, weeklyMissionsCompleted: [...newState.weeklyMissionsCompleted, ...newMissions] };
+      }
+
+      const ranksRewarded = newState.ranksRewarded ?? [];
+      let rankMoneyGain = 0;
+      const newRanksRewarded = [...ranksRewarded];
+      for (const rank of RANKS) {
+        if (newState.totalBookings >= rank.minBookings && !newRanksRewarded.includes(rank.name)) {
+          rankMoneyGain += RANK_MONEY_REWARDS[rank.name] ?? 0;
+          newRanksRewarded.push(rank.name);
+        }
+      }
+      if (rankMoneyGain > 0 || newRanksRewarded.length > ranksRewarded.length) {
+        newState = { ...newState, totalMoneyEarned: newState.totalMoneyEarned + rankMoneyGain, ranksRewarded: newRanksRewarded };
       }
 
       return newState;

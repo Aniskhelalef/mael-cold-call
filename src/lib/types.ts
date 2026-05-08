@@ -11,7 +11,6 @@ export interface GameState {
   lastActivityDate: string;
   totalCallsYes: number;
   dailyCallsYes: number;
-  pendingOuiCount: number;
   history: { date: string; calls: number; bookings: number }[];
   unlockedAchievements: string[];
   pendingToasts: string[];
@@ -57,6 +56,7 @@ export type GameAction =
   | { type: "LOG_CALL" }
   | { type: "LOG_CALL_YES" }
   | { type: "LOG_BOOKING" }
+  | { type: "LOG_CALL_BOOKING" }
   | { type: "UNDO_CALL" }
   | { type: "START_SESSION"; minutes: number }
   | { type: "END_SESSION" }
