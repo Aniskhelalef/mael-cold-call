@@ -8,6 +8,7 @@ import HomeTab from "./HomeTab";
 import StatsTab from "./StatsTab";
 import ScriptTab from "./ScriptTab";
 import LeaderboardTab from "./LeaderboardTab";
+import LeadsTab from "./LeadsTab";
 
 export default function GameApp() {
   const { state } = useGame();
@@ -24,8 +25,9 @@ export default function GameApp() {
 
       <main className="max-w-6xl mx-auto px-4 py-5 pb-24">
         {activeTab === "home"         && <HomeTab />}
-        {activeTab === "leaderboard" && <LeaderboardTab />}
-        {activeTab === "stats"       && <StatsTab />}
+        {activeTab === "leads"        && <LeadsTab />}
+        {activeTab === "leaderboard"  && <LeaderboardTab />}
+        {activeTab === "stats"        && <StatsTab />}
         {activeTab === "script"       && <ScriptTab />}
       </main>
 

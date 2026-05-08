@@ -34,7 +34,7 @@ export interface GameState {
   ranksRewarded?: string[];
 }
 
-export type ProspectStatus = "a_appeler" | "rappel" | "rdv" | "demo" | "vendu" | "perdu";
+export type ProspectStatus = "a_appeler" | "rappel" | "rdv" | "demo" | "vente_en_cours" | "vendu" | "perdu";
 
 export interface Prospect {
   id: string;
@@ -47,6 +47,8 @@ export interface Prospect {
   notes: string;
   reponse?: string;
   rappelDate?: string;
+  premierContact?: string;
+  pourquoi?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -65,7 +67,7 @@ export type GameAction =
   | { type: "DISMISS_ALL_TOASTS" }
   | { type: "LOG_SALE" }
   | { type: "ADD_PROSPECT"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt"> }
-  | { type: "UPDATE_PROSPECT"; id: string; changes: Partial<Pick<Prospect, "status" | "notes" | "rappelDate" | "reponse">> }
+  | { type: "UPDATE_PROSPECT"; id: string; changes: Partial<Pick<Prospect, "status" | "notes" | "rappelDate" | "reponse" | "premierContact" | "pourquoi">> }
   | { type: "DELETE_PROSPECT"; id: string }
   | { type: "IMPORT_PROSPECTS"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt">[] }
   | { type: "TICK" }
