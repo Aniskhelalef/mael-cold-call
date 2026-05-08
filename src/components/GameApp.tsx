@@ -8,7 +8,6 @@ import HomeTab from "./HomeTab";
 import StatsTab from "./StatsTab";
 import ScriptTab from "./ScriptTab";
 import LeaderboardTab from "./LeaderboardTab";
-import AchievementToast from "./AchievementToast";
 
 export default function GameApp() {
   const { state } = useGame();
@@ -30,7 +29,6 @@ export default function GameApp() {
         {activeTab === "script"       && <ScriptTab />}
       </main>
 
-      <AchievementToast />
     </div>
   );
 }

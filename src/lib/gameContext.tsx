@@ -345,7 +345,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...newState,
           totalMoneyEarned: newState.totalMoneyEarned + achMoney,
           unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
-          pendingToasts: [...newState.pendingToasts, ...newAchievements],
+          
         };
       }
 
@@ -405,7 +405,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...newState,
           totalMoneyEarned: newState.totalMoneyEarned + achMoney,
           unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
-          pendingToasts: [...newState.pendingToasts, ...newAchievements],
+          
         };
       }
 
@@ -444,7 +444,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...newState,
           totalMoneyEarned: newState.totalMoneyEarned + achMoney,
           unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
-          pendingToasts: [...newState.pendingToasts, ...newAchievements],
+          
         };
       }
 
@@ -507,17 +507,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const newUnlocked = currentState.unlockedAchievements.includes("dans_la_matrice")
         ? currentState.unlockedAchievements
         : [...currentState.unlockedAchievements, "dans_la_matrice"];
-      const achUnlocked = !currentState.unlockedAchievements.includes("dans_la_matrice");
-      const newPending = achUnlocked
-        ? [...currentState.pendingToasts, "dans_la_matrice"]
-        : currentState.pendingToasts;
-
       return {
         ...currentState,
         sessionActive: false,
         sessionStart: null,
         unlockedAchievements: newUnlocked,
-        pendingToasts: newPending,
       };
     }
 
