@@ -1,27 +1,4 @@
-import { Level, Rank, Achievement, WeeklyMission } from "./types";
-
-export const LEVELS: Level[] = [
-  { level: 1, title: "Recrue", minXP: 0 },
-  { level: 2, title: "Débutant", minXP: 100 },
-  { level: 3, title: "Apprenti", minXP: 250 },
-  { level: 4, title: "Prospecteur", minXP: 500 },
-  { level: 5, title: "Cold Caller", minXP: 800 },
-  { level: 6, title: "Décrocheur", minXP: 1200 },
-  { level: 7, title: "Communicateur", minXP: 1700 },
-  { level: 8, title: "Persuasif", minXP: 2300 },
-  { level: 9, title: "Chasseur de RDV", minXP: 3000 },
-  { level: 10, title: "Expert", minXP: 4000 },
-  { level: 11, title: "Vétéran", minXP: 5000 },
-  { level: 12, title: "Elite", minXP: 6500 },
-  { level: 13, title: "Master", minXP: 8000 },
-  { level: 14, title: "Grand Master", minXP: 10000 },
-  { level: 15, title: "Légende", minXP: 13000 },
-  { level: 16, title: "Mythique", minXP: 16000 },
-  { level: 17, title: "Immortel", minXP: 20000 },
-  { level: 18, title: "Divin", minXP: 25000 },
-  { level: 19, title: "Ancestral", minXP: 30000 },
-  { level: 20, title: "The Closer", minXP: 40000 },
-];
+import { Rank, Achievement, WeeklyMission } from "./types";
 
 export const RANKS: Rank[] = [
   // 🟤 Silver — Accès au système
@@ -511,33 +488,6 @@ export const WEEKLY_MISSIONS: WeeklyMission[] = [
     type: "days",
   },
 ];
-
-export function getLevel(totalXP: number): Level {
-  let current = LEVELS[0];
-  for (const level of LEVELS) {
-    if (totalXP >= level.minXP) {
-      current = level;
-    } else {
-      break;
-    }
-  }
-  return current;
-}
-
-export function getNextLevel(totalXP: number): Level | null {
-  const current = getLevel(totalXP);
-  const nextIndex = LEVELS.findIndex((l) => l.level === current.level + 1);
-  return nextIndex !== -1 ? LEVELS[nextIndex] : null;
-}
-
-export function getLevelProgress(totalXP: number): number {
-  const current = getLevel(totalXP);
-  const next = getNextLevel(totalXP);
-  if (!next) return 100;
-  const range = next.minXP - current.minXP;
-  const progress = totalXP - current.minXP;
-  return Math.min(100, Math.floor((progress / range) * 100));
-}
 
 export function getRank(totalBookings: number): Rank {
   let current = RANKS[0];

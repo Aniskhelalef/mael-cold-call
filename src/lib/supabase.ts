@@ -100,7 +100,7 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
       .map((row) => ({
         email:          row.id,
         name:           row.data.playerName,
-        totalXP:        row.data.totalXP        ?? 0,
+        totalXP:        (row.data as GameState & { totalXP?: number }).totalXP ?? 0,
         totalCalls:     row.data.totalCalls      ?? 0,
         totalBookings:  row.data.totalBookings   ?? 0,
         currentStreak:  row.data.currentStreak   ?? 0,

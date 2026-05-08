@@ -5,7 +5,6 @@ import { useGame } from "@/lib/gameContext";
 import SetupScreen from "./SetupScreen";
 import Header from "./Header";
 import HomeTab from "./HomeTab";
-import AchievementsTab from "./AchievementsTab";
 import StatsTab from "./StatsTab";
 import ScriptTab from "./ScriptTab";
 import LeaderboardTab from "./LeaderboardTab";
@@ -26,9 +25,8 @@ export default function GameApp() {
 
       <main className="max-w-6xl mx-auto px-4 py-5 pb-24">
         {activeTab === "home"         && <HomeTab />}
-        {activeTab === "leaderboard"  && <LeaderboardTab />}
-        {activeTab === "achievements" && <AchievementsTab />}
-        {activeTab === "stats"        && <StatsTab />}
+        {activeTab === "leaderboard" && <LeaderboardTab />}
+        {activeTab === "stats"       && <StatsTab />}
         {activeTab === "script"       && <ScriptTab />}
       </main>
 

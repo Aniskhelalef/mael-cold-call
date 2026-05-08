@@ -2,21 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { GameState } from "@/lib/types";
-import { ACHIEVEMENTS, LEVELS, RANKS } from "@/lib/gameData";
+import { ACHIEVEMENTS, RANKS } from "@/lib/gameData";
 import { fetchStateFromSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "coldcall2024";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getLevel(xp: number) {
-  let current = LEVELS[0];
-  for (const l of LEVELS) {
-    if (xp >= l.minXP) current = l;
-  }
-  const idx = LEVELS.findIndex((l) => l.level === current.level);
-  return { current, next: LEVELS[idx + 1] ?? null };
-}
 
 function getRank(bookings: number) {
   let current = RANKS[0];
@@ -270,16 +261,12 @@ function AdminDashboard({
     return () => clearInterval(t);
   }, []);
 
-  const { current: level, next: nextLevel } = getLevel(state.totalXP);
   const { current: rank, next: nextRank } = getRank(state.totalBookings);
   const weeklyCalls = state.totalCalls - state.weeklyCallsAtStart;
   const weeklyBookings = state.totalBookings - state.weeklyBookingsAtStart;
   const calledToday = state.lastActivityDate === today();
   const syncDate = syncedAt ? new Date(syncedAt) : null;
 
-  const xpPct = nextLevel
-    ? ((state.totalXP - level.minXP) / (nextLevel.minXP - level.minXP)) * 100
-    : 100;
   const rankPct = nextRank
     ? ((state.totalBookings - rank.minBookings) / (nextRank.minBookings - rank.minBookings)) * 100
     : 100;
@@ -311,9 +298,6 @@ function AdminDashboard({
                 fontFamily: "Rajdhani, sans-serif", fontWeight: 600,
               }}>
                 {rank.name}
-              </span>
-              <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>
-                Niv. {level.level} — {level.title}
               </span>
             </div>
           </div>
@@ -363,7 +347,7 @@ function AdminDashboard({
             { label: "📞 Calls", value: state.totalCalls.toLocaleString("fr-FR"), accent: true },
             { label: "🎯 RDV", value: state.totalBookings.toLocaleString("fr-FR") },
             { label: "💰 Sites vendus", value: (state.totalSales ?? 0).toLocaleString("fr-FR") },
-            { label: "⭐ XP total", value: state.totalXP.toLocaleString("fr-FR") },
+            { label: "💰 Gains", value: `${state.totalMoneyEarned ?? 0}€` },
           ]} />
         </div>
 
@@ -434,32 +418,8 @@ function AdminDashboard({
           <HistoryChart history={state.history} />
         </div>
 
-        {/* ── Level & Rank ── */}
+        {/* ── Rank ── */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
-          {/* Level */}
-          <div style={{ background: "#1a1b26", border: "1px solid #2a2b3d", borderRadius: "0.75rem", padding: "1.25rem" }}>
-            <div style={{ fontSize: "0.65rem", color: "#4b5563", letterSpacing: "0.15em", marginBottom: "0.75rem" }}>⭐ NIVEAU</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "0.625rem", marginBottom: "0.25rem" }}>
-              <span style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "2.5rem", fontWeight: 700, color: "#fff", lineHeight: 1 }}>{level.level}</span>
-              <span style={{ color: "#60a5fa", fontWeight: 600 }}>{level.title}</span>
-            </div>
-            <div style={{ color: "#4b5563", fontSize: "0.75rem", marginBottom: "0.75rem" }}>
-              {state.totalXP.toLocaleString("fr-FR")} XP total
-            </div>
-            {nextLevel ? (
-              <>
-                <div style={{ height: "8px", borderRadius: "9999px", background: "#1f2937", marginBottom: "0.4rem" }}>
-                  <div style={{ height: "100%", borderRadius: "9999px", background: "#3b82f6", width: `${xpPct}%`, transition: "width 0.5s" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "#4b5563" }}>
-                  <span>{(state.totalXP - level.minXP).toLocaleString("fr-FR")} / {(nextLevel.minXP - level.minXP).toLocaleString("fr-FR")} XP</span>
-                  <span style={{ color: "#60a5fa" }}>→ {nextLevel.title}</span>
-                </div>
-              </>
-            ) : (
-              <div style={{ color: "#ffd700", fontSize: "0.75rem", fontWeight: 700 }}>🏆 MAX LEVEL</div>
-            )}
-          </div>
           {/* Rank */}
           <div style={{ background: "#1a1b26", border: "1px solid #2a2b3d", borderRadius: "0.75rem", padding: "1.25rem" }}>
             <div style={{ fontSize: "0.65rem", color: "#4b5563", letterSpacing: "0.15em", marginBottom: "0.75rem" }}>🎮 RANG CS:GO</div>

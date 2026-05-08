@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/gameContext";
-import { ACHIEVEMENTS } from "@/lib/gameData";
+import { getRank, getNextRank } from "@/lib/gameData";
 
 const MAX_ENERGY = 100;
 
@@ -48,13 +48,8 @@ export default function HomeTab() {
     sessionExpired = elapsed >= dur;
   }
 
-  let buffLeft = 0;
-  if (state.xpBuffActive && state.xpBuffEnd) buffLeft = Math.max(0, state.xpBuffEnd - now);
-
-  const recentAch = state.unlockedAchievements
-    .slice(-3).reverse()
-    .map((id) => ACHIEVEMENTS.find((a) => a.id === id))
-    .filter(Boolean);
+  const rank     = getRank(state.totalBookings);
+  const nextRank = getNextRank(state.totalBookings);
 
   const goalPct  = Math.min(100, Math.round((state.dailyCalls / 20) * 100));
   const goalMet  = state.dailyCalls >= 20;
@@ -65,10 +60,10 @@ export default function HomeTab() {
       {/* ── KPI row ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {([
-          { label: "Calls",    value: state.dailyCalls,              sub: `Total: ${state.totalCalls}`,          color: "#FF5500", icon: "📞" },
-          { label: "RDV",      value: state.dailyBookings,           sub: `Ventes: ${state.dailySales}`,          color: "#1CE400", icon: "🎯" },
-          { label: "Streak",   value: `${state.currentStreak}J`,     sub: `Record: ${state.longestStreak}j`,     color: "#5DC7E5", icon: "🔥" },
-          { label: "XP Total", value: state.totalXP.toLocaleString(),sub: `+${state.dailyCalls * 10} aujourd'hui`, color: "#FF9500", icon: "⭐" },
+          { label: "Calls",   value: state.dailyCalls,          sub: `Total: ${state.totalCalls}`,      color: "#FF5500", icon: "📞" },
+          { label: "RDV",     value: state.dailyBookings,        sub: `Total: ${state.totalBookings}`,   color: "#1CE400", icon: "🎯" },
+          { label: "Streak",  value: `${state.currentStreak}J`,  sub: `Record: ${state.longestStreak}j`, color: "#5DC7E5", icon: "🔥" },
+          { label: "Rang",    value: rank.name.split(" ").slice(-2).join(" "), sub: nextRank ? `→ ${nextRank.name}` : "MAX", color: rank.color, icon: rank.group === "global" ? "👑" : rank.group === "guardian" ? "🛡️" : rank.group === "gold" ? "🏅" : "🥈" },
         ] as const).map((c) => (
           <div
             key={c.label}
@@ -145,7 +140,7 @@ export default function HomeTab() {
         >
           <span style={{ fontSize: "1.2rem" }}>📞</span>
           {"  "}LOG CALL
-          <span style={{ opacity: 0.7, fontSize: "0.7rem", marginLeft: "8px" }}>+10 XP · -2⚡</span>
+          <span style={{ opacity: 0.7, fontSize: "0.7rem", marginLeft: "8px" }}>-2⚡</span>
         </button>
 
         <div className="mb-3">
@@ -158,7 +153,6 @@ export default function HomeTab() {
           >
             <div style={{ fontSize: "1.1rem" }}>🎯</div>
             LOG RDV
-            <div style={{ opacity: 0.6, fontSize: "0.68rem" }}>+50 XP</div>
           </button>
         </div>
 
@@ -223,7 +217,7 @@ export default function HomeTab() {
           {!state.sessionActive ? (
             <div>
               <p style={{ color: "#848484", fontSize: "0.75rem", marginBottom: "0.6rem" }}>
-                Buff XP ×1.5 à la fin de session.
+                Reste focus pendant la session — timer visible pour tenir le rythme.
               </p>
               <div className="grid grid-cols-3 gap-1.5">
                 {[
@@ -291,51 +285,9 @@ export default function HomeTab() {
             </div>
           )}
 
-          {/* XP buff */}
-          {state.xpBuffActive && buffLeft > 0 && (
-            <div
-              className="mt-2.5 flex items-center gap-2 rounded-sm px-3 py-2"
-              style={{ background: "rgba(255,149,0,0.08)", border: "1px solid rgba(255,149,0,0.3)" }}
-            >
-              <span style={{ color: "#FF9500", fontSize: "0.8rem" }}>⚡</span>
-              <span className="font-game text-xs" style={{ color: "#FF9500" }}>BUFF XP ×1.5</span>
-              <span className="ml-auto font-game text-xs" style={{ color: "#FF9500" }}>{fmt(buffLeft)}</span>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── Recent achievements ───────────────────────────────────────────── */}
-      {recentAch.length > 0 && (
-        <div
-          className="rounded-sm p-4"
-          style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
-        >
-          <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
-            HAUTS FAITS RÉCENTS
-          </div>
-          <div className="space-y-2">
-            {recentAch.map((ach) => {
-              if (!ach) return null;
-              const tc = ach.tier === "gold" ? "#ffd700" : ach.tier === "silver" ? "#c8d0e0" : "#cd7f32";
-              return (
-                <div
-                  key={ach.id}
-                  className="flex items-center gap-3 rounded-sm px-3 py-2.5"
-                  style={{ background: "#2D2D2D", border: `1px solid ${tc}28` }}
-                >
-                  <span style={{ fontSize: "1.1rem" }}>{ach.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-game text-xs" style={{ color: tc }}>{ach.title}</div>
-                    <div style={{ color: "#848484", fontSize: "0.68rem" }} className="truncate">{ach.description}</div>
-                  </div>
-                  <div className="font-game text-xs flex-shrink-0" style={{ color: tc }}>+{ach.xpReward} XP</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

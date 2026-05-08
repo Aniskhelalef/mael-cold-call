@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useGame } from "@/lib/gameContext";
-import { getRank, getNextRank, getLevel, getNextLevel, getLevelProgress, RANKS, RANK_MONEY_REWARDS } from "@/lib/gameData";
+import { getRank, getNextRank, RANKS, RANK_MONEY_REWARDS } from "@/lib/gameData";
 
 type Period = "jour" | "semaine" | "mois" | "annee";
 
@@ -427,9 +427,6 @@ export default function StatsTab() {
 
   const rank      = getRank(state.totalBookings);
   const nextRank  = getNextRank(state.totalBookings);
-  const level     = getLevel(state.totalXP);
-  const nextLevel = getNextLevel(state.totalXP);
-  const lvlPct    = getLevelProgress(state.totalXP);
 
   const rankGroupClass =
     rank.group === "global"   ? "rank-global"   :
@@ -620,47 +617,41 @@ export default function StatsTab() {
         </div>
       </div>
 
-      {/* Level card */}
+      {/* Gains card */}
       <div className="rounded-sm p-4" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
         <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
-          NIVEAU & XP
+          GAINS TOTAUX
         </div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
-              className="w-11 h-11 rounded-sm fi-level-badge level-shimmer"
-              style={{
-                width: "44px", height: "44px", fontSize: "1.1rem",
-                background: "#2D2D2D", border: "1px solid #383838",
-                color: "#FF5500",
-              }}
+              className="w-11 h-11 rounded-sm flex items-center justify-center"
+              style={{ background: "rgba(28,228,0,0.08)", border: "1px solid rgba(28,228,0,0.2)", fontSize: "1.4rem" }}
             >
-              {level.level}
+              💶
             </div>
             <div>
-              <div className="font-game text-sm" style={{ color: "#FF5500" }}>{level.title}</div>
-              <div style={{ color: "#848484", fontSize: "0.68rem" }}>Niveau {level.level}</div>
+              <div className="font-game text-2xl" style={{ color: "#1CE400" }}>
+                {state.totalMoneyEarned}€
+              </div>
+              <div style={{ color: "#848484", fontSize: "0.68rem" }}>débloqués via rangs et hauts faits</div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="font-game text-xl" style={{ color: "#FF9500" }}>
-              {state.totalXP.toLocaleString("fr-FR")}
+          {nextRank && RANK_MONEY_REWARDS[nextRank.name] !== undefined && (
+            <div className="text-right">
+              <div className="font-game text-sm" style={{ color: "#FF9500" }}>
+                +{RANK_MONEY_REWARDS[nextRank.name]}€
+              </div>
+              <div style={{ color: "#848484", fontSize: "0.65rem" }}>prochain rang</div>
             </div>
-            <div style={{ color: "#848484", fontSize: "0.65rem" }}>XP total</div>
-          </div>
+          )}
+          {nextRank && nextRank.group === "global" && (
+            <div className="text-right">
+              <div className="font-game text-sm" style={{ color: "#FFD700" }}>🎁 MacBook</div>
+              <div style={{ color: "#848484", fontSize: "0.65rem" }}>prochain rang</div>
+            </div>
+          )}
         </div>
-        {nextLevel && (
-          <>
-            <div className="h-1.5 rounded-full overflow-hidden mb-1.5" style={{ background: "#383838" }}>
-              <div className="xp-bar-fill h-full rounded-full" style={{ width: `${lvlPct}%` }} />
-            </div>
-            <div className="flex justify-between" style={{ fontSize: "0.6rem", color: "#848484" }}>
-              <span>Niv. {level.level}</span>
-              <span>{lvlPct}%</span>
-              <span>Niv. {nextLevel.level} — {nextLevel.title}</span>
-            </div>
-          </>
-        )}
       </div>
 
       {/* Bottom stats */}

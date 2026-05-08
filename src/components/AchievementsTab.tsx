@@ -64,10 +64,6 @@ function AchievementCard({ achievement, unlocked }: { achievement: Achievement; 
         {unlocked ? achievement.description : achievement.hint}
       </div>
 
-      {/* XP */}
-      <div className="font-game text-[10px] mt-auto pt-1" style={{ color: unlocked ? "#FF9500" : "#686868" }}>
-        +{achievement.xpReward} XP
-      </div>
     </div>
   );
 }

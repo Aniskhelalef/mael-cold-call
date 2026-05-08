@@ -3,14 +3,7 @@
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/gameContext";
 import { fetchLeaderboard, LeaderboardEntry, isSupabaseConfigured } from "@/lib/supabase";
-import { getLevel } from "@/lib/gameData";
-
-function getLevelColor(lv: number): string {
-  if (lv <= 3)  return "#1CE400";
-  if (lv <= 6)  return "#5DC7E5";
-  if (lv <= 9)  return "#AE00FC";
-  return "#FF5500";
-}
+import { getRank } from "@/lib/gameData";
 
 function getInitials(name: string): string {
   return name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase();
@@ -36,7 +29,7 @@ export default function LeaderboardTab() {
   const [entries,   setEntries]   = useState<LeaderboardEntry[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
-  const [sortBy,    setSortBy]    = useState<"xp" | "rdv" | "calls" | "streak">("xp");
+  const [sortBy,    setSortBy]    = useState<"rdv" | "calls" | "streak">("rdv");
   const [refreshed, setRefreshed] = useState(0);
 
   useEffect(() => {
@@ -55,10 +48,9 @@ export default function LeaderboardTab() {
 
   const sorted = [...entries].sort((a, b) => {
     switch (sortBy) {
-      case "rdv":    return b.totalBookings - a.totalBookings;
       case "calls":  return b.totalCalls    - a.totalCalls;
       case "streak": return b.currentStreak - a.currentStreak;
-      default:       return b.totalXP       - a.totalXP;
+      default:       return b.totalBookings - a.totalBookings;
     }
   });
 
@@ -73,7 +65,7 @@ export default function LeaderboardTab() {
       ? {
           email:         myEmail,
           name:          state.playerName,
-          totalXP:       state.totalXP,
+          totalXP:       0,
           totalCalls:    state.totalCalls,
           totalBookings: state.totalBookings,
           currentStreak: state.currentStreak,
@@ -85,10 +77,9 @@ export default function LeaderboardTab() {
   const displayList = localEntry
     ? [...sorted, localEntry].sort((a, b) => {
         switch (sortBy) {
-          case "rdv":    return b.totalBookings - a.totalBookings;
           case "calls":  return b.totalCalls    - a.totalCalls;
           case "streak": return b.currentStreak - a.currentStreak;
-          default:       return b.totalXP       - a.totalXP;
+          default:       return b.totalBookings - a.totalBookings;
         }
       })
     : sorted;
@@ -98,10 +89,9 @@ export default function LeaderboardTab() {
   ) + 1;
 
   const SORT_TABS: { key: typeof sortBy; label: string }[] = [
-    { key: "xp",     label: "XP / ELO"  },
-    { key: "rdv",    label: "RDV"        },
-    { key: "calls",  label: "Calls"      },
-    { key: "streak", label: "Streak"     },
+    { key: "rdv",    label: "RDV"    },
+    { key: "calls",  label: "Calls"  },
+    { key: "streak", label: "Streak" },
   ];
 
   return (
@@ -191,8 +181,7 @@ export default function LeaderboardTab() {
           {[1, 0, 2].map((pos, col) => {
             const entry = displayList[pos];
             if (!entry) return <div key={col} />;
-            const lv = getLevel(entry.totalXP);
-            const lvColor = getLevelColor(lv.level);
+            const entryRank = getRank(entry.totalBookings);
             const isSelf = entry.email === myEmail || entry.name === state.playerName;
             const heights = ["h-24", "h-32", "h-20"];
             return (
@@ -206,29 +195,24 @@ export default function LeaderboardTab() {
                   border: `1px solid ${isSelf ? "rgba(255,85,0,0.4)" : pos === 0 ? "rgba(255,215,0,0.25)" : "#383838"}`,
                 }}
               >
-                {/* Medal */}
                 <div className="absolute top-2 left-0 right-0 text-center" style={{ fontSize: col === 1 ? "1.4rem" : "1.1rem" }}>
                   {MEDAL[pos]}
                 </div>
-                {/* Avatar */}
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center font-game text-sm mb-1"
-                  style={{ background: `${lvColor}22`, border: `2px solid ${lvColor}`, color: lvColor }}
+                  style={{ background: `${entryRank.color}22`, border: `2px solid ${entryRank.color}`, color: entryRank.color }}
                 >
                   {getInitials(entry.name)}
                 </div>
-                {/* Name */}
                 <div
                   className="font-game text-[10px] tracking-wide text-center px-1 truncate w-full"
                   style={{ color: isSelf ? "#FF5500" : "#FFFFFF" }}
                 >
                   {entry.name.split(" ")[0].toUpperCase()}
                 </div>
-                {/* XP */}
                 <div className="font-game text-[9px] mt-0.5" style={{ color: "#848484" }}>
-                  {sortBy === "xp"     ? `${entry.totalXP.toLocaleString()} XP` :
-                   sortBy === "rdv"    ? `${entry.totalBookings} RDV` :
-                   sortBy === "calls"  ? `${entry.totalCalls} calls` :
+                  {sortBy === "rdv"   ? `${entry.totalBookings} RDV` :
+                   sortBy === "calls" ? `${entry.totalCalls} calls` :
                    `${entry.currentStreak}j`}
                 </div>
               </div>
@@ -251,7 +235,7 @@ export default function LeaderboardTab() {
             gap: "8px",
           }}
         >
-          {["#", "JOUEUR", "NIVEAU", sortBy === "xp" ? "XP" : sortBy === "rdv" ? "RDV" : sortBy === "calls" ? "CALLS" : "STREAK", "RDV", "CALLS"].map((h, i) => (
+          {["#", "JOUEUR", "RANG", sortBy === "rdv" ? "RDV" : sortBy === "calls" ? "CALLS" : "STREAK", "RDV", "CALLS"].map((h, i) => (
             <div key={i} className="font-game text-[10px] tracking-widest" style={{ color: "#848484", textAlign: i > 2 ? "right" : "left" }}>
               {h}
             </div>
@@ -270,11 +254,9 @@ export default function LeaderboardTab() {
         ) : (
           displayList.map((entry, idx) => {
             const isSelf = entry.email === myEmail || entry.name === state.playerName;
-            const lv = getLevel(entry.totalXP);
-            const lvColor = getLevelColor(lv.level);
+            const entryRank = getRank(entry.totalBookings);
             const rank = idx + 1;
             const mainStat =
-              sortBy === "xp"     ? entry.totalXP.toLocaleString() :
               sortBy === "rdv"    ? entry.totalBookings :
               sortBy === "calls"  ? entry.totalCalls :
               `${entry.currentStreak}j`;
@@ -298,7 +280,7 @@ export default function LeaderboardTab() {
                 <div className="flex items-center gap-2 min-w-0">
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 font-game text-[10px]"
-                    style={{ background: `${lvColor}18`, border: `1.5px solid ${lvColor}`, color: lvColor }}
+                    style={{ background: `${entryRank.color}18`, border: `1.5px solid ${entryRank.color}`, color: entryRank.color }}
                   >
                     {getInitials(entry.name)}
                   </div>
@@ -319,13 +301,13 @@ export default function LeaderboardTab() {
                   </div>
                 </div>
 
-                {/* Level badge */}
-                <div>
-                  <span
-                    className="fi-level-badge"
-                    style={{ background: lvColor, color: "#000" }}
-                  >
-                    {lv.level}
+                {/* Rank dot */}
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ background: entryRank.color }} />
+                  <span className="font-game text-[9px]" style={{ color: entryRank.color }}>
+                    {entryRank.group === "global" ? "GE" :
+                     entryRank.group === "guardian" ? "MG" :
+                     entryRank.group === "gold" ? "GN" : "SL"}
                   </span>
                 </div>
 
@@ -351,7 +333,7 @@ export default function LeaderboardTab() {
 
       {/* ── Footer note ──────────────────────────────────────────────────── */}
       <p className="text-center" style={{ color: "#686868", fontSize: "0.65rem" }}>
-        Classement mis à jour en temps réel depuis Supabase · Tri par {sortBy === "xp" ? "XP total" : sortBy === "rdv" ? "RDV" : sortBy === "calls" ? "Calls" : "Streak"}
+        Classement mis à jour en temps réel depuis Supabase · Tri par {sortBy === "rdv" ? "RDV" : sortBy === "calls" ? "Calls" : "Streak"}
       </p>
     </div>
   );

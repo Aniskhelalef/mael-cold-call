@@ -3,7 +3,6 @@ export interface GameState {
   playerEmail: string;
   totalCalls: number;
   totalBookings: number;
-  totalXP: number;
   dailyCalls: number;
   dailyBookings: number;
   dailyEnergyUsed: number;
@@ -20,8 +19,6 @@ export interface GameState {
   sessionTargetMinutes: number;
   sessionCalls: number;
   sessionBookings: number;
-  xpBuffActive: boolean;
-  xpBuffEnd: number | null;
   weeklyCallsAtStart: number;
   weeklyBookingsAtStart: number;
   weeklyDaysActive: number;
@@ -70,12 +67,6 @@ export type GameAction =
   | { type: "IMPORT_PROSPECTS"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt">[] }
   | { type: "TICK" }
   | { type: "LOGOUT" };
-
-export interface Level {
-  level: number;
-  title: string;
-  minXP: number;
-}
 
 export interface Rank {
   name: string;

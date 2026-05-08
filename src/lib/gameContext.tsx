@@ -22,7 +22,6 @@ const defaultState: GameState = {
   playerEmail: "",
   totalCalls: 0,
   totalBookings: 0,
-  totalXP: 0,
   dailyCalls: 0,
   dailyBookings: 0,
   dailyEnergyUsed: 0,
@@ -39,8 +38,6 @@ const defaultState: GameState = {
   sessionTargetMinutes: 30,
   sessionCalls: 0,
   sessionBookings: 0,
-  xpBuffActive: false,
-  xpBuffEnd: null,
   weeklyCallsAtStart: 0,
   weeklyBookingsAtStart: 0,
   weeklyDaysActive: 0,
@@ -79,9 +76,8 @@ function saveState(state: GameState) {
   }
 }
 
-function checkAchievements(state: GameState): { newAchievements: string[]; bonusXP: number; moneyGain: number } {
+function checkAchievements(state: GameState): { newAchievements: string[]; moneyGain: number } {
   const newAchievements: string[] = [];
-  let bonusXP = 0;
 
   const weeklyCalls = state.totalCalls - state.weeklyCallsAtStart;
   const weeklyBookings = state.totalBookings - state.weeklyBookingsAtStart;
@@ -209,17 +205,15 @@ function checkAchievements(state: GameState): { newAchievements: string[]; bonus
 
     if (shouldUnlock) {
       newAchievements.push(ach.id);
-      bonusXP += ach.xpReward;
     }
   }
 
   const moneyGain = newAchievements.reduce((sum, id) => sum + (ACHIEVEMENT_MONEY_REWARDS[id] ?? 0), 0);
-  return { newAchievements, bonusXP, moneyGain };
+  return { newAchievements, moneyGain };
 }
 
-function checkWeeklyMissions(state: GameState): { newMissions: string[]; bonusXP: number } {
+function checkWeeklyMissions(state: GameState): { newMissions: string[] } {
   const newMissions: string[] = [];
-  let bonusXP = 0;
 
   const weeklyCalls = state.totalCalls - state.weeklyCallsAtStart;
   const weeklyBookings = state.totalBookings - state.weeklyBookingsAtStart;
@@ -234,11 +228,10 @@ function checkWeeklyMissions(state: GameState): { newMissions: string[]; bonusXP
 
     if (progress >= mission.target) {
       newMissions.push(mission.id);
-      bonusXP += mission.xpReward;
     }
   }
 
-  return { newMissions, bonusXP };
+  return { newMissions };
 }
 
 function performDailyReset(state: GameState, today: string): GameState {
@@ -311,11 +304,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
   const currentWeekKey = getISOWeekKey(new Date());
   const now = Date.now();
 
-  // Check if buff has expired
   let currentState = state;
-  if (state.xpBuffActive && state.xpBuffEnd && now > state.xpBuffEnd) {
-    currentState = { ...currentState, xpBuffActive: false, xpBuffEnd: null };
-  }
 
   // Daily reset check
   if (currentState.lastResetDate !== today) {
@@ -342,23 +331,18 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "LOG_SALE": {
-      let xpGain = 100;
-      if (currentState.xpBuffActive) xpGain = Math.floor(xpGain * 1.5);
-
       let newState: GameState = {
         ...currentState,
         totalSales: currentState.totalSales + 1,
         dailySales: currentState.dailySales + 1,
-        totalXP: currentState.totalXP + xpGain,
       };
 
       newState = updateStreak(newState, today);
 
-      const { newAchievements, bonusXP: achXP, moneyGain: achMoney } = checkAchievements(newState);
+      const { newAchievements, moneyGain: achMoney } = checkAchievements(newState);
       if (newAchievements.length > 0) {
         newState = {
           ...newState,
-          totalXP: newState.totalXP + achXP,
           totalMoneyEarned: newState.totalMoneyEarned + achMoney,
           unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
           pendingToasts: [...newState.pendingToasts, ...newAchievements],
@@ -383,49 +367,27 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       if (currentState.dailyEnergyUsed >= MAX_ENERGY) return currentState;
 
       const isFirstCallOfDay = currentState.dailyCalls === 0;
-      const isFirstCallEver = currentState.totalCalls === 0;
       const newEnergyUsed = Math.min(MAX_ENERGY, currentState.dailyEnergyUsed + ENERGY_PER_CALL);
       const energyFullyUsed = newEnergyUsed >= MAX_ENERGY && currentState.dailyEnergyUsed < MAX_ENERGY;
-
-      let xpGain = 10;
-      if (currentState.xpBuffActive) xpGain = Math.floor(xpGain * 1.5);
-      if (isFirstCallOfDay) xpGain += 5;
 
       let newState: GameState = {
         ...currentState,
         totalCalls: currentState.totalCalls + 1,
         dailyCalls: currentState.dailyCalls + 1,
-        totalXP: currentState.totalXP + xpGain,
         dailyEnergyUsed: newEnergyUsed,
         sessionCalls: currentState.sessionActive
           ? currentState.sessionCalls + 1
           : currentState.sessionCalls,
-        firstDayCalls: isFirstCallEver
-          ? 1
-          : currentState.firstDayCalls + (currentState.totalCalls === 0 ? 0 : 0),
       };
 
-      // no_scope eligibility: reset if calls > 5 without a booking
+      // no_scope eligibility
       if (newState.dailyCalls > 5 && newState.dailyBookings === 0) {
         newState = { ...newState, noScopeEligible: false };
       }
 
-      // Energy bonus
-      let energyBonusXP = 0;
-      let newFullEnergyCount = newState.fullEnergyCount;
+      // Energy full bonus
       if (energyFullyUsed) {
-        energyBonusXP = 50;
-        newFullEnergyCount = newState.fullEnergyCount + 1;
-        newState = {
-          ...newState,
-          totalXP: newState.totalXP + energyBonusXP,
-          fullEnergyCount: newFullEnergyCount,
-        };
-      }
-
-      // Daily goal bonus
-      if (newState.dailyCalls === 20) {
-        newState = { ...newState, totalXP: newState.totalXP + 100 };
+        newState = { ...newState, fullEnergyCount: newState.fullEnergyCount + 1 };
       }
 
       // Streak update
@@ -437,11 +399,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // Achievement check
-      const { newAchievements, bonusXP: achXP, moneyGain: achMoney } = checkAchievements(newState);
+      const { newAchievements, moneyGain: achMoney } = checkAchievements(newState);
       if (newAchievements.length > 0) {
         newState = {
           ...newState,
-          totalXP: newState.totalXP + achXP,
           totalMoneyEarned: newState.totalMoneyEarned + achMoney,
           unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
           pendingToasts: [...newState.pendingToasts, ...newAchievements],
@@ -449,11 +410,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // Weekly missions check
-      const { newMissions, bonusXP: missionXP } = checkWeeklyMissions(newState);
+      const { newMissions } = checkWeeklyMissions(newState);
       if (newMissions.length > 0) {
         newState = {
           ...newState,
-          totalXP: newState.totalXP + missionXP,
           weeklyMissionsCompleted: [...newState.weeklyMissionsCompleted, ...newMissions],
         };
       }
@@ -463,14 +423,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "LOG_BOOKING": {
       const isFirstBooking = currentState.totalBookings === 0;
-      let xpGain = 50;
-      if (currentState.xpBuffActive) xpGain = Math.floor(xpGain * 1.5);
 
       let newState: GameState = {
         ...currentState,
         totalBookings: currentState.totalBookings + 1,
         dailyBookings: currentState.dailyBookings + 1,
-        totalXP: currentState.totalXP + xpGain,
         sessionBookings: currentState.sessionActive
           ? currentState.sessionBookings + 1
           : currentState.sessionBookings,
@@ -481,11 +438,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       newState = updateStreak(newState, today);
 
       // Achievement check
-      const { newAchievements, bonusXP: achXP, moneyGain: achMoney } = checkAchievements(newState);
+      const { newAchievements, moneyGain: achMoney } = checkAchievements(newState);
       if (newAchievements.length > 0) {
         newState = {
           ...newState,
-          totalXP: newState.totalXP + achXP,
           totalMoneyEarned: newState.totalMoneyEarned + achMoney,
           unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
           pendingToasts: [...newState.pendingToasts, ...newAchievements],
@@ -493,11 +449,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       // Weekly missions
-      const { newMissions, bonusXP: missionXP } = checkWeeklyMissions(newState);
+      const { newMissions } = checkWeeklyMissions(newState);
       if (newMissions.length > 0) {
         newState = {
           ...newState,
-          totalXP: newState.totalXP + missionXP,
           weeklyMissionsCompleted: [...newState.weeklyMissionsCompleted, ...newMissions],
         };
       }
@@ -526,12 +481,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case "UNDO_CALL": {
       if (currentState.dailyCalls <= 0) return currentState;
       const newEnergy = Math.max(0, currentState.dailyEnergyUsed - ENERGY_PER_CALL);
-      const xpRefund = 10;
       return {
         ...currentState,
         totalCalls: Math.max(0, currentState.totalCalls - 1),
         dailyCalls: Math.max(0, currentState.dailyCalls - 1),
-        totalXP: Math.max(0, currentState.totalXP - xpRefund),
         dailyEnergyUsed: newEnergy,
         sessionCalls: currentState.sessionActive
           ? Math.max(0, currentState.sessionCalls - 1)
@@ -555,21 +508,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ? currentState.unlockedAchievements
         : [...currentState.unlockedAchievements, "dans_la_matrice"];
       const achUnlocked = !currentState.unlockedAchievements.includes("dans_la_matrice");
-      const achXPBonus = achUnlocked ? 20 : 0;
       const newPending = achUnlocked
         ? [...currentState.pendingToasts, "dans_la_matrice"]
         : currentState.pendingToasts;
 
-      // Activate XP buff for 30 minutes
       return {
         ...currentState,
         sessionActive: false,
         sessionStart: null,
-        xpBuffActive: true,
-        xpBuffEnd: now + 30 * 60 * 1000,
         unlockedAchievements: newUnlocked,
         pendingToasts: newPending,
-        totalXP: currentState.totalXP + achXPBonus,
       };
     }
 
@@ -629,10 +577,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "TICK": {
-      // Just triggers a re-render for timer updates
-      if (currentState.xpBuffActive && currentState.xpBuffEnd && now > currentState.xpBuffEnd) {
-        return { ...currentState, xpBuffActive: false, xpBuffEnd: null };
-      }
       return currentState;
     }
 

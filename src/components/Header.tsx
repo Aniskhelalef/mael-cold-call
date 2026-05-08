@@ -1,7 +1,7 @@
 "use client";
 
 import { useGame } from "@/lib/gameContext";
-import { getLevel, getNextLevel, getLevelProgress } from "@/lib/gameData";
+import { getRank, getNextRank } from "@/lib/gameData";
 
 interface HeaderProps {
   activeTab: string;
@@ -9,34 +9,18 @@ interface HeaderProps {
 }
 
 const TABS = [
-  { id: "home",         label: "Dashboard"   },
-  { id: "leaderboard",  label: "Classement"  },
-  { id: "achievements", label: "Hauts Faits" },
-  { id: "stats",        label: "Stats"       },
-  { id: "script",       label: "Script"      },
+  { id: "home",        label: "Dashboard"  },
+  { id: "leaderboard", label: "Classement" },
+  { id: "stats",       label: "Stats"      },
+  { id: "script",      label: "Script"     },
 ];
 
 const TAB_ICONS: Record<string, string> = {
-  home:         "⚡",
-  leaderboard:  "🏆",
-  achievements: "🎖",
-  stats:        "📊",
-  script:       "📋",
+  home:        "⚡",
+  leaderboard: "🏆",
+  stats:       "📊",
+  script:      "📋",
 };
-
-function getLevelColor(lv: number): string {
-  if (lv <= 3)  return "#1CE400";
-  if (lv <= 6)  return "#5DC7E5";
-  if (lv <= 9)  return "#AE00FC";
-  return "#FF5500";
-}
-
-function getLevelBg(lv: number): string {
-  if (lv <= 3)  return "rgba(28,228,0,0.15)";
-  if (lv <= 6)  return "rgba(93,199,229,0.15)";
-  if (lv <= 9)  return "rgba(174,0,252,0.15)";
-  return "rgba(255,85,0,0.15)";
-}
 
 function getInitials(name: string): string {
   return name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase();
@@ -51,11 +35,15 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
     }
   };
 
-  const level    = getLevel(state.totalXP);
-  const nextLevel = getNextLevel(state.totalXP);
-  const progress  = getLevelProgress(state.totalXP);
-  const lvColor   = getLevelColor(level.level);
-  const lvBg      = getLevelBg(level.level);
+  const rank      = getRank(state.totalBookings);
+  const nextRank  = getNextRank(state.totalBookings);
+  const rankPct   = nextRank
+    ? Math.round(((state.totalBookings - rank.minBookings) / (nextRank.minBookings - rank.minBookings)) * 100)
+    : 100;
+  const rankIcon  =
+    rank.group === "global"   ? "👑" :
+    rank.group === "guardian" ? "🛡" :
+    rank.group === "gold"     ? "🏅" : "🥈";
 
   return (
     <header
@@ -139,40 +127,40 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
             {/* Divider */}
             <div style={{ width: "1px", height: "20px", background: "#383838" }} className="hidden sm:block" />
 
-            {/* Avatar + name + xp */}
+            {/* Avatar + name + rank */}
             <div className="flex items-center gap-2.5">
               {/* Avatar circle */}
               <div className="relative flex-shrink-0">
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center font-game text-sm"
                   style={{
-                    background: lvBg,
-                    border: `2px solid ${lvColor}`,
-                    color:  lvColor,
+                    background: `${rank.color}20`,
+                    border: `2px solid ${rank.color}`,
+                    color:  rank.color,
                   }}
                 >
                   {getInitials(state.playerName)}
                 </div>
-                {/* Level badge */}
+                {/* Rank badge */}
                 <div
                   className="absolute -bottom-1 -right-1 fi-level-badge"
-                  style={{ background: lvColor, color: "#000" }}
+                  style={{ background: rank.color, color: "#000", fontSize: "0.6rem" }}
                 >
-                  {level.level}
+                  {rankIcon}
                 </div>
               </div>
 
-              {/* Name + XP bar */}
+              {/* Name + rank bar */}
               <div className="hidden md:block">
                 <div className="font-game text-sm text-white leading-none truncate max-w-[130px]">
                   {state.playerName}
                 </div>
                 <div className="flex items-center gap-1.5 mt-1">
                   <div className="w-20 h-1 rounded-full overflow-hidden" style={{ background: "#383838" }}>
-                    <div className="xp-bar-fill h-full rounded-full" style={{ width: `${progress}%` }} />
+                    <div className="h-full rounded-full progress-bar" style={{ width: `${rankPct}%`, background: rank.color }} />
                   </div>
-                  <span style={{ color: "#848484", fontSize: "0.58rem" }} className="font-game">
-                    {nextLevel ? `${state.totalXP} XP` : "MAX"}
+                  <span style={{ color: rank.color, fontSize: "0.58rem" }} className="font-game">
+                    {nextRank ? `${nextRank.minBookings - state.totalBookings} RDV` : "MAX"}
                   </span>
                 </div>
               </div>
