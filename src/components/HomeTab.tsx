@@ -148,10 +148,10 @@ export default function HomeTab() {
           <span style={{ opacity: 0.7, fontSize: "0.7rem", marginLeft: "8px" }}>+10 XP · -2⚡</span>
         </button>
 
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="mb-3">
           <button
             onClick={() => dispatch({ type: "LOG_BOOKING" })}
-            className="py-4 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95"
+            className="w-full py-4 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95"
             style={{ background: "rgba(28,228,0,0.1)", border: "1px solid rgba(28,228,0,0.4)", color: "#1CE400" }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.18)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(28,228,0,0.1)"; }}
@@ -159,18 +159,6 @@ export default function HomeTab() {
             <div style={{ fontSize: "1.1rem" }}>🎯</div>
             LOG RDV
             <div style={{ opacity: 0.6, fontSize: "0.68rem" }}>+50 XP</div>
-          </button>
-
-          <button
-            onClick={() => dispatch({ type: "LOG_SALE" })}
-            className="py-4 rounded-sm font-game text-sm tracking-wide transition-all duration-150 active:scale-95"
-            style={{ background: "rgba(255,149,0,0.1)", border: "1px solid rgba(255,149,0,0.4)", color: "#FF9500" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,149,0,0.18)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,149,0,0.1)"; }}
-          >
-            <div style={{ fontSize: "1.1rem" }}>💰</div>
-            VENDU
-            <div style={{ opacity: 0.6, fontSize: "0.68rem" }}>+100 XP</div>
           </button>
         </div>
 

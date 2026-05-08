@@ -50,6 +50,44 @@ export async function fetchStateFromSupabase(email?: string): Promise<{
   }
 }
 
+// ── Script votes ─────────────────────────────────────────────────────────────
+// Table: script_votes (id TEXT PK, likes INT DEFAULT 0, dislikes INT DEFAULT 0)
+
+export interface ScriptVote { id: string; likes: number; dislikes: number; }
+
+export async function fetchScriptVotes(): Promise<Record<string, ScriptVote>> {
+  if (!supabase) return {};
+  try {
+    const { data, error } = await supabase.from("script_votes").select("id, likes, dislikes");
+    if (error || !data) return {};
+    const map: Record<string, ScriptVote> = {};
+    for (const row of data as ScriptVote[]) map[row.id] = row;
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+export async function castScriptVote(id: string, type: "like" | "dislike", delta: 1 | -1): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.from("script_votes").select("likes, dislikes").eq("id", id).single();
+    const cur = (data ?? { likes: 0, dislikes: 0 }) as { likes: number; dislikes: number };
+    await supabase.from("script_votes").upsert(
+      {
+        id,
+        likes:    type === "like"    ? Math.max(0, cur.likes    + delta) : cur.likes,
+        dislikes: type === "dislike" ? Math.max(0, cur.dislikes + delta) : cur.dislikes,
+      },
+      { onConflict: "id" }
+    );
+  } catch {
+    // ignore
+  }
+}
+
+// ── Leaderboard ───────────────────────────────────────────────────────────────
+
 export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
   if (!supabase) return [];
   try {

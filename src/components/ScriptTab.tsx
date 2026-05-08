@@ -1,9 +1,112 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { fetchScriptVotes, castScriptVote, ScriptVote, isSupabaseConfigured } from "@/lib/supabase";
 
 const CARD_BG = "#1C1C1C";
 const BORDER  = "#2A2A2A";
+
+// ── Votes ─────────────────────────────────────────────────────────────────────
+
+const LS_KEY = "script_votes_local";
+
+function loadLocalVotes(): Record<string, "like" | "dislike"> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(LS_KEY) ?? "{}"); } catch { return {}; }
+}
+function saveLocalVotes(v: Record<string, "like" | "dislike">) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(LS_KEY, JSON.stringify(v));
+}
+
+function useVotes() {
+  const [votes,      setVotes]      = useState<Record<string, ScriptVote>>({});
+  const [myVotes,    setMyVotes]    = useState<Record<string, "like" | "dislike">>({});
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    setMyVotes(loadLocalVotes());
+    fetchScriptVotes().then(setVotes);
+  }, [refreshKey]);
+
+  const vote = useCallback(async (id: string, type: "like" | "dislike") => {
+    const prev = myVotes[id];
+    const newMyVotes = { ...myVotes };
+
+    if (prev === type) {
+      // Toggle off
+      delete newMyVotes[id];
+      saveLocalVotes(newMyVotes);
+      setMyVotes(newMyVotes);
+      setVotes((cur) => {
+        const base = cur[id] ?? { id, likes: 0, dislikes: 0 };
+        return { ...cur, [id]: { ...base, [type === "like" ? "likes" : "dislikes"]: Math.max(0, (base[type === "like" ? "likes" : "dislikes"]) - 1) } };
+      });
+      await castScriptVote(id, type, -1);
+    } else {
+      // Cancel previous if any
+      if (prev) {
+        setVotes((cur) => {
+          const base = cur[id] ?? { id, likes: 0, dislikes: 0 };
+          return { ...cur, [id]: { ...base, [prev === "like" ? "likes" : "dislikes"]: Math.max(0, (base[prev === "like" ? "likes" : "dislikes"]) - 1) } };
+        });
+        await castScriptVote(id, prev, -1);
+      }
+      // Add new vote
+      newMyVotes[id] = type;
+      saveLocalVotes(newMyVotes);
+      setMyVotes(newMyVotes);
+      setVotes((cur) => {
+        const base = cur[id] ?? { id, likes: 0, dislikes: 0 };
+        return { ...cur, [id]: { ...base, [type === "like" ? "likes" : "dislikes"]: (base[type === "like" ? "likes" : "dislikes"]) + 1 } };
+      });
+      await castScriptVote(id, type, 1);
+    }
+    // Re-fetch after a short delay to get server truth
+    setTimeout(() => setRefreshKey((k) => k + 1), 800);
+  }, [myVotes]);
+
+  return { votes, myVotes, vote };
+}
+
+function VoteBar({ id, votes, myVotes, vote }: {
+  id: string;
+  votes:   Record<string, ScriptVote>;
+  myVotes: Record<string, "like" | "dislike">;
+  vote:    (id: string, type: "like" | "dislike") => void;
+}) {
+  const v = votes[id] ?? { likes: 0, dislikes: 0 };
+  const my = myVotes[id];
+
+  if (!isSupabaseConfigured) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+      <button
+        onClick={(e) => { e.stopPropagation(); void vote(id, "like"); }}
+        className="flex items-center gap-1 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+        style={{
+          background: my === "like" ? "rgba(28,228,0,0.15)" : "rgba(255,255,255,0.03)",
+          border:     `1px solid ${my === "like" ? "rgba(28,228,0,0.5)" : "#2A2A2A"}`,
+          color:      my === "like" ? "#1CE400" : "#5A5A5A",
+        }}
+      >
+        👍 {v.likes > 0 ? v.likes : ""}
+      </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); void vote(id, "dislike"); }}
+        className="flex items-center gap-1 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+        style={{
+          background: my === "dislike" ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.03)",
+          border:     `1px solid ${my === "dislike" ? "rgba(239,68,68,0.45)" : "#2A2A2A"}`,
+          color:      my === "dislike" ? "#ef4444" : "#5A5A5A",
+        }}
+      >
+        👎 {v.dislikes > 0 ? v.dislikes : ""}
+      </button>
+    </div>
+  );
+}
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
@@ -100,39 +203,47 @@ function CopyBtn({ text }: { text: string }) {
 
 // ── Sections ──────────────────────────────────────────────────────────────────
 
-function ScriptSection() {
+type VoteProps = { votes: Record<string, ScriptVote>; myVotes: Record<string, "like" | "dislike">; vote: (id: string, type: "like" | "dislike") => void; };
+
+function ScriptSection({ votes, myVotes, vote }: VoteProps) {
   return (
     <div className="space-y-2">
-      {SCRIPT_STEPS.map((step, i) => (
-        <div
-          key={i}
-          className="rounded-sm p-4"
-          style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${step.color}` }}
-        >
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <span
-              className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
-              style={{ color: step.color, background: `${step.color}14` }}
-            >
-              {step.tag}
-            </span>
-            <CopyBtn text={step.text} />
-          </div>
-          <p style={{ color: "#FFFFFF", fontSize: "0.88rem", lineHeight: 1.7, margin: 0 }}>
-            {step.text}
-          </p>
-          {step.note && (
-            <p style={{ color: "#5A5A5A", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>
-              {step.note}
+      {SCRIPT_STEPS.map((step, i) => {
+        const id = `script_${i}`;
+        return (
+          <div
+            key={i}
+            className="rounded-sm p-4"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${step.color}` }}
+          >
+            <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+              <span
+                className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
+                style={{ color: step.color, background: `${step.color}14` }}
+              >
+                {step.tag}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <VoteBar id={id} votes={votes} myVotes={myVotes} vote={vote} />
+                <CopyBtn text={step.text} />
+              </div>
+            </div>
+            <p style={{ color: "#FFFFFF", fontSize: "0.88rem", lineHeight: 1.7, margin: 0 }}>
+              {step.text}
             </p>
-          )}
-        </div>
-      ))}
+            {step.note && (
+              <p style={{ color: "#5A5A5A", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>
+                {step.note}
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function ObjectionsSection() {
+function ObjectionsSection({ votes, myVotes, vote }: VoteProps) {
   const [open,   setOpen]   = useState<number | null>(null);
   const [search, setSearch] = useState("");
 
@@ -184,9 +295,12 @@ function ObjectionsSection() {
                 className="px-4 pb-4 pt-2"
                 style={{ background: "#171717", borderTop: `1px solid ${BORDER}` }}
               >
-                <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                   <span className="font-game text-[9px] tracking-widest" style={{ color: "#FF5500" }}>RÉPONSE</span>
-                  <CopyBtn text={obj.response} />
+                  <div className="flex items-center gap-1.5">
+                    <VoteBar id={`obj_${realIdx}`} votes={votes} myVotes={myVotes} vote={vote} />
+                    <CopyBtn text={obj.response} />
+                  </div>
                 </div>
                 <p style={{ color: "#D0D0D0", fontSize: "0.875rem", lineHeight: 1.75, margin: 0 }}>
                   {obj.response}
@@ -206,7 +320,7 @@ function ObjectionsSection() {
   );
 }
 
-function VariantsSection() {
+function VariantsSection({ votes, myVotes, vote }: VoteProps) {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
@@ -243,14 +357,17 @@ function VariantsSection() {
               className="px-4 pb-4 pt-2"
               style={{ background: "#171717", borderTop: `1px solid ${BORDER}` }}
             >
-              <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                 <span
                   className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm"
                   style={{ color: "#1CE400", background: "rgba(28,228,0,0.08)" }}
                 >
                   {v.profil}
                 </span>
-                <CopyBtn text={v.script} />
+                <div className="flex items-center gap-1.5">
+                  <VoteBar id={`var_${v.num}`} votes={votes} myVotes={myVotes} vote={vote} />
+                  <CopyBtn text={v.script} />
+                </div>
               </div>
               <p style={{ color: "#D0D0D0", fontSize: "0.875rem", lineHeight: 1.75, margin: 0 }}>
                 {v.script}
@@ -273,6 +390,7 @@ const SECTIONS = [
 
 export default function ScriptTab() {
   const [activeSection, setActiveSection] = useState("script");
+  const { votes, myVotes, vote } = useVotes();
 
   return (
     <div className="space-y-3 max-w-3xl mx-auto">
@@ -323,9 +441,9 @@ export default function ScriptTab() {
       </div>
 
       {/* Content */}
-      {activeSection === "script"     && <ScriptSection />}
-      {activeSection === "objections" && <ObjectionsSection />}
-      {activeSection === "variants"   && <VariantsSection />}
+      {activeSection === "script"     && <ScriptSection     votes={votes} myVotes={myVotes} vote={vote} />}
+      {activeSection === "objections" && <ObjectionsSection votes={votes} myVotes={myVotes} vote={vote} />}
+      {activeSection === "variants"   && <VariantsSection   votes={votes} myVotes={myVotes} vote={vote} />}
     </div>
   );
 }
