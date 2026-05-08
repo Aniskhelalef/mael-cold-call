@@ -10,11 +10,11 @@ const config: Config = {
     extend: {
       colors: {
         game: {
-          bg: "#0c0e1a",
-          card: "#141628",
-          "card-hover": "#1a1c34",
-          border: "#1e2040",
-          "border-light": "#2a2d55",
+          bg: "#0f1117",
+          card: "#1a1d2e",
+          "card-hover": "#20243a",
+          border: "#272d4a",
+          "border-light": "#343c5e",
         },
       },
       fontFamily: {

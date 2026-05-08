@@ -17,6 +17,7 @@ const ENERGY_PER_CALL = 2;
 
 const defaultState: GameState = {
   playerName: "",
+  playerEmail: "",
   totalCalls: 0,
   totalBookings: 0,
   totalXP: 0,
@@ -312,6 +313,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const newState: GameState = {
         ...currentState,
         playerName: action.name,
+        playerEmail: action.email,
         weeklyKey: currentWeekKey,
         weeklyCallsAtStart: 0,
         weeklyBookingsAtStart: 0,

@@ -1,5 +1,6 @@
 export interface GameState {
   playerName: string;
+  playerEmail: string;
   totalCalls: number;
   totalBookings: number;
   totalXP: number;
@@ -33,7 +34,7 @@ export interface GameState {
 }
 
 export type GameAction =
-  | { type: "SETUP_PLAYER"; name: string }
+  | { type: "SETUP_PLAYER"; name: string; email: string }
   | { type: "LOG_CALL" }
   | { type: "LOG_BOOKING" }
   | { type: "UNDO_CALL" }

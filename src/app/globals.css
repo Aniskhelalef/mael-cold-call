@@ -5,10 +5,10 @@
 @tailwind utilities;
 
 :root {
-  --game-bg: #0c0e1a;
-  --game-card: #141628;
-  --game-border: #1e2040;
-  --game-border-light: #2a2d55;
+  --game-bg: #0f1117;
+  --game-card: #1a1d2e;
+  --game-border: #272d4a;
+  --game-border-light: #343c5e;
 }
 
 * {
@@ -57,17 +57,17 @@ body {
 }
 
 .bg-tier-bronze {
-  background-color: #211000;
+  background-color: #2a1600;
   border-color: #cd7f32;
 }
 
 .bg-tier-silver {
-  background-color: #18182e;
+  background-color: #1c1e38;
   border-color: #808090;
 }
 
 .bg-tier-gold {
-  background-color: #211900;
+  background-color: #2a2000;
   border-color: #ffd700;
 }
 

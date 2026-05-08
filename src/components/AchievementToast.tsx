@@ -8,25 +8,25 @@ function getTierStyle(tier: string) {
   switch (tier) {
     case "gold":
       return {
-        bg: "rgba(26,20,0,0.97)",
+        bg: "rgba(44,32,0,0.98)",
         border: "#ffd700",
         glow: "0 0 20px rgba(255,215,0,0.5), 0 0 40px rgba(255,215,0,0.2)",
         titleColor: "#ffd700",
         label: "OR",
-        labelBg: "rgba(255,215,0,0.15)",
+        labelBg: "rgba(255,215,0,0.18)",
       };
     case "silver":
       return {
-        bg: "rgba(14,14,24,0.97)",
-        border: "#808090",
-        glow: "0 0 15px rgba(200,208,224,0.3), 0 0 30px rgba(200,208,224,0.1)",
+        bg: "rgba(26,28,50,0.98)",
+        border: "#9098aa",
+        glow: "0 0 15px rgba(200,208,224,0.35), 0 0 30px rgba(200,208,224,0.12)",
         titleColor: "#c8d0e0",
         label: "ARGENT",
-        labelBg: "rgba(200,208,224,0.1)",
+        labelBg: "rgba(200,208,224,0.12)",
       };
     default:
       return {
-        bg: "rgba(26,13,0,0.97)",
+        bg: "rgba(44,22,0,0.98)",
         border: "#cd7f32",
         glow: "0 0 20px rgba(205,127,50,0.4), 0 0 40px rgba(205,127,50,0.15)",
         titleColor: "#cd7f32",

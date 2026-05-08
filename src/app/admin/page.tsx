@@ -300,6 +300,11 @@ function AdminDashboard({
               <span style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}>
                 {state.playerName || "Mael"}
               </span>
+              {state.playerEmail && (
+                <span style={{ fontSize: "0.75rem", color: "#60a5fa" }}>
+                  {state.playerEmail}
+                </span>
+              )}
               <span style={{
                 fontSize: "0.7rem", padding: "0.15rem 0.6rem", borderRadius: "9999px",
                 color: rank.color, background: `${rank.color}22`, border: `1px solid ${rank.color}44`,

@@ -10,11 +10,11 @@ const CATEGORIES = ["Tous", "Premiers Pas", "Calls", "Bookings", "Streaks", "Én
 function getTierStyle(tier: string): { color: string; borderColor: string; bg: string; label: string; glowClass: string } {
   switch (tier) {
     case "gold":
-      return { color: "#ffd700", borderColor: "#ffd700", bg: "rgba(26,20,0,0.9)", label: "OR", glowClass: "glow-gold" };
+      return { color: "#ffd700", borderColor: "#ffd700", bg: "rgba(42,32,0,0.95)", label: "OR", glowClass: "glow-gold" };
     case "silver":
-      return { color: "#c8d0e0", borderColor: "#808090", bg: "rgba(20,20,32,0.9)", label: "ARGENT", glowClass: "glow-silver" };
+      return { color: "#c8d0e0", borderColor: "#808090", bg: "rgba(28,30,56,0.95)", label: "ARGENT", glowClass: "glow-silver" };
     default:
-      return { color: "#cd7f32", borderColor: "#cd7f32", bg: "rgba(26,13,0,0.9)", label: "BRONZE", glowClass: "glow-bronze" };
+      return { color: "#cd7f32", borderColor: "#cd7f32", bg: "rgba(42,22,0,0.95)", label: "BRONZE", glowClass: "glow-bronze" };
   }
 }
 
@@ -81,7 +81,7 @@ function AchievementCard({ achievement, unlocked }: AchievementCardProps) {
     <div
       className="achievement-card rounded-xl border p-4 relative overflow-hidden opacity-50"
       style={{
-        background: "rgba(10,10,18,0.8)",
+        background: "rgba(22,24,40,0.9)",
         borderColor: tierStyle.borderColor + "30",
         borderStyle: "dashed"
       }}
