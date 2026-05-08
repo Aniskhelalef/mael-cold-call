@@ -272,15 +272,26 @@ export default function HomeTab() {
                       {STATUS_LABEL[currentProspect.status] ?? currentProspect.status}
                     </span>
                     {callableProspects.length > 1 && callStage === "idle" && (
-                      <button
-                        onClick={() => setProspectIdx((i) => i + 1)}
-                        className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
-                        style={{ color: "#848484", border: "1px solid #383838" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
-                      >
-                        →
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setProspectIdx((i) => (i - 1 + callableProspects.length) % callableProspects.length)}
+                          className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
+                          style={{ color: "#848484", border: "1px solid #383838" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                        >
+                          ←
+                        </button>
+                        <button
+                          onClick={() => setProspectIdx((i) => i + 1)}
+                          className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
+                          style={{ color: "#848484", border: "1px solid #383838" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                        >
+                          →
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
