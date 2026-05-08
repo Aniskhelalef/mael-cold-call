@@ -71,7 +71,8 @@ export type GameAction =
   | { type: "DELETE_PROSPECT"; id: string }
   | { type: "IMPORT_PROSPECTS"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt">[] }
   | { type: "TICK" }
-  | { type: "LOGOUT" };
+  | { type: "LOGOUT" }
+  | { type: "RESET_STATS" };
 
 export interface Rank {
   name: string;

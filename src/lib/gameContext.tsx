@@ -641,6 +641,17 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...currentState, prospects: [...(currentState.prospects ?? []), ...newProspects] };
     }
 
+    case "RESET_STATS": {
+      return {
+        ...defaultState,
+        playerName:    currentState.playerName,
+        playerEmail:   currentState.playerEmail,
+        prospects:     currentState.prospects,
+        weeklyKey:     currentWeekKey,
+        lastResetDate: today,
+      };
+    }
+
     case "LOGOUT": {
       return { ...defaultState };
     }
