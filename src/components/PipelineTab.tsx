@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useGame } from "@/lib/gameContext";
 import { Prospect, ProspectStatus } from "@/lib/types";
 
@@ -28,6 +28,131 @@ function daysAgo(iso: string) {
   if (diff === 0) return "aujourd'hui";
   if (diff === 1) return "hier";
   return `il y a ${diff}j`;
+}
+
+// ─── CSV Import ────────────────────────────────────────────────────────────────
+
+type CsvProspect = Omit<Prospect, "id" | "createdAt" | "updatedAt">;
+
+function normalizeHeader(h: string) {
+  return h.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+}
+
+function parseCSV(text: string): string[][] {
+  const firstLine = text.split(/\r?\n/)[0] ?? "";
+  const sep = firstLine.split(";").length > firstLine.split(",").length ? ";" : ",";
+  const rows: string[][] = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const row: string[] = [];
+    let field = "";
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') {
+        if (inQ && line[i + 1] === '"') { field += '"'; i++; }
+        else inQ = !inQ;
+      } else if (line[i] === sep && !inQ) {
+        row.push(field.trim());
+        field = "";
+      } else {
+        field += line[i];
+      }
+    }
+    row.push(field.trim());
+    rows.push(row);
+  }
+  return rows;
+}
+
+function detectColumns(headers: string[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  const rules: [string, string[]][] = [
+    ["name",       ["nom", "name", "contact", "prenom", "client"]],
+    ["ville",      ["ville", "city", "localite", "commune", "secteur"]],
+    ["specialite", ["specialite", "profession", "metier", "type", "activite"]],
+    ["phone",      ["telephone", "tel", "phone", "numero", "mobile", "portable", "gsm"]],
+    ["notes",      ["notes", "note", "commentaire", "remarque", "info"]],
+  ];
+  headers.forEach((h, i) => {
+    const n = normalizeHeader(h);
+    for (const [key, candidates] of rules) {
+      if (map[key] === undefined && candidates.some((c) => n.includes(c))) {
+        map[key] = i;
+      }
+    }
+  });
+  return map;
+}
+
+function matchSpecialite(raw: string): string {
+  const n = (raw ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (n.includes("osteo")) return "Ostéopathe";
+  if (n.includes("kine")) return "Kinésithérapeute";
+  if (n.includes("psycho")) return "Psychologue";
+  if (n.includes("hypno")) return "Hypnothérapeute";
+  if (n.includes("sophro")) return "Sophrologue";
+  if (n.includes("dent")) return "Dentiste";
+  if (n.includes("medecin") || n.includes("generaliste") || n.includes("gp")) return "Médecin généraliste";
+  if (n.includes("infirm")) return "Infirmier(e)";
+  return raw.trim() || "Autre";
+}
+
+function parseProspects(text: string): { data: CsvProspect[]; error: string | null } {
+  const rows = parseCSV(text);
+  if (rows.length < 2) return { data: [], error: "Fichier vide ou invalide" };
+  const cols = detectColumns(rows[0]);
+  if (cols.name === undefined) {
+    return { data: [], error: `Colonne «nom» introuvable. Colonnes détectées: ${rows[0].join(", ")}` };
+  }
+  const data: CsvProspect[] = rows.slice(1)
+    .filter((r) => r[cols.name]?.trim())
+    .map((r) => ({
+      name: r[cols.name] ?? "",
+      ville: cols.ville !== undefined ? (r[cols.ville] ?? "") : "",
+      specialite: matchSpecialite(cols.specialite !== undefined ? (r[cols.specialite] ?? "") : ""),
+      phone: cols.phone !== undefined ? (r[cols.phone] ?? "") : "",
+      notes: cols.notes !== undefined ? (r[cols.notes] ?? "") : "",
+      status: "a_appeler" as ProspectStatus,
+    }));
+  return { data, error: null };
+}
+
+type CsvPreview = { count: number; sample: string[]; data: CsvProspect[] };
+
+function CsvImportButton({ onPreview }: { onPreview: (p: CsvPreview) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const { data, error: err } = parseProspects(text);
+      if (err) { setError(err); }
+      else { onPreview({ count: data.length, sample: data.slice(0, 4).map((d) => d.name), data }); setError(null); }
+    };
+    reader.readAsText(file, "UTF-8");
+    e.target.value = "";
+  };
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: "none" }} onChange={handleFile} />
+      <button
+        onClick={() => { setError(null); fileRef.current?.click(); }}
+        className="px-4 py-2 rounded-xl font-game text-sm tracking-wider transition-all active:scale-95"
+        style={{ background: "transparent", border: "1px solid #343c5e", color: "#64748b" }}
+      >
+        📥 CSV
+      </button>
+      {error && (
+        <p style={{ color: "#f87171", fontSize: "0.72rem" }}>{error}</p>
+      )}
+    </div>
+  );
 }
 
 // ─── Add form ──────────────────────────────────────────────────────────────────
@@ -421,9 +546,10 @@ function PipelineColumn({
 // ─── Main Tab ──────────────────────────────────────────────────────────────────
 
 export default function PipelineTab() {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
   const [showAdd, setShowAdd] = useState(false);
   const [showLost, setShowLost] = useState(false);
+  const [csvPreview, setCsvPreview] = useState<CsvPreview | null>(null);
 
   const prospects = state.prospects ?? [];
   const active = prospects.filter((p) => p.status !== "perdu");
@@ -443,17 +569,20 @@ export default function PipelineTab() {
               {lost.length > 0 && ` · ${lost.length} perdu${lost.length > 1 ? "s" : ""}`}
             </p>
           </div>
-          <button
-            onClick={() => setShowAdd(!showAdd)}
-            className="px-4 py-2 rounded-xl font-game text-sm tracking-wider transition-all active:scale-95"
-            style={{
-              background: showAdd ? "transparent" : "linear-gradient(135deg, #1d4ed8, #2563eb)",
-              border: "1px solid #3b82f6",
-              color: showAdd ? "#64748b" : "#fff",
-            }}
-          >
-            {showAdd ? "ANNULER" : "＋ PROSPECT"}
-          </button>
+          <div className="flex items-center gap-2">
+            <CsvImportButton onPreview={(p) => { setCsvPreview(p); setShowAdd(false); }} />
+            <button
+              onClick={() => setShowAdd(!showAdd)}
+              className="px-4 py-2 rounded-xl font-game text-sm tracking-wider transition-all active:scale-95"
+              style={{
+                background: showAdd ? "transparent" : "linear-gradient(135deg, #1d4ed8, #2563eb)",
+                border: "1px solid #3b82f6",
+                color: showAdd ? "#64748b" : "#fff",
+              }}
+            >
+              {showAdd ? "ANNULER" : "＋ PROSPECT"}
+            </button>
+          </div>
         </div>
 
         {/* Stage totals */}
@@ -473,6 +602,40 @@ export default function PipelineTab() {
           })}
         </div>
       </div>
+
+      {/* CSV preview */}
+      {csvPreview && (
+        <div
+          className="rounded-xl border p-4"
+          style={{ background: "rgba(14,26,17,0.98)", borderColor: "#22c55e40" }}
+        >
+          <div className="font-game text-xs tracking-widest text-green-400 mb-2">
+            ✅ {csvPreview.count} PROSPECT{csvPreview.count > 1 ? "S" : ""} DÉTECTÉ{csvPreview.count > 1 ? "S" : ""}
+          </div>
+          <p style={{ color: "#94a3b8", fontSize: "0.8rem", marginBottom: "0.75rem" }}>
+            {csvPreview.sample.join(", ")}{csvPreview.count > 4 ? ` … +${csvPreview.count - 4} autres` : ""}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                dispatch({ type: "IMPORT_PROSPECTS", data: csvPreview.data });
+                setCsvPreview(null);
+              }}
+              className="flex-1 py-2 rounded-lg font-game text-sm tracking-wider transition-all active:scale-95"
+              style={{ background: "linear-gradient(135deg, #166534, #15803d)", border: "1px solid #22c55e", color: "#fff" }}
+            >
+              📥 IMPORTER {csvPreview.count} PROSPECTS
+            </button>
+            <button
+              onClick={() => setCsvPreview(null)}
+              className="px-4 py-2 rounded-lg font-game text-sm transition-all"
+              style={{ background: "transparent", border: "1px solid #343c5e", color: "#64748b" }}
+            >
+              ANNULER
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add form */}
       {showAdd && <AddProspectForm onClose={() => setShowAdd(false)} />}

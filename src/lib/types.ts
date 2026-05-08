@@ -64,6 +64,7 @@ export type GameAction =
   | { type: "ADD_PROSPECT"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt"> }
   | { type: "UPDATE_PROSPECT"; id: string; changes: Partial<Pick<Prospect, "status" | "notes">> }
   | { type: "DELETE_PROSPECT"; id: string }
+  | { type: "IMPORT_PROSPECTS"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt">[] }
   | { type: "TICK" }
   | { type: "LOGOUT" };
 

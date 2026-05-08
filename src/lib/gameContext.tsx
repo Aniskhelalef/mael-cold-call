@@ -591,6 +591,18 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "IMPORT_PROSPECTS": {
+      const importNow = new Date().toISOString();
+      const base = Date.now();
+      const newProspects = action.data.map((d, i) => ({
+        ...d,
+        id: (base + i).toString(36) + Math.random().toString(36).slice(2, 7),
+        createdAt: importNow,
+        updatedAt: importNow,
+      }));
+      return { ...currentState, prospects: [...(currentState.prospects ?? []), ...newProspects] };
+    }
+
     case "LOGOUT": {
       return { ...defaultState };
     }
