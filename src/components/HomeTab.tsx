@@ -713,7 +713,7 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
               </div>
             )}
 
-            {/* Cancel + undo */}
+            {/* Cancel flow */}
             <div className="flex items-center justify-between mt-2">
               {callStage !== "idle" ? (
                 <button onClick={resetCallFlow}
@@ -724,18 +724,7 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
                 >
                   ← annuler
                 </button>
-              ) : (
-                <button
-                  onClick={() => dispatch({ type: "UNDO_CALL" })}
-                  disabled={state.dailyCalls === 0}
-                  className="text-xs transition-colors py-1 disabled:opacity-20 disabled:cursor-not-allowed"
-                  style={{ color: "#848484" }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#C0C0C0"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#848484"; }}
-                >
-                  ↩ Annuler le dernier call
-                </button>
-              )}
+              ) : <span />}
               <span style={{ color: "#484848", fontSize: "0.65rem" }}>
                 {callableProspects.length} prospect{callableProspects.length !== 1 ? "s" : ""} en attente
               </span>
