@@ -86,6 +86,24 @@ export async function castScriptVote(id: string, type: "like" | "dislike", delta
   }
 }
 
+// ── All users (admin) ────────────────────────────────────────────────────────
+
+export async function fetchAllStates(): Promise<{ email: string; state: GameState; syncedAt: string }[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("game_state")
+      .select("id, data, updated_at")
+      .order("updated_at", { ascending: false });
+    if (error || !data) return [];
+    return (data as { id: string; data: GameState; updated_at: string }[])
+      .filter((row) => row.data?.playerName)
+      .map((row) => ({ email: row.id, state: row.data as GameState, syncedAt: row.updated_at }));
+  } catch {
+    return [];
+  }
+}
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 
 export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {

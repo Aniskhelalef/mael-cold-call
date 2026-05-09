@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { GameState } from "@/lib/types";
 import { ACHIEVEMENTS, RANKS } from "@/lib/gameData";
-import { fetchStateFromSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import { fetchAllStates, isSupabaseConfigured } from "@/lib/supabase";
+import { Prospect, ProspectStatus } from "@/lib/types";
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "coldcall2024";
 
@@ -251,9 +252,9 @@ function StatCard({ title, icon, rows }: {
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
 
 function AdminDashboard({
-  state, syncedAt, onRefresh, loading,
+  state, syncedAt, onRefresh, loading, hideHeader = false,
 }: {
-  state: GameState; syncedAt: string | null; onRefresh: () => void; loading: boolean;
+  state: GameState; syncedAt: string | null; onRefresh: () => void; loading: boolean; hideHeader?: boolean;
 }) {
   const [, forceUpdate] = useState(0);
   useEffect(() => {
@@ -274,61 +275,37 @@ function AdminDashboard({
   const unlocked = ACHIEVEMENTS.filter((a) => state.unlockedAchievements.includes(a.id));
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0f1117" }}>
-      {/* ── Header ── */}
-      <div style={{ background: "#1a1b26", borderBottom: "1px solid #2a2b3d", position: "sticky", top: 0, zIndex: 20 }}>
-        <div style={{ maxWidth: "72rem", margin: "0 auto", padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "1.1rem" }}>👑</span>
-              <span style={{ fontSize: "0.65rem", color: "#6b7280", letterSpacing: "0.15em" }}>COLD CALL OF DUTY — ADMIN</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.25rem", flexWrap: "wrap" }}>
-              <span style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}>
-                {state.playerName || "Mael"}
-              </span>
-              {state.playerEmail && (
-                <span style={{ fontSize: "0.75rem", color: "#60a5fa" }}>
-                  {state.playerEmail}
-                </span>
-              )}
-              <span style={{
-                fontSize: "0.7rem", padding: "0.15rem 0.6rem", borderRadius: "9999px",
-                color: rank.color, background: `${rank.color}22`, border: `1px solid ${rank.color}44`,
-                fontFamily: "Rajdhani, sans-serif", fontWeight: 600,
-              }}>
-                {rank.name}
-              </span>
-            </div>
+    <div>
+      {/* ── Player summary banner (when not hidden) ── */}
+      {!hideHeader && (
+        <div style={{ background: "#1a1b26", borderBottom: "1px solid #2a2b3d", padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <span style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}>
+              {state.playerName}
+            </span>
+            {state.playerEmail && <span style={{ fontSize: "0.75rem", color: "#60a5fa" }}>{state.playerEmail}</span>}
+            <span style={{ fontSize: "0.7rem", padding: "0.15rem 0.6rem", borderRadius: "9999px", color: rank.color, background: `${rank.color}22`, border: `1px solid ${rank.color}44`, fontFamily: "Rajdhani, sans-serif", fontWeight: 600 }}>
+              {rank.name}
+            </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", justifyContent: "flex-end" }}>
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e", display: "inline-block", animation: "pulse 2s infinite" }} />
-                <span style={{ fontSize: "0.7rem", color: "#22c55e", letterSpacing: "0.1em" }}>LIVE</span>
-              </div>
-              {syncDate && (
-                <div style={{ fontSize: "0.7rem", color: "#4b5563" }}>{timeAgo(syncDate)}</div>
-              )}
-            </div>
-            <button
-              onClick={onRefresh}
-              disabled={loading}
-              style={{
-                padding: "0.4rem 0.875rem", borderRadius: "0.5rem",
-                background: "transparent", border: "1px solid #374151",
-                color: loading ? "#4b5563" : "#9ca3af",
-                fontSize: "0.75rem", cursor: loading ? "not-allowed" : "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {loading ? "..." : "🔄 Sync"}
-            </button>
-          </div>
+          {syncDate && <div style={{ fontSize: "0.7rem", color: "#4b5563" }}>{timeAgo(syncDate)}</div>}
         </div>
-      </div>
+      )}
 
-      <div style={{ maxWidth: "72rem", margin: "0 auto", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      {/* Player name + rank inline when header is hidden */}
+      {hideHeader && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.25rem" }}>
+          <span style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}>
+            {state.playerName}
+          </span>
+          <span style={{ fontSize: "0.7rem", padding: "0.15rem 0.6rem", borderRadius: "9999px", color: rank.color, background: `${rank.color}22`, border: `1px solid ${rank.color}44`, fontFamily: "Rajdhani, sans-serif", fontWeight: 600 }}>
+            {rank.name}
+          </span>
+          {syncDate && <span style={{ fontSize: "0.7rem", color: "#4b5563" }}>{timeAgo(syncDate)}</span>}
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
         {/* ── Stat Cards ── */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
           <StatCard title="AUJOURD'HUI" icon="📅" rows={[
@@ -497,14 +474,148 @@ function AdminDashboard({
   );
 }
 
+// ─── Status config ─────────────────────────────────────────────────────────────
+
+const STATUS_LABELS: Record<ProspectStatus, { label: string; color: string }> = {
+  a_appeler:      { label: "—",              color: "#848484" },
+  rappel:         { label: "Relance",        color: "#f97316" },
+  rdv:            { label: "RDV Booké",      color: "#22c55e" },
+  demo:           { label: "Site montré",    color: "#8b5cf6" },
+  vente_en_cours: { label: "Vente en cours", color: "#f59e0b" },
+  vendu:          { label: "Vendu",          color: "#1CE400" },
+  perdu:          { label: "No close",       color: "#ef4444" },
+};
+
+// ─── Pipeline View ─────────────────────────────────────────────────────────────
+
+function PipelineView({ prospects }: { prospects: Prospect[] }) {
+  const [search, setSearch] = useState("");
+
+  const filtered = prospects.filter((p) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return p.name.toLowerCase().includes(q) || p.phone.includes(q) || (p.email ?? "").toLowerCase().includes(q);
+  });
+
+  const total   = prospects.length;
+  const rdv     = prospects.filter((p) => p.status === "rdv" || p.status === "demo" || p.status === "vente_en_cours" || p.status === "vendu").length;
+  const relance = prospects.filter((p) => p.status === "rappel").length;
+  const vendu   = prospects.filter((p) => p.status === "vendu").length;
+
+  return (
+    <div style={{ background: "#1a1b26", border: "1px solid #2a2b3d", borderRadius: "0.75rem", overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #2a2b3d" }}>
+        <div style={{ fontSize: "0.65rem", color: "#4b5563", letterSpacing: "0.15em", marginBottom: "0.75rem" }}>
+          👥 PIPELINE — {total} LEADS
+        </div>
+        <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+          {[
+            { label: "Total",    value: total,   color: "#e2e8f0" },
+            { label: "RDV+",     value: rdv,     color: "#22c55e" },
+            { label: "Relances", value: relance, color: "#f97316" },
+            { label: "Vendus",   value: vendu,   color: "#1CE400" },
+          ].map((kpi) => (
+            <div key={kpi.label}>
+              <div style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.5rem", fontWeight: 700, color: kpi.color, lineHeight: 1 }}>
+                {kpi.value}
+              </div>
+              <div style={{ fontSize: "0.65rem", color: "#4b5563", marginTop: "0.15rem" }}>{kpi.label}</div>
+            </div>
+          ))}
+        </div>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher un lead…"
+          style={{
+            width: "100%", boxSizing: "border-box", padding: "0.5rem 0.875rem",
+            background: "#0f1117", border: "1px solid #2a2b3d", borderRadius: "0.375rem",
+            color: "#e2e8f0", fontSize: "0.8rem", outline: "none",
+          }}
+        />
+      </div>
+
+      {/* Table */}
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "#111827" }}>
+              {["NOM", "TÉL", "STATUT", "RÉPONSE", "1er CONTACT", "FICHE", "COMMENTAIRE"].map((h) => (
+                <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "0.6rem", color: "#4b5563", letterSpacing: "0.1em", fontFamily: "Rajdhani, sans-serif", fontWeight: 700, whiteSpace: "nowrap", borderBottom: "1px solid #2a2b3d" }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ padding: "2rem", textAlign: "center", color: "#4b5563", fontSize: "0.875rem" }}>
+                  Aucun lead
+                </td>
+              </tr>
+            ) : (
+              filtered.map((p, i) => {
+                const sc = STATUS_LABELS[p.status] ?? STATUS_LABELS.a_appeler;
+                return (
+                  <tr key={p.id} style={{ borderBottom: "1px solid #1f2937", background: i % 2 === 0 ? "#1a1b26" : "#151621" }}>
+                    <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
+                      <span style={{ color: "#e2e8f0", fontSize: "0.82rem", fontWeight: 600 }}>{p.name}</span>
+                    </td>
+                    <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
+                      <a href={`tel:${p.phone.replace(/\s/g, "")}`} style={{ color: "#60a5fa", fontSize: "0.78rem", textDecoration: "none", fontFamily: "monospace" }}>
+                        {p.phone}
+                      </a>
+                    </td>
+                    <td style={{ padding: "8px 12px" }}>
+                      <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "2px 8px", borderRadius: 3, background: sc.color + "22", color: sc.color }}>
+                        {sc.label}
+                      </span>
+                    </td>
+                    <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                      <span style={{
+                        fontSize: "0.7rem", fontWeight: 700,
+                        color: p.reponse === "Oui" ? "#22c55e" : p.reponse === "Non" ? "#ef4444" : "#374151",
+                      }}>
+                        {p.reponse ?? "—"}
+                      </span>
+                    </td>
+                    <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                      {p.premierContact
+                        ? new Date(p.premierContact + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+                        : "—"}
+                    </td>
+                    <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                      {p.googleMapsUrl ? (
+                        <a href={p.googleMapsUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#60a5fa", fontSize: "0.72rem", textDecoration: "none" }}>
+                          Maps ↗
+                        </a>
+                      ) : <span style={{ color: "#374151", fontSize: "0.72rem" }}>—</span>}
+                    </td>
+                    <td style={{ padding: "8px 12px", color: "#6b7280", fontSize: "0.75rem", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {p.notes || "—"}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page Export ───────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  const [syncedAt, setSyncedAt] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [authenticated,  setAuthenticated]  = useState(false);
+  const [checkingAuth,   setCheckingAuth]   = useState(true);
+  const [allUsers,       setAllUsers]       = useState<{ email: string; state: GameState; syncedAt: string }[]>([]);
+  const [selectedEmail,  setSelectedEmail]  = useState<string | null>(null);
+  const [loading,        setLoading]        = useState(false);
+  const [activeTab,      setActiveTab]      = useState<"stats" | "pipeline">("stats");
 
   useEffect(() => {
     if (sessionStorage.getItem("admin_auth") === "true") setAuthenticated(true);
@@ -514,15 +625,13 @@ export default function AdminPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await fetchStateFromSupabase();
-      if (result) {
-        setGameState(result.state);
-        setSyncedAt(result.syncedAt);
-      }
+      const users = await fetchAllStates();
+      setAllUsers(users);
+      if (users.length > 0 && !selectedEmail) setSelectedEmail(users[0].email);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedEmail]);
 
   useEffect(() => {
     if (!authenticated || !isSupabaseConfigured) return;
@@ -535,22 +644,97 @@ export default function AdminPage() {
   if (!authenticated) return <PasswordGate onAuth={() => setAuthenticated(true)} />;
   if (!isSupabaseConfigured) return <SetupInstructions />;
 
-  if (!gameState) {
+  const selected = allUsers.find((u) => u.email === selectedEmail) ?? null;
+
+  if (!selected && !loading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f1117" }}>
         {loading ? (
-          <div style={{ color: "#6b7280" }}>Chargement des données...</div>
+          <div style={{ color: "#6b7280" }}>Chargement…</div>
         ) : (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ color: "#9ca3af", marginBottom: "0.5rem" }}>Aucune donnée trouvée</div>
-            <div style={{ color: "#4b5563", fontSize: "0.875rem" }}>
-              Mael doit d&apos;abord utiliser l&apos;app pour synchroniser.
-            </div>
-          </div>
+          <div style={{ textAlign: "center", color: "#6b7280" }}>Aucune donnée — les commerciaux doivent d&apos;abord utiliser l&apos;app.</div>
         )}
       </div>
     );
   }
 
-  return <AdminDashboard state={gameState} syncedAt={syncedAt} onRefresh={fetchData} loading={loading} />;
+  return (
+    <div style={{ minHeight: "100vh", background: "#0f1117" }}>
+      {/* ── Top bar ── */}
+      <div style={{ background: "#1a1b26", borderBottom: "1px solid #2a2b3d", position: "sticky", top: 0, zIndex: 20 }}>
+        <div style={{ maxWidth: "72rem", margin: "0 auto", padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span>👑</span>
+            <span style={{ fontSize: "0.65rem", color: "#6b7280", letterSpacing: "0.15em" }}>COLD CALL OF DUTY — ADMIN</span>
+          </div>
+
+          {/* User selector */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <select
+              value={selectedEmail ?? ""}
+              onChange={(e) => { setSelectedEmail(e.target.value); setActiveTab("stats"); }}
+              style={{
+                background: "#0f1117", border: "1px solid #2a2b3d", borderRadius: "0.5rem",
+                color: "#e2e8f0", padding: "0.4rem 0.75rem", fontSize: "0.85rem",
+                outline: "none", cursor: "pointer", fontFamily: "Rajdhani, sans-serif",
+              }}
+            >
+              {allUsers.map((u) => (
+                <option key={u.email} value={u.email}>{u.state.playerName} — {u.email}</option>
+              ))}
+            </select>
+            <button
+              onClick={fetchData}
+              disabled={loading}
+              style={{
+                padding: "0.4rem 0.875rem", borderRadius: "0.5rem",
+                background: "transparent", border: "1px solid #374151",
+                color: loading ? "#4b5563" : "#9ca3af",
+                fontSize: "0.75rem", cursor: loading ? "not-allowed" : "pointer",
+              }}
+            >
+              {loading ? "..." : "🔄 Sync"}
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        {selected && (
+          <div style={{ maxWidth: "72rem", margin: "0 auto", padding: "0 1.5rem", display: "flex", gap: "0" }}>
+            {(["stats", "pipeline"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: "0.6rem 1.25rem", fontSize: "0.72rem", fontFamily: "Rajdhani, sans-serif",
+                  fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer",
+                  background: "none", border: "none",
+                  borderBottom: activeTab === tab ? "2px solid #FF5500" : "2px solid transparent",
+                  color: activeTab === tab ? "#FF5500" : "#6b7280",
+                }}
+              >
+                {tab === "stats" ? "📊 STATS" : "👥 PIPELINE"}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selected && (
+        <div style={{ maxWidth: "72rem", margin: "0 auto", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          {activeTab === "stats" ? (
+            <AdminDashboard
+              state={selected.state}
+              syncedAt={selected.syncedAt}
+              onRefresh={fetchData}
+              loading={loading}
+              hideHeader
+            />
+          ) : (
+            <PipelineView prospects={selected.state.prospects ?? []} />
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
