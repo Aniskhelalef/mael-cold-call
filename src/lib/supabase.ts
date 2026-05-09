@@ -98,6 +98,34 @@ export async function deleteAccount(email: string): Promise<boolean> {
   }
 }
 
+// ── Reset user state (admin) — wipes stats + pipeline, keeps account ─────────
+
+export async function resetUserState(email: string, name: string): Promise<boolean> {
+  if (!supabase) return false;
+  const today = new Date().toISOString().split("T")[0];
+  const fresh = {
+    playerName: name, playerEmail: email,
+    totalCalls: 0, totalBookings: 0, dailyCalls: 0, dailyBookings: 0,
+    lastResetDate: today, currentStreak: 0, longestStreak: 0, lastActivityDate: "",
+    totalCallsYes: 0, dailyCallsYes: 0, history: [], unlockedAchievements: [],
+    pendingToasts: [], sessionActive: false, sessionStart: null,
+    sessionTargetMinutes: 30, sessionCalls: 0, sessionBookings: 0,
+    weeklyCallsAtStart: 0, weeklyBookingsAtStart: 0, weeklyDaysActive: 0,
+    weeklyKey: "", weeklyMissionsCompleted: [], firstBookingDate: null,
+    firstDayCalls: 0, noScopeEligible: false, totalMoneyEarned: 0,
+    prospects: [], ranksRewarded: [],
+  };
+  try {
+    const { error } = await supabase.from("game_state").upsert(
+      { id: email, data: fresh, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
+    );
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 // ── All users (admin) ────────────────────────────────────────────────────────
 
 export async function fetchAllStates(): Promise<{ email: string; state: GameState; syncedAt: string }[]> {
@@ -134,7 +162,7 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
         totalCalls:     row.data.totalCalls      ?? 0,
         totalBookings:  row.data.totalBookings   ?? 0,
         currentStreak:  row.data.currentStreak   ?? 0,
-        totalSales:     row.data.totalSales      ?? 0,
+        totalSales:     0,
         updatedAt:      row.updated_at,
       }))
       .sort((a, b) => b.totalXP - a.totalXP);

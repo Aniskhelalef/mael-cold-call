@@ -47,7 +47,6 @@ function PlayerModal({ entry, onClose }: { entry: LeaderboardEntry; onClose: () 
   const stats = playerState ? [
     { label: "Calls total",     value: playerState.totalCalls.toLocaleString("fr-FR"),    color: "#FF5500" },
     { label: "RDV total",       value: playerState.totalBookings.toLocaleString("fr-FR"), color: "#1CE400" },
-    { label: "Sites vendus",    value: (playerState.totalSales ?? 0).toString(),           color: "#f59e0b" },
     { label: "Taux conversion", value: `${taux}%`,                                         color: "#60a5fa" },
     { label: "Streak actuel",   value: `${playerState.currentStreak}j`,                    color: "#f97316" },
     { label: "Record streak",   value: `${playerState.longestStreak}j`,                    color: "#848484" },
@@ -159,7 +158,7 @@ export default function LeaderboardTab() {
           totalCalls:    state.totalCalls,
           totalBookings: state.totalBookings,
           currentStreak: state.currentStreak,
-          totalSales:    state.totalSales,
+          totalSales:    0,
           updatedAt:     new Date().toISOString(),
         }
       : null;

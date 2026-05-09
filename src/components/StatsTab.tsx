@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useGame } from "@/lib/gameContext";
-import { getRank, getNextRank, RANKS, RANK_MONEY_REWARDS } from "@/lib/gameData";
+import { getRank, getNextRank, RANK_MONEY_REWARDS } from "@/lib/gameData";
 
 type Period = "jour" | "semaine" | "mois" | "annee";
 
@@ -420,17 +420,9 @@ const PERIODS: { id: Period; label: string }[] = [
 export default function StatsTab() {
   const { state }  = useGame();
   const [period, setPeriod] = useState<Period>("semaine");
-  const [showRanks, setShowRanks] = useState(false);
 
-  const rank      = getRank(state.totalBookings);
-  const nextRank  = getNextRank(state.totalBookings);
-
-  const rankGroupClass =
-    rank.group === "global"   ? "rank-global"   :
-    rank.group === "supreme"  ? "rank-supreme"  :
-    rank.group === "eagle"    ? "rank-eagle"    :
-    rank.group === "guardian" ? "rank-guardian" :
-    rank.group === "gold"     ? "rank-gold"     : "";
+  const rank     = getRank(state.totalBookings);
+  const nextRank = getNextRank(state.totalBookings);
 
   return (
     <div className="space-y-3 max-w-3xl mx-auto">
@@ -458,161 +450,6 @@ export default function StatsTab() {
       {period === "semaine" && <SemaineView />}
       {period === "mois"    && <MoisView />}
       {period === "annee"   && <AnneeView />}
-
-      {/* Rank card */}
-      <div className="rounded-sm p-4 relative overflow-hidden" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{ background: `radial-gradient(circle at 80% 50%,${rank.color} 0%,transparent 60%)` }} />
-        <div className="relative">
-          <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
-            RANG CS:GO
-          </div>
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div
-                className={`font-game text-xl ${rankGroupClass}`}
-                style={{ color: rankGroupClass ? undefined : rank.color }}
-              >
-                {rank.name}
-              </div>
-              <div style={{ color: "#848484", fontSize: "0.7rem", marginTop: "2px" }}>
-                {state.totalBookings} RDV au total
-              </div>
-            </div>
-            <div
-              className="w-12 h-12 rounded-full border-2 flex items-center justify-center"
-              style={{
-                borderColor: rank.color,
-                background:  `${rank.color}12`,
-                boxShadow:   `0 0 12px ${rank.color}30`,
-              }}
-            >
-              <span style={{ fontSize: "1.3rem" }}>
-                {rank.group === "global" ? "👑" : rank.group === "supreme" ? "⭐" :
-                 rank.group === "eagle" ? "🦅" : rank.group === "guardian" ? "🛡️" :
-                 rank.group === "gold" ? "🏅" : "🥈"}
-              </span>
-            </div>
-          </div>
-          {/* Money reward for current rank */}
-          {RANK_MONEY_REWARDS[rank.name] !== undefined && (
-            <div
-              className="mb-2 flex items-center gap-1.5 rounded-sm px-2.5 py-1.5"
-              style={{ background: "rgba(28,228,0,0.07)", border: "1px solid rgba(28,228,0,0.2)" }}
-            >
-              <span style={{ fontSize: "0.75rem" }}>💰</span>
-              <span className="font-game text-xs" style={{ color: "#1CE400" }}>
-                {RANK_MONEY_REWARDS[rank.name]}€ débloqués à ce rang
-              </span>
-            </div>
-          )}
-
-          {nextRank ? (
-            <>
-              <div className="flex justify-between mb-1.5" style={{ fontSize: "0.68rem" }}>
-                <span style={{ color: "#848484" }}>Prochain rang</span>
-                <span className="font-game" style={{ color: nextRank.color }}>
-                  {nextRank.name}
-                  {RANK_MONEY_REWARDS[nextRank.name] !== undefined && (
-                    <span style={{ color: "#FF9500", marginLeft: "6px" }}>+{RANK_MONEY_REWARDS[nextRank.name]}€</span>
-                  )}
-                  {nextRank.group === "global" && (
-                    <span style={{ color: "#FF9500", marginLeft: "6px" }}>🎁 MacBook Pro</span>
-                  )}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
-                <div
-                  className="h-full rounded-full progress-bar"
-                  style={{
-                    width: `${Math.round(((state.totalBookings - rank.minBookings) / (nextRank.minBookings - rank.minBookings)) * 100)}%`,
-                    background: rank.color,
-                    boxShadow:  `0 0 5px ${rank.color}50`,
-                  }}
-                />
-              </div>
-              <div style={{ color: "#848484", fontSize: "0.63rem", marginTop: "4px" }}>
-                {nextRank.minBookings - state.totalBookings} RDV manquants
-              </div>
-            </>
-          ) : (
-            <div
-              className="flex items-center gap-2 rounded-sm px-2.5 py-2"
-              style={{ background: "rgba(255,215,0,0.07)", border: "1px solid rgba(255,215,0,0.25)" }}
-            >
-              <span style={{ fontSize: "1rem" }}>🏆</span>
-              <span className="font-game text-xs" style={{ color: "#FFD700" }}>GLOBAL ELITE — MacBook Pro débloqué</span>
-            </div>
-          )}
-
-          {/* Toggle rank table */}
-          <button
-            onClick={() => setShowRanks((v) => !v)}
-            className="w-full mt-3 py-1.5 rounded-sm font-game text-[10px] tracking-widest transition-colors"
-            style={{
-              background: "transparent",
-              border: `1px solid #383838`,
-              color: "#848484",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#686868"; e.currentTarget.style.color = "#C0C0C0"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
-          >
-            {showRanks ? "▲ MASQUER LES RANGS" : "▼ VOIR TOUS LES RANGS"}
-          </button>
-
-          {showRanks && (
-            <div className="mt-3 space-y-1">
-              {RANKS.map((r) => {
-                const isCurrent = r.name === rank.name;
-                const isUnlocked = state.totalBookings >= r.minBookings;
-                const reward = RANK_MONEY_REWARDS[r.name];
-                return (
-                  <div
-                    key={r.name}
-                    className="flex items-center gap-2 rounded-sm px-2.5 py-2"
-                    style={{
-                      background: isCurrent ? `${r.color}12` : "#1E1E1E",
-                      border: `1px solid ${isCurrent ? r.color + "50" : "#2D2D2D"}`,
-                    }}
-                  >
-                    <span style={{ fontSize: "0.7rem", opacity: isUnlocked ? 1 : 0.3 }}>
-                      {isUnlocked ? "✓" : "○"}
-                    </span>
-                    <span
-                      className="font-game text-xs flex-1"
-                      style={{ color: isUnlocked ? r.color : "#686868" }}
-                    >
-                      {r.name}
-                      {isCurrent && (
-                        <span
-                          className="ml-2 rounded-sm px-1"
-                          style={{ background: `${r.color}20`, fontSize: "0.6rem", color: r.color }}
-                        >
-                          ACTUEL
-                        </span>
-                      )}
-                    </span>
-                    <span style={{ color: "#848484", fontSize: "0.62rem" }}>
-                      {r.minBookings} RDV
-                    </span>
-                    {r.group === "global" ? (
-                      <span style={{ color: isUnlocked ? "#FFD700" : "#686868", fontSize: "0.68rem" }}>🎁</span>
-                    ) : reward !== undefined ? (
-                      <span
-                        className="font-game text-[10px]"
-                        style={{ color: isUnlocked ? "#1CE400" : "#686868", minWidth: "36px", textAlign: "right" }}
-                      >
-                        +{reward}€
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-        </div>
-      </div>
 
       {/* Gains card */}
       <div className="rounded-sm p-4" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>

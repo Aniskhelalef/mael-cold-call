@@ -28,13 +28,12 @@ export interface GameState {
   firstDayCalls: number;
   noScopeEligible: boolean;
   totalMoneyEarned: number;
-  totalSales: number;
-  dailySales: number;
   prospects: Prospect[];
   ranksRewarded?: string[];
+  lastCallType?: "no" | "yes" | "booking";
 }
 
-export type ProspectStatus = "a_appeler" | "rappel" | "rdv" | "demo" | "vente_en_cours" | "vendu" | "perdu";
+export type ProspectStatus = "a_appeler" | "rappel" | "rdv" | "perdu";
 
 export interface Prospect {
   id: string;
@@ -70,14 +69,14 @@ export type GameAction =
   | { type: "END_SESSION" }
   | { type: "DISMISS_TOAST"; id: string }
   | { type: "DISMISS_ALL_TOASTS" }
-  | { type: "LOG_SALE" }
   | { type: "ADD_PROSPECT"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt"> }
   | { type: "UPDATE_PROSPECT"; id: string; changes: Partial<Pick<Prospect, "status" | "notes" | "rappelDate" | "reponse" | "premierContact" | "pourquoi" | "relanceCount" | "website" | "googleMapsUrl" | "reviewsCount" | "callDuration">> }
   | { type: "DELETE_PROSPECT"; id: string }
   | { type: "IMPORT_PROSPECTS"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt">[] }
   | { type: "TICK" }
   | { type: "LOGOUT" }
-  | { type: "RESET_STATS" };
+  | { type: "RESET_STATS" }
+  | { type: "WIPE_ALL" };
 
 export interface Rank {
   name: string;

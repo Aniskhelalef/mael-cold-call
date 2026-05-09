@@ -7,12 +7,10 @@ import { Prospect, ProspectStatus } from "@/lib/types";
 // ─── Config ────────────────────────────────────────────────────────────────────
 
 const STAGES: { id: ProspectStatus; label: string; icon: string; color: string }[] = [
-  { id: "a_appeler",      label: "À Appeler",    icon: "📋", color: "#3b82f6" },
-  { id: "rappel",         label: "Rappel",       icon: "🔄", color: "#f97316" },
-  { id: "rdv",            label: "RDV Booké",    icon: "🎯", color: "#22c55e" },
-  { id: "demo",           label: "Site Montré",  icon: "💻", color: "#8b5cf6" },
-  { id: "vente_en_cours", label: "Vente en cours", icon: "🤝", color: "#f59e0b" },
-  { id: "vendu",          label: "Vendu",        icon: "💰", color: "#1CE400" },
+  { id: "a_appeler", label: "À Appeler",  icon: "📋", color: "#3b82f6" },
+  { id: "rappel",    label: "Rappel",     icon: "🔄", color: "#f97316" },
+  { id: "rdv",       label: "RDV Booké", icon: "🎯", color: "#22c55e" },
+  { id: "perdu",     label: "Perdu",     icon: "❌", color: "#ef4444" },
 ];
 
 const SPECIALITES = [
@@ -100,10 +98,8 @@ function matchSpecialite(raw: string): string {
 function mapStatutToStatus(raw: string): ProspectStatus {
   const v = (raw ?? "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   if (v.includes("no close") || v.includes("noclose")) return "perdu";
-  if (v.includes("vente") || v.includes("en cours")) return "vente_en_cours";
   if (v.includes("relance")) return "rappel";
   if (v.includes("rdv") || v.includes("rendez")) return "rdv";
-  if (v.includes("vendu")) return "vendu";
   return "a_appeler";
 }
 

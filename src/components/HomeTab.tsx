@@ -65,11 +65,6 @@ function getInitials(name: string): string {
   return name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 }
 
-function fmt(ms: number): string {
-  if (ms <= 0) return "00:00";
-  const s = Math.floor(ms / 1000);
-  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-}
 
 const CARD_BG = "#232323";
 const BORDER  = "#383838";
@@ -83,16 +78,6 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
     return () => clearInterval(id);
   }, []);
 
-  // Session
-  let sessionMsLeft = 0, sessionPct = 0, sessionExpired = false;
-  if (state.sessionActive && state.sessionStart) {
-    const dur      = state.sessionTargetMinutes * 60_000;
-    const elapsed  = now - state.sessionStart;
-    sessionMsLeft  = Math.max(0, dur - elapsed);
-    sessionPct     = Math.min(100, Math.round((elapsed / dur) * 100));
-    sessionExpired = elapsed >= dur;
-  }
-
   const rank     = getRank(state.totalBookings);
   const nextRank = getNextRank(state.totalBookings);
 
@@ -103,13 +88,23 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
     const weeksSince = Math.floor((Date.now() - new Date(firstDay + "T00:00:00").getTime()) / msPerWeek);
     return Math.min(80, 20 + weeksSince * 10);
   })();
-  const goalPct = Math.min(100, Math.round((state.dailyCalls / dailyGoal) * 100));
-  const goalMet = state.dailyCalls >= dailyGoal;
+  const dailyCallsYes = state.dailyCallsYes ?? 0;
+  const goalPct = Math.min(100, Math.round((dailyCallsYes / dailyGoal) * 100));
+  const goalMet = dailyCallsYes >= dailyGoal;
 
-  const rankGroupIcon =
-    rank.group === "global"   ? "👑" :
-    rank.group === "guardian" ? "🛡️" :
-    rank.group === "gold"     ? "🏅" : "🥈";
+  const weeklyBookingGoal = 10;
+  const weeklyBookings    = state.totalBookings - state.weeklyBookingsAtStart;
+  const weeklyGoalPct     = Math.min(100, Math.round((weeklyBookings / weeklyBookingGoal) * 100));
+  const weeklyGoalMet     = weeklyBookings >= weeklyBookingGoal;
+
+  const RANK_IMG: Record<string, number> = {
+    "Silver I": 1, "Silver II": 2, "Silver III": 3, "Silver IV": 4,
+    "Silver Elite": 5, "Silver Elite Master": 6,
+    "Gold Nova I": 7, "Gold Nova II": 8, "Gold Nova III": 9, "Gold Nova Master": 10,
+    "Master Guardian I": 11, "Master Guardian II": 12, "Master Guardian Elite": 13,
+    "Distinguished Master Guardian": 14, "Global Elite": 18,
+  };
+  const rankImgUrl = `https://static.csgostats.gg/images/ranks/${RANK_IMG[rank.name] ?? 1}.png`;
 
   const rankPct = nextRank
     ? Math.round(((state.totalBookings - rank.minBookings) / (nextRank.minBookings - rank.minBookings)) * 100)
@@ -117,7 +112,7 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
 
   const nextRankReward = nextRank ? RANK_MONEY_REWARDS[nextRank.name] : null;
 
-  type CallStage = "idle" | "answered_q" | "booked_q" | "relance_q" | "relance_date";
+  type CallStage = "idle" | "answered_q" | "booked_q" | "pourquoi_q" | "relance_q" | "relance_date";
   const [callStage, setCallStage] = useState<CallStage>("idle");
   const [callAnsweredYes, setCallAnsweredYes] = useState(false);
   const [prospectIdx, setProspectIdx] = useState(0);
@@ -133,12 +128,10 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const STATUS_LABEL: Record<string, string> = {
-    a_appeler: "À APPELER", rappel: "RAPPEL", rdv: "RDV",
-    demo: "DÉMO", vendu: "VENDU", perdu: "PERDU",
+    a_appeler: "À APPELER", rappel: "RAPPEL", rdv: "RDV", perdu: "PERDU",
   };
   const STATUS_COLOR: Record<string, string> = {
-    a_appeler: "#FF5500", rappel: "#5DC7E5", rdv: "#1CE400",
-    demo: "#a855f7", vendu: "#f6ad55", perdu: "#ef4444",
+    a_appeler: "#FF5500", rappel: "#5DC7E5", rdv: "#1CE400", perdu: "#ef4444",
   };
 
   const callableProspects = (state.prospects ?? [])
@@ -193,6 +186,10 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
     setCallAnsweredYes(true);
     setCallStage("booked_q");
     startTimer();
+    if (currentProspect && !currentProspect.premierContact) {
+      const today = new Date().toISOString().split("T")[0];
+      dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { premierContact: today } });
+    }
   }
   function handleBooked() {
     const dur = stopTimer();
@@ -204,7 +201,7 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
   function handleNotBooked() {
     dispatch({ type: "LOG_CALL_YES" });
     if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { reponse: "oui_non_booké" } });
-    setCallStage("relance_q");
+    setCallStage("pourquoi_q");
   }
   function handleRelanceOui() { setCallStage("relance_date"); }
   function handleRelanceNon() {
@@ -263,7 +260,7 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
   const myEmail = state.playerEmail;
   const myOnLb  = lbEntries.some((e) => e.email === myEmail || e.name === state.playerName);
   const localEntry: LeaderboardEntry | null = !myOnLb && state.playerName
-    ? { email: myEmail, name: state.playerName, totalXP: 0, totalCalls: state.totalCalls, totalBookings: state.totalBookings, currentStreak: state.currentStreak, totalSales: state.totalSales, updatedAt: new Date().toISOString() }
+    ? { email: myEmail, name: state.playerName, totalXP: 0, totalCalls: state.totalCalls, totalBookings: state.totalBookings, currentStreak: state.currentStreak, totalSales: 0, updatedAt: new Date().toISOString() }
     : null;
   const lbSorted = [...lbEntries, ...(localEntry ? [localEntry] : [])]
     .sort((a, b) => b.totalBookings - a.totalBookings);
@@ -290,11 +287,12 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
         <div className="space-y-3">
 
           {/* ── KPI row ─────────────────────────────────────────────────── */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {([
-              { label: "Calls",  value: state.dailyCalls,         sub: `Total: ${state.totalCalls}`,      color: "#FF5500", icon: "📞" },
-              { label: "RDV",    value: state.dailyBookings,       sub: `Total: ${state.totalBookings}`,   color: "#1CE400", icon: "🎯" },
-              { label: "Streak", value: `${state.currentStreak}J`, sub: `Record: ${state.longestStreak}j`, color: "#5DC7E5", icon: "🔥" },
+              { label: "Passés",      value: state.dailyCalls,                                                sub: `Total: ${state.totalCalls}`,                                                        color: "#FF5500", icon: "📞" },
+              { label: "Répondus",    value: state.dailyCallsYes ?? 0,                                        sub: `Total: ${state.totalCallsYes ?? 0}`,                                                color: "#5DC7E5", icon: "👍" },
+              { label: "Bookés",      value: state.dailyBookings,                                             sub: `Total: ${state.totalBookings}`,                                                     color: "#1CE400", icon: "🎯" },
+              { label: "Non bookés",  value: Math.max(0, (state.dailyCallsYes ?? 0) - state.dailyBookings),   sub: `Total: ${Math.max(0, (state.totalCallsYes ?? 0) - state.totalBookings)}`,             color: "#f97316", icon: "❌" },
             ] as const).map((c) => (
               <div
                 key={c.label}
@@ -337,7 +335,7 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
                   )}
                 </div>
                 <span className="font-game text-xs" style={{ color: goalMet ? "#1CE400" : "#C0C0C0" }}>
-                  {goalMet ? "✅ OBJECTIF ATTEINT" : `${state.dailyCalls} / ${dailyGoal} CALLS`}
+                  {goalMet ? "✅ OBJECTIF ATTEINT" : `${dailyCallsYes} / ${dailyGoal} RÉPONDUS`}
                 </span>
               </div>
               <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
@@ -354,12 +352,38 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
                   }}
                 />
               </div>
+
+              {/* Weekly booking goal */}
+              <div className="mt-3 pt-3" style={{ borderTop: "1px solid #2A2A2A" }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
+                    OBJECTIF HEBDO — RDV
+                  </span>
+                  <span className="font-game text-xs" style={{ color: weeklyGoalMet ? "#1CE400" : "#C0C0C0" }}>
+                    {weeklyGoalMet ? "✅ OBJECTIF ATTEINT" : `${weeklyBookings} / ${weeklyBookingGoal} RDV`}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
+                  <div
+                    className="h-full rounded-full progress-bar"
+                    style={{
+                      width: `${weeklyGoalPct}%`,
+                      background: weeklyGoalMet
+                        ? "linear-gradient(90deg,#15803d,#22c55e)"
+                        : "linear-gradient(90deg,#0e7490,#5DC7E5)",
+                      boxShadow: weeklyGoalMet
+                        ? "0 0 6px rgba(34,197,94,0.5)"
+                        : "0 0 6px rgba(93,199,229,0.4)",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Recharger */}
             {onNavigate && (
               <button
-                onClick={() => onNavigate("scraper")}
+                onClick={() => onNavigate("leads")}
                 className="rounded-sm font-game text-xs tracking-wider transition-all active:scale-95 flex flex-col items-center justify-center gap-1.5"
                 style={{
                   background: CARD_BG, border: `1px solid ${BORDER}`,
@@ -599,6 +623,40 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
               </div>
             )}
 
+            {callStage === "pourquoi_q" && (
+              <div>
+                <div className="font-game text-[10px] tracking-widest text-center mb-3" style={{ color: "#848484" }}>
+                  POURQUOI PAS BOOKÉ ?
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {["Pas intéressé", "Déjà un prestataire", "Pas le bon moment", "Budget insuffisant"].map((reason) => (
+                    <button
+                      key={reason}
+                      onClick={() => {
+                        if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { pourquoi: reason } });
+                        setCallStage("relance_q");
+                      }}
+                      className="py-3 rounded-sm font-game text-xs tracking-wide transition-all active:scale-95"
+                      style={{ background: "#1A1A1A", border: "1px solid #383838", color: "#848484" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF5500"; e.currentTarget.style.color = "#FF5500"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setCallStage("relance_q")}
+                  className="w-full py-2 rounded-sm text-xs transition-colors"
+                  style={{ color: "#484848", background: "transparent", border: "none" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#848484"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#484848"; }}
+                >
+                  Passer →
+                </button>
+              </div>
+            )}
+
             {callStage === "relance_q" && (
               <div>
                 {timerStart && (
@@ -684,85 +742,6 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
             </div>
           </div>
 
-          {/* ── Session ─────────────────────────────────────────────────── */}
-          <div
-            className="rounded-sm p-4"
-            style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
-          >
-            <div className="font-game text-[10px] tracking-widest mb-3" style={{ color: "#848484" }}>
-              SESSION DE TRAVAIL
-            </div>
-
-            {!state.sessionActive ? (
-              <div>
-                <p style={{ color: "#848484", fontSize: "0.75rem", marginBottom: "0.6rem" }}>
-                  Reste focus pendant la session — timer visible pour tenir le rythme.
-                </p>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {[
-                    { minutes: 30,  label: "30 MIN" },
-                    { minutes: 60,  label: "1H" },
-                    { minutes: 120, label: "2H" },
-                  ].map((opt) => (
-                    <button
-                      key={opt.minutes}
-                      onClick={() => dispatch({ type: "START_SESSION", minutes: opt.minutes })}
-                      className="py-3 rounded-sm font-game text-xs tracking-wider transition-all duration-150 active:scale-95"
-                      style={{ background: "#2D2D2D", border: "1px solid #383838", color: "#C0C0C0" }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = "#FF5500";
-                        e.currentTarget.style.color = "#FF5500";
-                        e.currentTarget.style.background = "rgba(255,85,0,0.08)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "#383838";
-                        e.currentTarget.style.color = "#C0C0C0";
-                        e.currentTarget.style.background = "#2D2D2D";
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <div className={`font-game text-3xl leading-none ${sessionExpired ? "session-expired" : "text-white"}`}>
-                      {sessionExpired ? "TERMINÉ!" : fmt(sessionMsLeft)}
-                    </div>
-                    <div style={{ color: "#848484", fontSize: "0.65rem", marginTop: "3px" }}>
-                      {state.sessionTargetMinutes}min · {state.sessionCalls} calls · {state.sessionBookings} RDV
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => dispatch({ type: "END_SESSION" })}
-                    className="px-3 py-1.5 rounded-sm font-game text-xs tracking-wider transition-all active:scale-95"
-                    style={{
-                      background: sessionExpired ? "rgba(28,228,0,0.1)" : "rgba(255,85,0,0.1)",
-                      border:     sessionExpired ? "1px solid rgba(28,228,0,0.4)" : "1px solid rgba(255,85,0,0.4)",
-                      color:      sessionExpired ? "#1CE400" : "#FF5500",
-                    }}
-                  >
-                    {sessionExpired ? "✅ CLORE" : "⏹ STOP"}
-                  </button>
-                </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
-                  <div
-                    className="h-full rounded-full progress-bar"
-                    style={{
-                      width: `${sessionPct}%`,
-                      background: sessionExpired
-                        ? "linear-gradient(90deg,#15803d,#22c55e)"
-                        : "linear-gradient(90deg,#7c3aed,#8b5cf6)",
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
         </div>
 
         {/* ── RIGHT COLUMN ────────────────────────────────────────────────── */}
@@ -784,12 +763,14 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
               </div>
 
               <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="w-12 h-12 rounded-sm flex items-center justify-center text-2xl flex-shrink-0"
-                  style={{ background: `${rank.color}18`, border: `1px solid ${rank.color}50` }}
-                >
-                  {rankGroupIcon}
-                </div>
+                <img
+                  src={rankImgUrl}
+                  alt={rank.name}
+                  width={52}
+                  height={52}
+                  className="flex-shrink-0"
+                  style={{ filter: `drop-shadow(0 0 10px ${rank.color}70)` }}
+                />
                 <div>
                   <div className="font-game text-base leading-tight" style={{ color: rank.color }}>
                     {rank.name}
@@ -845,16 +826,6 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
                 </div>
               )}
 
-              <div className="my-4" style={{ height: "1px", background: "#383838" }} />
-
-              <div className="flex items-center justify-between">
-                <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
-                  GAINS DÉBLOQUÉS
-                </span>
-                <span className="font-game text-sm" style={{ color: "#1CE400" }}>
-                  💶 {state.totalMoneyEarned}€
-                </span>
-              </div>
             </div>
           </div>
 

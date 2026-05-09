@@ -60,8 +60,8 @@ function ConfirmModal({ title, body, confirmLabel = "CONFIRMER", danger = false,
 const TABS = [
   { id: "home",        label: "Dashboard"  },
   { id: "leads",       label: "Leads"      },
-  { id: "scraper",     label: "Scraper"    },
   { id: "leaderboard", label: "Classement" },
+  { id: "rank",        label: "Mon Rank"   },
   { id: "stats",       label: "Stats"      },
   { id: "script",      label: "Script"     },
 ];
@@ -69,8 +69,8 @@ const TABS = [
 const TAB_ICONS: Record<string, string> = {
   home:        "⚡",
   leads:       "👥",
-  scraper:     "🔍",
   leaderboard: "🏆",
+  rank:        "🎖",
   stats:       "📊",
   script:      "📋",
 };
@@ -81,7 +81,7 @@ function getInitials(name: string): string {
 
 export default function Header({ activeTab, setActiveTab }: HeaderProps) {
   const { state, dispatch } = useGame();
-  const [modal, setModal] = useState<"logout" | "reset" | null>(null);
+  const [modal, setModal] = useState<"logout" | "reset" | "wipe" | null>(null);
 
   const handleLogout = () => setModal("logout");
   const handleResetStats = () => setModal("reset");
@@ -114,6 +114,16 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
         confirmLabel="↺ RÉINITIALISER"
         danger
         onConfirm={() => { dispatch({ type: "RESET_STATS" }); setModal(null); }}
+        onCancel={() => setModal(null)}
+      />
+    )}
+    {modal === "wipe" && (
+      <ConfirmModal
+        title="TOUT RÉINITIALISER"
+        body="Stats ET pipeline seront entièrement effacés. Ton compte reste actif. Action irréversible."
+        confirmLabel="💣 TOUT EFFACER"
+        danger
+        onConfirm={() => { dispatch({ type: "WIPE_ALL" }); setModal(null); }}
         onCancel={() => setModal(null)}
       />
     )}
@@ -182,19 +192,6 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
               </div>
             )}
 
-            {/* Money earned */}
-            {state.totalMoneyEarned > 0 && (
-              <div
-                className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded"
-                style={{ background: "rgba(28,228,0,0.08)", border: "1px solid rgba(28,228,0,0.2)" }}
-              >
-                <span style={{ fontSize: "0.7rem" }}>💶</span>
-                <span className="font-game text-xs" style={{ color: "#1CE400" }}>
-                  {state.totalMoneyEarned}€
-                </span>
-              </div>
-            )}
-
             {/* Divider */}
             <div style={{ width: "1px", height: "20px", background: "#383838" }} className="hidden sm:block" />
 
@@ -236,6 +233,24 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                 </div>
               </div>
             </div>
+
+            {/* Wipe all */}
+            <button
+              onClick={() => setModal("wipe")}
+              title="Tout réinitialiser (stats + pipeline)"
+              className="w-7 h-7 rounded flex items-center justify-center transition-colors duration-150"
+              style={{ background: "transparent", border: "1px solid #383838", color: "#848484" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#ef4444";
+                e.currentTarget.style.color = "#ef4444";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#383838";
+                e.currentTarget.style.color = "#848484";
+              }}
+            >
+              <span style={{ fontSize: "0.75rem" }}>💣</span>
+            </button>
 
             {/* Logout */}
             <button

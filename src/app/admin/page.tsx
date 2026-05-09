@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { GameState } from "@/lib/types";
 import { RANKS } from "@/lib/gameData";
-import { fetchAllStates, deleteAccount, isSupabaseConfigured } from "@/lib/supabase";
+import { fetchAllStates, deleteAccount, resetUserState, isSupabaseConfigured } from "@/lib/supabase";
 import { Prospect, ProspectStatus } from "@/lib/types";
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "coldcall2024";
@@ -303,7 +303,6 @@ function AdminDashboard({
           <StatCard title="AUJOURD'HUI" icon="📅" rows={[
             { label: "📞 Calls", value: state.dailyCalls, accent: true },
             { label: "🎯 RDV", value: state.dailyBookings },
-            { label: "💰 Sites vendus", value: state.dailySales ?? 0 },
             { label: "👍 OUI aujourd'hui", value: state.dailyCallsYes ?? 0 },
           ]} />
           <StatCard title="CETTE SEMAINE" icon="📆" rows={[
@@ -315,7 +314,6 @@ function AdminDashboard({
           <StatCard title="TOTAL" icon="🏆" rows={[
             { label: "📞 Calls", value: state.totalCalls.toLocaleString("fr-FR"), accent: true },
             { label: "🎯 RDV", value: state.totalBookings.toLocaleString("fr-FR") },
-            { label: "💰 Sites vendus", value: (state.totalSales ?? 0).toLocaleString("fr-FR") },
             { label: "💰 Gains", value: `${state.totalMoneyEarned ?? 0}€` },
           ]} />
         </div>
@@ -426,13 +424,10 @@ function AdminDashboard({
 // ─── Status config ─────────────────────────────────────────────────────────────
 
 const STATUS_LABELS: Record<ProspectStatus, { label: string; color: string }> = {
-  a_appeler:      { label: "—",              color: "#848484" },
-  rappel:         { label: "Relance",        color: "#f97316" },
-  rdv:            { label: "RDV Booké",      color: "#22c55e" },
-  demo:           { label: "Site montré",    color: "#8b5cf6" },
-  vente_en_cours: { label: "Vente en cours", color: "#f59e0b" },
-  vendu:          { label: "Vendu",          color: "#1CE400" },
-  perdu:          { label: "No close",       color: "#ef4444" },
+  a_appeler: { label: "À appeler",  color: "#848484" },
+  rappel:    { label: "Relance",    color: "#f97316" },
+  rdv:       { label: "RDV Booké", color: "#22c55e" },
+  perdu:     { label: "Perdu",     color: "#ef4444" },
 };
 
 // ─── Pipeline View ─────────────────────────────────────────────────────────────
@@ -447,9 +442,8 @@ function PipelineView({ prospects }: { prospects: Prospect[] }) {
   });
 
   const total   = prospects.length;
-  const rdv     = prospects.filter((p) => p.status === "rdv" || p.status === "demo" || p.status === "vente_en_cours" || p.status === "vendu").length;
+  const rdv     = prospects.filter((p) => p.status === "rdv").length;
   const relance = prospects.filter((p) => p.status === "rappel").length;
-  const vendu   = prospects.filter((p) => p.status === "vendu").length;
 
   return (
     <div style={{ background: "#1a1b26", border: "1px solid #2a2b3d", borderRadius: "0.75rem", overflow: "hidden" }}>
@@ -461,9 +455,8 @@ function PipelineView({ prospects }: { prospects: Prospect[] }) {
         <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap", marginBottom: "1rem" }}>
           {[
             { label: "Total",    value: total,   color: "#e2e8f0" },
-            { label: "RDV+",     value: rdv,     color: "#22c55e" },
+            { label: "RDV",      value: rdv,     color: "#22c55e" },
             { label: "Relances", value: relance, color: "#f97316" },
-            { label: "Vendus",   value: vendu,   color: "#1CE400" },
           ].map((kpi) => (
             <div key={kpi.label}>
               <div style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.5rem", fontWeight: 700, color: kpi.color, lineHeight: 1 }}>
@@ -567,6 +560,8 @@ export default function AdminPage() {
   const [activeTab,      setActiveTab]      = useState<"stats" | "pipeline">("stats");
   const [confirmDelete,  setConfirmDelete]  = useState(false);
   const [deleting,       setDeleting]       = useState(false);
+  const [confirmReset,   setConfirmReset]   = useState(false);
+  const [resetting,      setResetting]      = useState(false);
 
   useEffect(() => {
     if (sessionStorage.getItem("admin_auth") === "true") setAuthenticated(true);
@@ -608,6 +603,15 @@ export default function AdminPage() {
     setSelectedEmail(remaining[0]?.email ?? null);
   }
 
+  async function handleReset() {
+    if (!selectedEmail || !selected) return;
+    setResetting(true);
+    await resetUserState(selectedEmail, selected.state.playerName);
+    setConfirmReset(false);
+    setResetting(false);
+    await fetchData();
+  }
+
   if (!selected && !loading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f1117" }}>
@@ -622,6 +626,42 @@ export default function AdminPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#0f1117" }}>
+
+      {/* ── Reset confirmation modal ── */}
+      {confirmReset && selected && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onClick={() => setConfirmReset(false)}
+        >
+          <div
+            style={{ background: "#1a1b26", border: "1px solid #383838", borderRadius: "0.5rem", padding: "1.5rem", maxWidth: "380px", width: "100%", boxShadow: "0 24px 60px rgba(0,0,0,0.7)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1rem", fontWeight: 700, color: "#fff", letterSpacing: "0.08em", marginBottom: "0.5rem" }}>
+              TOUT RÉINITIALISER
+            </div>
+            <p style={{ color: "#6b7280", fontSize: "0.82rem", lineHeight: 1.5, marginBottom: "1.25rem" }}>
+              Remettre à zéro stats, pipeline et gains de <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{selected.state.playerName}</span>.<br />
+              Le compte reste actif. Action irréversible.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                onClick={() => setConfirmReset(false)}
+                style={{ flex: 1, padding: "0.6rem", background: "transparent", border: "1px solid #374151", borderRadius: "0.375rem", color: "#6b7280", fontFamily: "Rajdhani, sans-serif", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", letterSpacing: "0.08em" }}
+              >
+                ANNULER
+              </button>
+              <button
+                onClick={handleReset}
+                disabled={resetting}
+                style={{ flex: 1, padding: "0.6rem", background: "rgba(255,85,0,0.12)", border: "1px solid rgba(255,85,0,0.5)", borderRadius: "0.375rem", color: "#FF5500", fontFamily: "Rajdhani, sans-serif", fontWeight: 700, fontSize: "0.8rem", cursor: resetting ? "not-allowed" : "pointer", letterSpacing: "0.08em" }}
+              >
+                {resetting ? "RÉINIT…" : "💣 TOUT EFFACER"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Delete confirmation modal ── */}
       {confirmDelete && selected && (
@@ -695,17 +735,30 @@ export default function AdminPage() {
               {loading ? "..." : "🔄 Sync"}
             </button>
             {selected && (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                style={{
-                  padding: "0.4rem 0.875rem", borderRadius: "0.5rem",
-                  background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)",
-                  color: "#ef4444", fontSize: "0.75rem", cursor: "pointer",
-                  fontFamily: "Rajdhani, sans-serif", fontWeight: 700, letterSpacing: "0.06em",
-                }}
-              >
-                🗑 Supprimer
-              </button>
+              <>
+                <button
+                  onClick={() => setConfirmReset(true)}
+                  style={{
+                    padding: "0.4rem 0.875rem", borderRadius: "0.5rem",
+                    background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.3)",
+                    color: "#FF5500", fontSize: "0.75rem", cursor: "pointer",
+                    fontFamily: "Rajdhani, sans-serif", fontWeight: 700, letterSpacing: "0.06em",
+                  }}
+                >
+                  💣 Réinitialiser
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  style={{
+                    padding: "0.4rem 0.875rem", borderRadius: "0.5rem",
+                    background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)",
+                    color: "#ef4444", fontSize: "0.75rem", cursor: "pointer",
+                    fontFamily: "Rajdhani, sans-serif", fontWeight: 700, letterSpacing: "0.06em",
+                  }}
+                >
+                  🗑 Supprimer
+                </button>
+              </>
             )}
           </div>
         </div>

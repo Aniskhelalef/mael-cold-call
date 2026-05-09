@@ -6,10 +6,10 @@ import SetupScreen from "./SetupScreen";
 import Header from "./Header";
 import HomeTab from "./HomeTab";
 import StatsTab from "./StatsTab";
+import RankTab from "./RankTab";
 import ScriptTab from "./ScriptTab";
 import LeaderboardTab from "./LeaderboardTab";
 import LeadsTab from "./LeadsTab";
-import ScraperTab from "./ScraperTab";
 
 export default function GameApp() {
   const { state } = useGame();
@@ -31,8 +31,8 @@ export default function GameApp() {
       <main className="max-w-6xl mx-auto px-4 py-5 pb-24">
         {activeTab === "home"         && <HomeTab onNavigate={setActiveTab} />}
         {activeTab === "leads"        && <LeadsTab />}
-        {activeTab === "scraper"      && <ScraperTab />}
         {activeTab === "leaderboard"  && <LeaderboardTab />}
+        {activeTab === "rank"         && <RankTab />}
         {activeTab === "stats"        && <StatsTab />}
         {activeTab === "script"       && <ScriptTab />}
       </main>

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useRef } from "react";
 import { GameState, GameAction } from "./types";
-import { syncStateToSupabase } from "./supabase";
+import { syncStateToSupabase, supabase } from "./supabase";
 import {
   ACHIEVEMENTS,
   ACHIEVEMENT_MONEY_REWARDS,
@@ -47,11 +47,19 @@ const defaultState: GameState = {
   firstDayCalls: 0,
   noScopeEligible: true,
   totalMoneyEarned: 0,
-  totalSales: 0,
-  dailySales: 0,
   prospects: [],
   ranksRewarded: [],
 };
+
+function sanitize(s: GameState): GameState {
+  return {
+    ...s,
+    totalCallsYes: Math.min(s.totalCallsYes ?? 0, s.totalCalls),
+    dailyCallsYes: Math.min(s.dailyCallsYes ?? 0, s.dailyCalls),
+    totalBookings: Math.min(s.totalBookings, s.totalCalls),
+    dailyBookings: Math.min(s.dailyBookings, s.dailyCalls),
+  };
+}
 
 function loadState(): GameState {
   if (typeof window === "undefined") return defaultState;
@@ -59,7 +67,7 @@ function loadState(): GameState {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return { ...defaultState, ...parsed };
+      return sanitize({ ...defaultState, ...parsed });
     }
   } catch {
     // ignore
@@ -186,16 +194,10 @@ function checkAchievements(state: GameState): { newAchievements: string[]; money
           state.noScopeEligible && state.dailyCalls <= 5 && state.dailyBookings >= 1;
         break;
       case "premier_site":
-        shouldUnlock = state.totalSales >= 1;
-        break;
       case "vendeur_confirme":
-        shouldUnlock = state.totalSales >= 5;
-        break;
       case "closer_elite":
-        shouldUnlock = state.totalSales >= 20;
-        break;
       case "sales_legend":
-        shouldUnlock = state.totalSales >= 50;
+        // sales achievements removed
         break;
     }
 
@@ -253,7 +255,6 @@ function performDailyReset(state: GameState, today: string): GameState {
     dailyCalls: 0,
     dailyBookings: 0,
     dailyCallsYes: 0,
-    dailySales: 0,
     lastResetDate: today,
     history: trimmedHistory,
     noScopeEligible: true,
@@ -326,28 +327,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return newState;
     }
 
-    case "LOG_SALE": {
-      let newState: GameState = {
-        ...currentState,
-        totalSales: currentState.totalSales + 1,
-        dailySales: currentState.dailySales + 1,
-      };
-
-      newState = updateStreak(newState, today);
-
-      const { newAchievements, moneyGain: achMoney } = checkAchievements(newState);
-      if (newAchievements.length > 0) {
-        newState = {
-          ...newState,
-          totalMoneyEarned: newState.totalMoneyEarned + achMoney,
-          unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
-          
-        };
-      }
-
-      return newState;
-    }
-
     case "RESTORE_STATE": {
       let restored = { ...action.state };
       if (restored.lastResetDate !== today) {
@@ -356,7 +335,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       if (restored.weeklyKey !== currentWeekKey) {
         restored = performWeeklyReset(restored, currentWeekKey);
       }
-      return restored;
+      return sanitize(restored);
     }
 
     case "LOG_CALL": {
@@ -384,6 +363,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         newState = { ...newState, weeklyDaysActive: newState.weeklyDaysActive + 1 };
       }
 
+      newState = { ...newState, lastCallType: "no" };
+
       // Achievement check
       const { newAchievements, moneyGain: achMoney } = checkAchievements(newState);
       if (newAchievements.length > 0) {
@@ -391,17 +372,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...newState,
           totalMoneyEarned: newState.totalMoneyEarned + achMoney,
           unlockedAchievements: [...newState.unlockedAchievements, ...newAchievements],
-          
         };
       }
 
       // Weekly missions check
       const { newMissions } = checkWeeklyMissions(newState);
       if (newMissions.length > 0) {
-        newState = {
-          ...newState,
-          weeklyMissionsCompleted: [...newState.weeklyMissionsCompleted, ...newMissions],
-        };
+        newState = { ...newState, weeklyMissionsCompleted: [...newState.weeklyMissionsCompleted, ...newMissions] };
       }
 
       return newState;
@@ -422,6 +399,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
       newState = updateStreak(newState, today);
+      newState = { ...newState, lastCallType: "yes" };
 
       if (isFirstCallOfDay) {
         newState = { ...newState, weeklyDaysActive: newState.weeklyDaysActive + 1 };
@@ -520,6 +498,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
       newState = updateStreak(newState, today);
+      newState = { ...newState, lastCallType: "booking" };
 
       if (isFirstCallOfDay) {
         newState = { ...newState, weeklyDaysActive: newState.weeklyDaysActive + 1 };
@@ -557,13 +536,18 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "UNDO_CALL": {
       if (currentState.dailyCalls <= 0) return currentState;
+      const t = currentState.lastCallType ?? "no";
       return {
         ...currentState,
-        totalCalls: Math.max(0, currentState.totalCalls - 1),
-        dailyCalls: Math.max(0, currentState.dailyCalls - 1),
-        sessionCalls: currentState.sessionActive
-          ? Math.max(0, currentState.sessionCalls - 1)
-          : currentState.sessionCalls,
+        totalCalls:     Math.max(0, currentState.totalCalls - 1),
+        dailyCalls:     Math.max(0, currentState.dailyCalls - 1),
+        totalCallsYes:  t !== "no" ? Math.max(0, (currentState.totalCallsYes ?? 0) - 1) : currentState.totalCallsYes,
+        dailyCallsYes:  t !== "no" ? Math.max(0, (currentState.dailyCallsYes ?? 0) - 1) : currentState.dailyCallsYes,
+        totalBookings:  t === "booking" ? Math.max(0, currentState.totalBookings - 1) : currentState.totalBookings,
+        dailyBookings:  t === "booking" ? Math.max(0, currentState.dailyBookings - 1) : currentState.dailyBookings,
+        sessionCalls:   currentState.sessionActive ? Math.max(0, currentState.sessionCalls - 1) : currentState.sessionCalls,
+        sessionBookings:t === "booking" && currentState.sessionActive ? Math.max(0, currentState.sessionBookings - 1) : currentState.sessionBookings,
+        lastCallType:   undefined,
       };
     }
 
@@ -660,6 +644,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "WIPE_ALL": {
+      return {
+        ...defaultState,
+        playerName:    currentState.playerName,
+        playerEmail:   currentState.playerEmail,
+        weeklyKey:     currentWeekKey,
+        lastResetDate: today,
+      };
+    }
+
     case "LOGOUT": {
       return { ...defaultState };
     }
@@ -683,6 +677,11 @@ const GameContext = createContext<GameContextType | null>(null);
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, defaultState, loadState);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // One-time: clean up legacy "mael" orphan row in Supabase
+  useEffect(() => {
+    supabase?.from("game_state").delete().eq("id", "mael").then(() => {});
+  }, []);
 
   useEffect(() => {
     saveState(state);
