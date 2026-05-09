@@ -1,11 +1,60 @@
 "use client";
 
+import { useState } from "react";
 import { useGame } from "@/lib/gameContext";
 import { getRank, getNextRank } from "@/lib/gameData";
 
 interface HeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+}
+
+function ConfirmModal({ title, body, confirmLabel = "CONFIRMER", danger = false, onConfirm, onCancel }: {
+  title: string; body: string; confirmLabel?: string; danger?: boolean;
+  onConfirm: () => void; onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(3px)" }}
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-sm rounded-sm p-5 space-y-4"
+        style={{ background: "#232323", border: "1px solid #383838", boxShadow: "0 20px 60px rgba(0,0,0,0.7)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div>
+          <div className="font-game text-sm tracking-wider text-white mb-1">{title}</div>
+          <div style={{ color: "#848484", fontSize: "0.8rem", lineHeight: 1.5 }}>{body}</div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-sm font-game text-xs tracking-wider"
+            style={{ background: "transparent", border: "1px solid #383838", color: "#848484" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#686868"; e.currentTarget.style.color = "#C0C0C0"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
+          >
+            ANNULER
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-sm font-game text-xs tracking-wider"
+            style={{
+              background: danger ? "rgba(239,68,68,0.15)" : "rgba(255,85,0,0.15)",
+              border: `1px solid ${danger ? "rgba(239,68,68,0.5)" : "rgba(255,85,0,0.5)"}`,
+              color: danger ? "#ef4444" : "#FF5500",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = danger ? "rgba(239,68,68,0.25)" : "rgba(255,85,0,0.25)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = danger ? "rgba(239,68,68,0.15)" : "rgba(255,85,0,0.15)"; }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const TABS = [
@@ -32,18 +81,10 @@ function getInitials(name: string): string {
 
 export default function Header({ activeTab, setActiveTab }: HeaderProps) {
   const { state, dispatch } = useGame();
+  const [modal, setModal] = useState<"logout" | "reset" | null>(null);
 
-  const handleLogout = () => {
-    if (window.confirm("Se déconnecter ? Ta progression reste sauvegardée dans le cloud.")) {
-      dispatch({ type: "LOGOUT" });
-    }
-  };
-
-  const handleResetStats = () => {
-    if (window.confirm("Réinitialiser toutes les stats (calls, RDV, streaks…) ? Les prospects sont conservés. Cette action est irréversible.")) {
-      dispatch({ type: "RESET_STATS" });
-    }
-  };
+  const handleLogout = () => setModal("logout");
+  const handleResetStats = () => setModal("reset");
 
   const rank      = getRank(state.totalBookings);
   const nextRank  = getNextRank(state.totalBookings);
@@ -56,6 +97,26 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
     rank.group === "gold"     ? "🏅" : "🥈";
 
   return (
+    <>
+    {modal === "logout" && (
+      <ConfirmModal
+        title="SE DÉCONNECTER"
+        body="Ta progression reste sauvegardée dans le cloud. Tu pourras te reconnecter avec ton email."
+        confirmLabel="🚪 DÉCONNECTER"
+        onConfirm={() => { dispatch({ type: "LOGOUT" }); setModal(null); }}
+        onCancel={() => setModal(null)}
+      />
+    )}
+    {modal === "reset" && (
+      <ConfirmModal
+        title="RÉINITIALISER LES STATS"
+        body="Calls, RDV, streaks seront remis à zéro. Les prospects sont conservés. Cette action est irréversible."
+        confirmLabel="↺ RÉINITIALISER"
+        danger
+        onConfirm={() => { dispatch({ type: "RESET_STATS" }); setModal(null); }}
+        onCancel={() => setModal(null)}
+      />
+    )}
     <header
       className="sticky top-0 z-40"
       style={{ background: "#181818", borderBottom: "1px solid #383838" }}
@@ -222,5 +283,6 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
         </nav>
       </div>
     </header>
+    </>
   );
 }
