@@ -13,8 +13,9 @@ import LeadsTab from "./LeadsTab";
 
 export default function GameApp() {
   const { state } = useGame();
-  const [activeTab, setActiveTab] = useState("home");
-  const [mounted,   setMounted]   = useState(false);
+  const [activeTab,    setActiveTab]    = useState("home");
+  const [leadsSubTab,  setLeadsSubTab]  = useState<"pipeline" | "scraper">("pipeline");
+  const [mounted,      setMounted]      = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -24,13 +25,23 @@ export default function GameApp() {
     return <SetupScreen />;
   }
 
+  function handleNavigate(target: string) {
+    if (target === "leads:scraper") {
+      setLeadsSubTab("scraper");
+      setActiveTab("leads");
+    } else {
+      setLeadsSubTab("pipeline");
+      setActiveTab(target);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-game-bg">
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Header activeTab={activeTab} setActiveTab={(t) => handleNavigate(t)} />
 
       <main className="max-w-6xl mx-auto px-4 py-5 pb-24">
-        {activeTab === "home"         && <HomeTab onNavigate={setActiveTab} />}
-        {activeTab === "leads"        && <LeadsTab />}
+        {activeTab === "home"         && <HomeTab onNavigate={handleNavigate} />}
+        {activeTab === "leads"        && <LeadsTab defaultSub={leadsSubTab} />}
         {activeTab === "leaderboard"  && <LeaderboardTab />}
         {activeTab === "rank"         && <RankTab />}
         {activeTab === "stats"        && <StatsTab />}

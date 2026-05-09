@@ -383,7 +383,7 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
             {/* Recharger */}
             {onNavigate && (
               <button
-                onClick={() => onNavigate("leads")}
+                onClick={() => onNavigate("leads:scraper")}
                 className="rounded-sm font-game text-xs tracking-wider transition-all active:scale-95 flex flex-col items-center justify-center gap-1.5"
                 style={{
                   background: CARD_BG, border: `1px solid ${BORDER}`,

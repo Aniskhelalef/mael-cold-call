@@ -548,8 +548,8 @@ function ScraperPanel() {
 
 type SubTab = "pipeline" | "scraper";
 
-export default function LeadsTab() {
-  const [sub, setSub] = useState<SubTab>("pipeline");
+export default function LeadsTab({ defaultSub = "pipeline" }: { defaultSub?: SubTab }) {
+  const [sub, setSub] = useState<SubTab>(defaultSub);
 
   return (
     <div className="space-y-3">
