@@ -305,8 +305,7 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
             )}
 
             {/* Variants toggle */}
-            {isSupabaseConfigured && (
-              <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${BORDER}` }}>
+            <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${BORDER}` }}>
                 <button
                   onClick={() => { setOpenVarFor(isVarOpen ? null : i); setAddingFor(null); setDraftText(""); }}
                   className="font-game text-[9px] tracking-widest transition-colors"
@@ -442,7 +441,6 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
                   </div>
                 )}
               </div>
-            )}
           </div>
         );
       })}
