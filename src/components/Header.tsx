@@ -11,6 +11,7 @@ interface HeaderProps {
 const TABS = [
   { id: "home",        label: "Dashboard"  },
   { id: "leads",       label: "Leads"      },
+  { id: "scraper",     label: "Scraper"    },
   { id: "leaderboard", label: "Classement" },
   { id: "stats",       label: "Stats"      },
   { id: "script",      label: "Script"     },
@@ -19,6 +20,7 @@ const TABS = [
 const TAB_ICONS: Record<string, string> = {
   home:        "⚡",
   leads:       "👥",
+  scraper:     "🔍",
   leaderboard: "🏆",
   stats:       "📊",
   script:      "📋",
