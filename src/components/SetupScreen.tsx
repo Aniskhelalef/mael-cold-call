@@ -89,10 +89,10 @@ export default function SetupScreen() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="font-game text-[11px] tracking-[0.25em] mb-3" style={{ color: "#848484" }}>
-            COLD CALL RPG
+            COLD CALL OF DUTY
           </div>
           <h1 className="font-game leading-none mb-2" style={{ fontSize: "clamp(2.5rem,8vw,3.5rem)", color: "#FF5500" }}>
-            CCR
+            CCOD
           </h1>
           <p style={{ color: "#848484", fontSize: "0.8rem" }}>
             Gamifie ta prospection. Rank up en bookant des RDV.

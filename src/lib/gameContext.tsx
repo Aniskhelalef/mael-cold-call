@@ -632,13 +632,21 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case "IMPORT_PROSPECTS": {
       const importNow = new Date().toISOString();
       const base = Date.now();
-      const newProspects = action.data.map((d, i) => ({
+      const existing = currentState.prospects ?? [];
+      const existingKeys = new Set(
+        existing.map((p) => `${p.name.trim().toLowerCase()}|${p.phone.replace(/\s/g, "")}`)
+      );
+      const deduped = action.data.filter((d) => {
+        const key = `${d.name.trim().toLowerCase()}|${d.phone.replace(/\s/g, "")}`;
+        return !existingKeys.has(key);
+      });
+      const newProspects = deduped.map((d, i) => ({
         ...d,
         id: (base + i).toString(36) + Math.random().toString(36).slice(2, 7),
         createdAt: importNow,
         updatedAt: importNow,
       }));
-      return { ...currentState, prospects: [...(currentState.prospects ?? []), ...newProspects] };
+      return { ...currentState, prospects: [...existing, ...newProspects] };
     }
 
     case "RESET_STATS": {

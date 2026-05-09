@@ -118,11 +118,16 @@ function Cell({ value, onSave, type = "text" }: {
 
 // ── Lead row ──────────────────────────────────────────────────────────────────
 
-function LeadRow({ prospect, idx }: { prospect: Prospect; idx: number }) {
+function LeadRow({ prospect, idx, checked, onToggle }: {
+  prospect: Prospect;
+  idx: number;
+  checked: boolean;
+  onToggle: () => void;
+}) {
   const { dispatch } = useGame();
 
   const update = (
-    changes: Partial<Pick<Prospect, "status" | "notes" | "rappelDate" | "reponse" | "premierContact" | "pourquoi">>
+    changes: Partial<Pick<Prospect, "status" | "notes" | "rappelDate" | "reponse" | "premierContact" | "pourquoi" | "website" | "googleMapsUrl" | "reviewsCount">>
   ) => dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes });
 
   const cycleReponse = () => {
@@ -135,7 +140,12 @@ function LeadRow({ prospect, idx }: { prospect: Prospect; idx: number }) {
   const rowBg = idx % 2 === 0 ? "#1c1c1c" : "#181818";
 
   return (
-    <tr style={{ borderBottom: `1px solid #252525`, background: rowBg }}>
+    <tr style={{ borderBottom: `1px solid #252525`, background: checked ? "rgba(255,85,0,0.04)" : rowBg }}>
+
+      {/* CHECKBOX */}
+      <td style={{ padding: "8px 12px" }}>
+        <input type="checkbox" checked={checked} onChange={onToggle} style={{ accentColor: "#FF5500", cursor: "pointer" }} />
+      </td>
 
       {/* NOM */}
       <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
@@ -243,6 +253,22 @@ function LeadRow({ prospect, idx }: { prospect: Prospect; idx: number }) {
         />
       </td>
 
+      {/* FICHE GOOGLE */}
+      <td style={{ padding: "8px 12px", textAlign: "center" }}>
+        {prospect.googleMapsUrl ? (
+          <a
+            href={prospect.googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#60a5fa", fontSize: "0.72rem", textDecoration: "none" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#93c5fd"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa"; }}
+          >
+            Maps ↗
+          </a>
+        ) : <span style={{ color: "#383838", fontSize: "0.72rem" }}>—</span>}
+      </td>
+
       {/* COMMENTAIRES */}
       <td style={{ padding: "8px 12px", minWidth: 180, maxWidth: 260 }}>
         <Cell
@@ -276,6 +302,7 @@ export default function LeadsTab() {
   const { state, dispatch } = useGame();
   const [search,       setSearch]       = useState("");
   const [filterStatus, setFilterStatus] = useState<ProspectStatus | "all">("all");
+  const [selected,     setSelected]     = useState<Set<string>>(new Set());
   const autoImported = useRef(false);
 
   // Auto-import seed data on first render if no prospects exist
@@ -315,6 +342,32 @@ export default function LeadsTab() {
     }
     return list;
   }, [prospects, filterStatus, search]);
+
+  const allChecked  = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
+  const someChecked = filtered.some((p) => selected.has(p.id));
+  const selectedCount = filtered.filter((p) => selected.has(p.id)).length;
+
+  function toggleAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allChecked) filtered.forEach((p) => next.delete(p.id));
+      else            filtered.forEach((p) => next.add(p.id));
+      return next;
+    });
+  }
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function deleteSelected() {
+    selected.forEach((id) => dispatch({ type: "DELETE_PROSPECT", id }));
+    setSelected(new Set());
+  }
 
   const TH = ({ children, style }: { children?: React.ReactNode; style?: React.CSSProperties }) => (
     <th
@@ -417,6 +470,25 @@ export default function LeadsTab() {
         <div style={{ color: "#484848", fontSize: "0.72rem", marginLeft: 4 }}>
           {filtered.length} affiché{filtered.length !== 1 ? "s" : ""}
         </div>
+
+        {/* Bulk action bar */}
+        {someChecked && (
+          <div className="flex items-center gap-3 ml-auto">
+            <span className="font-game text-xs" style={{ color: "#FF5500" }}>
+              {selectedCount} sélectionné{selectedCount !== 1 ? "s" : ""}
+            </span>
+            <button
+              onClick={deleteSelected}
+              className="font-game text-xs tracking-wider px-4 py-2 rounded-sm"
+              style={{
+                background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.4)",
+                color: "#ef4444", cursor: "pointer",
+              }}
+            >
+              🗑 SUPPRIMER
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -424,6 +496,9 @@ export default function LeadsTab() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
+              <TH style={{ width: 36 }}>
+                <input type="checkbox" checked={allChecked} onChange={toggleAll} style={{ accentColor: "#FF5500", cursor: "pointer" }} />
+              </TH>
               <TH>NOM</TH>
               <TH>MAIL</TH>
               <TH>TÉL</TH>
@@ -432,6 +507,7 @@ export default function LeadsTab() {
               <TH>STATUT</TH>
               <TH>DATE RELANCE</TH>
               <TH>POURQUOI</TH>
+              <TH style={{ textAlign: "center" }}>FICHE</TH>
               <TH>COMMENTAIRES</TH>
               <TH></TH>
             </tr>
@@ -439,12 +515,20 @@ export default function LeadsTab() {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} style={{ padding: "32px", textAlign: "center", color: "#484848", fontSize: "0.85rem" }}>
+                <td colSpan={12} style={{ padding: "32px", textAlign: "center", color: "#484848", fontSize: "0.85rem" }}>
                   {total === 0 ? "Aucun lead — cliquer sur « Charger les 34 leads »" : "Aucun résultat"}
                 </td>
               </tr>
             ) : (
-              filtered.map((p, i) => <LeadRow key={p.id} prospect={p} idx={i} />)
+              filtered.map((p, i) => (
+                <LeadRow
+                  key={p.id}
+                  prospect={p}
+                  idx={i}
+                  checked={selected.has(p.id)}
+                  onToggle={() => toggleOne(p.id)}
+                />
+              ))
             )}
           </tbody>
         </table>

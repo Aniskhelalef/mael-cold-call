@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGame } from "@/lib/gameContext";
 import SetupScreen from "./SetupScreen";
 import Header from "./Header";
@@ -14,8 +14,12 @@ import ScraperTab from "./ScraperTab";
 export default function GameApp() {
   const { state } = useGame();
   const [activeTab, setActiveTab] = useState("home");
+  const [mounted,   setMounted]   = useState(false);
 
-  // Show setup screen if no player name
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return null;
+
   if (!state.playerName) {
     return <SetupScreen />;
   }

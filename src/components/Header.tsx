@@ -71,14 +71,14 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
               className="font-game text-lg tracking-widest"
               style={{ color: "#FF5500" }}
             >
-              CCR
+              CCOD
             </span>
             <div style={{ width: "1px", height: "18px", background: "#383838" }} className="hidden sm:block" />
             <span
               className="font-game text-xs tracking-widest hidden sm:block"
               style={{ color: "#848484" }}
             >
-              Cold Call RPG
+              Cold Call of Duty
             </span>
           </div>
 

@@ -63,7 +63,7 @@ function PasswordGate({ onAuth }: { onAuth: () => void }) {
         <div className="text-center mb-8">
           <div className="text-5xl mb-4">👑</div>
           <h1 style={{ fontFamily: "Rajdhani, sans-serif", letterSpacing: "0.12em", fontSize: "1.5rem", color: "#fff", fontWeight: 700 }}>
-            COLD CALL RPG
+            COLD CALL OF DUTY
           </h1>
           <p style={{ color: "#6b7280", fontSize: "0.85rem", marginTop: "0.25rem" }}>Panneau Admin</p>
         </div>
@@ -281,7 +281,7 @@ function AdminDashboard({
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span style={{ fontSize: "1.1rem" }}>👑</span>
-              <span style={{ fontSize: "0.65rem", color: "#6b7280", letterSpacing: "0.15em" }}>COLD CALL RPG — ADMIN</span>
+              <span style={{ fontSize: "0.65rem", color: "#6b7280", letterSpacing: "0.15em" }}>COLD CALL OF DUTY — ADMIN</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.25rem", flexWrap: "wrap" }}>
               <span style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}>
@@ -490,7 +490,7 @@ function AdminDashboard({
         </div>
 
         <div style={{ textAlign: "center", fontSize: "0.7rem", color: "#1f2937", paddingBottom: "1rem" }}>
-          Cold Call RPG Admin — Données en lecture seule
+          Cold Call of Duty Admin — Données en lecture seule
         </div>
       </div>
     </div>

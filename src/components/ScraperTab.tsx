@@ -7,14 +7,6 @@ import { ProspectStatus } from "@/lib/types";
 const CARD_BG = "#232323";
 const BORDER  = "#383838";
 
-// Platforms that don't count as a real website
-const PLATFORM_DOMAINS = ["doctolib", "facebook", "instagram", "twitter", "linkedin", "pages.google", "google.com/maps"];
-
-function hasRealWebsite(url?: string): boolean {
-  if (!url) return false;
-  return !PLATFORM_DOMAINS.some((d) => url.toLowerCase().includes(d));
-}
-
 function guessSpecialite(category: string, searchTerm: string): string {
   const s = (category || searchTerm).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   if (s.includes("osteo"))  return "Ostéopathe";
@@ -33,6 +25,7 @@ interface ApifyItem {
   phone?: string;
   email?: string;
   website?: string;
+  url?: string;
   address?: string;
   city?: string;
   neighborhood?: string;
@@ -78,7 +71,6 @@ export default function ScraperTab() {
   const [errMsg,       setErrMsg]       = useState("");
   const [elapsed,      setElapsed]      = useState(0);
   const [results,      setResults]      = useState<ApifyItem[]>([]);
-  const [filterNoSite, setFilterNoSite] = useState(true);
   const [selected,     setSelected]     = useState<Set<number>>(new Set());
   const [imported,     setImported]     = useState(false);
 
@@ -126,24 +118,22 @@ export default function ScraperTab() {
   async function pollRun(runId: string) {
     try {
       const res  = await fetch(`/api/apify?runId=${runId}`);
-      const data = await res.json() as { status: string; items?: ApifyItem[] };
+      const data = await res.json() as { status: string; items?: ApifyItem[]; errorMessage?: string };
 
       if (data.status === "SUCCEEDED") {
         stopTimers();
         const items = data.items ?? [];
         setResults(items);
-        // Pre-select: has phone + no real website
-        const pre = new Set(
-          items
-            .map((_, i) => i)
-            .filter((i) => !!(items[i].phone) && !hasRealWebsite(items[i].website))
-        );
+        // Pre-select all results with a phone number
+        const pre = new Set(items.map((_, i) => i).filter((i) => !!(items[i].phone)));
         setSelected(pre);
         setScrapeStatus("done");
       } else if (["FAILED", "ABORTED", "TIMED-OUT"].includes(data.status)) {
         stopTimers();
         setScrapeStatus("error");
-        setErrMsg(`Run ${data.status.toLowerCase()} — vérifie ton token et réessaie.`);
+        setErrMsg(data.errorMessage
+          ? `Run ${data.status.toLowerCase()} : ${data.errorMessage}`
+          : `Run ${data.status.toLowerCase()} — vérifie les paramètres et réessaie.`);
       }
     } catch {
       // keep polling on transient network errors
@@ -152,10 +142,7 @@ export default function ScraperTab() {
 
   // ── Derived data ─────────────────────────────────────────────────────────
 
-  const withPhone   = results.filter((r) => !!r.phone);
-  const noSiteLeads = withPhone.filter((r) => !hasRealWebsite(r.website));
-  const displayed   = filterNoSite ? noSiteLeads : withPhone;
-
+  const displayed     = results.filter((r) => !!r.phone);
   const selectedCount = displayed.filter((r) => selected.has(results.indexOf(r))).length;
   const allChecked    = displayed.length > 0 && displayed.every((r) => selected.has(results.indexOf(r)));
 
@@ -178,16 +165,13 @@ export default function ScraperTab() {
     const leads = displayed
       .filter((r) => selected.has(results.indexOf(r)))
       .map((r) => ({
-        name:       r.title?.trim() || "Sans nom",
-        phone:      r.phone ?? "",
-        email:      r.email?.trim() || undefined,
-        ville:      extractCity(r, location),
-        specialite: guessSpecialite(r.categoryName ?? "", searchTerm),
-        status:     "a_appeler" as ProspectStatus,
-        notes:      [
-          r.website && `Site: ${r.website}`,
-          r.reviewsCount && `${r.reviewsCount} avis Google`,
-        ].filter(Boolean).join(" · "),
+        name:          r.title?.trim() || "Sans nom",
+        phone:         r.phone ?? "",
+        ville:         extractCity(r, location),
+        specialite:    guessSpecialite(r.categoryName ?? "", searchTerm),
+        status:        "a_appeler" as ProspectStatus,
+        notes:         "",
+        googleMapsUrl: r.url || undefined,
       }));
 
     dispatch({ type: "IMPORT_PROSPECTS", data: leads });
@@ -303,33 +287,14 @@ export default function ScraperTab() {
         <div style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: 4, overflow: "hidden" }}>
 
           {/* Stats bar */}
-          <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-game text-xs" style={{ color: "#848484" }}>
-                {results.length} fiches Google
-              </span>
-              <span style={{ color: "#484848" }}>·</span>
-              <span className="font-game text-xs" style={{ color: "#60a5fa" }}>
-                {withPhone.length} avec tel
-              </span>
-              <span style={{ color: "#484848" }}>·</span>
-              <span className="font-game text-xs" style={{ color: "#1CE400" }}>
-                {noSiteLeads.length} sans site
-              </span>
-            </div>
-
-            {/* Filter toggle */}
-            <button
-              onClick={() => setFilterNoSite(!filterNoSite)}
-              style={{
-                padding: "4px 10px", borderRadius: 3, fontSize: "0.72rem", fontWeight: 700,
-                cursor: "pointer", border: "none", fontFamily: "'Rajdhani', sans-serif",
-                background: filterNoSite ? "rgba(28,228,0,0.15)" : "rgba(132,132,132,0.1)",
-                color: filterNoSite ? "#1CE400" : "#848484",
-              }}
-            >
-              {filterNoSite ? "✓ SANS SITE UNIQUEMENT" : "TOUS AVEC TÉL"}
-            </button>
+          <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
+            <span className="font-game text-xs" style={{ color: "#848484" }}>
+              {results.length} fiches Google
+            </span>
+            <span style={{ color: "#484848" }}>·</span>
+            <span className="font-game text-xs" style={{ color: "#60a5fa" }}>
+              {displayed.length} avec téléphone
+            </span>
           </div>
 
           {/* Table */}
@@ -340,7 +305,7 @@ export default function ScraperTab() {
                   <th style={{ padding: "8px 12px", width: 36 }}>
                     <input type="checkbox" checked={allChecked} onChange={toggleAll} style={{ accentColor: "#FF5500", cursor: "pointer" }} />
                   </th>
-                  {["NOM", "TÉL", "VILLE", "CATÉGORIE", "SITE"].map((h) => (
+                  {["NOM", "TÉL", "VILLE", "FICHE GOOGLE"].map((h) => (
                     <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "0.62rem", color: "#848484", letterSpacing: "0.1em", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, whiteSpace: "nowrap" }}>
                       {h}
                     </th>
@@ -351,7 +316,6 @@ export default function ScraperTab() {
                 {displayed.map((r, displayIdx) => {
                   const globalIdx = results.indexOf(r);
                   const isSelected = selected.has(globalIdx);
-                  const real = hasRealWebsite(r.website);
                   return (
                     <tr
                       key={globalIdx}
@@ -363,20 +327,12 @@ export default function ScraperTab() {
                       }}
                     >
                       <td style={{ padding: "8px 12px" }}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {}}
-                          style={{ accentColor: "#FF5500", cursor: "pointer" }}
-                        />
+                        <input type="checkbox" checked={isSelected} onChange={() => {}} style={{ accentColor: "#FF5500", cursor: "pointer" }} />
                       </td>
-                      <td style={{ padding: "8px 12px", maxWidth: 180 }}>
+                      <td style={{ padding: "8px 12px", maxWidth: 200 }}>
                         <div style={{ color: "#f1f5f9", fontSize: "0.82rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {r.title}
                         </div>
-                        {r.reviewsCount ? (
-                          <div style={{ color: "#484848", fontSize: "0.65rem" }}>⭐ {r.totalScore?.toFixed(1)} ({r.reviewsCount} avis)</div>
-                        ) : null}
                       </td>
                       <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
                         <a
@@ -390,23 +346,20 @@ export default function ScraperTab() {
                       <td style={{ padding: "8px 12px", color: "#848484", fontSize: "0.78rem", whiteSpace: "nowrap" }}>
                         {extractCity(r, location)}
                       </td>
-                      <td style={{ padding: "8px 12px", color: "#848484", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                        {r.categoryName ?? "—"}
-                      </td>
                       <td style={{ padding: "8px 12px" }}>
-                        {r.website ? (
-                          <span style={{
-                            fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: 3,
-                            background: real ? "rgba(239,68,68,0.15)" : "rgba(132,132,132,0.1)",
-                            color: real ? "#ef4444" : "#848484",
-                          }}>
-                            {real ? "SITE" : r.website.includes("doctolib") ? "DOCTOLIB" : "SOCIAL"}
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: 3, background: "rgba(28,228,0,0.12)", color: "#1CE400" }}>
-                            AUCUN
-                          </span>
-                        )}
+                        {r.url ? (
+                          <a
+                            href={r.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ color: "#60a5fa", fontSize: "0.72rem", textDecoration: "none" }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#93c5fd"; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa"; }}
+                          >
+                            Maps ↗
+                          </a>
+                        ) : <span style={{ color: "#383838", fontSize: "0.72rem" }}>—</span>}
                       </td>
                     </tr>
                   );

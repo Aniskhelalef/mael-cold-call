@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        searchStrings: [searchTerm.trim()],
+        searchStringsArray: [searchTerm.trim()],
         locationQuery: `${location.trim()}, France`,
         maxCrawledPlacesPerSearch: Math.min(Number(maxResults) || 100, 500),
         language: "fr",
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (["FAILED", "ABORTED", "TIMED-OUT"].includes(data.status)) {
-    return NextResponse.json({ status: data.status });
+    return NextResponse.json({ status: data.status, errorMessage: data.statusMessage ?? null });
   }
 
   return NextResponse.json({ status: data.status });
