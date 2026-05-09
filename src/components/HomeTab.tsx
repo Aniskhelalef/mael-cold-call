@@ -7,6 +7,60 @@ import { fetchLeaderboard, LeaderboardEntry } from "@/lib/supabase";
 
 const MEDAL = ["🥇", "🥈", "🥉"];
 
+// ── Custom confirm modal ──────────────────────────────────────────────────────
+
+function ConfirmModal({ title, body, confirmLabel = "CONFIRMER", danger = false, onConfirm, onCancel }: {
+  title: string;
+  body: string;
+  confirmLabel?: string;
+  danger?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(3px)" }}
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-sm rounded-sm p-5 space-y-4"
+        style={{ background: "#232323", border: "1px solid #383838", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div>
+          <div className="font-game text-sm tracking-wider text-white mb-1">{title}</div>
+          <div style={{ color: "#848484", fontSize: "0.8rem", lineHeight: 1.5 }}>{body}</div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-sm font-game text-xs tracking-wider transition-all active:scale-95"
+            style={{ background: "transparent", border: "1px solid #383838", color: "#848484" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#686868"; e.currentTarget.style.color = "#C0C0C0"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
+          >
+            ANNULER
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-sm font-game text-xs tracking-wider transition-all active:scale-95"
+            style={{
+              background: danger ? "rgba(239,68,68,0.15)" : "rgba(255,85,0,0.15)",
+              border: `1px solid ${danger ? "rgba(239,68,68,0.5)" : "rgba(255,85,0,0.5)"}`,
+              color: danger ? "#ef4444" : "#FF5500",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = danger ? "rgba(239,68,68,0.25)" : "rgba(255,85,0,0.25)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = danger ? "rgba(239,68,68,0.15)" : "rgba(255,85,0,0.15)"; }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getInitials(name: string): string {
   return name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 }
@@ -66,6 +120,7 @@ export default function HomeTab() {
   });
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft,   setNotesDraft]   = useState("");
+  const [confirmOpen,  setConfirmOpen]  = useState(false);
 
   const STATUS_LABEL: Record<string, string> = {
     a_appeler: "À APPELER", rappel: "RAPPEL", rdv: "RDV",
@@ -142,11 +197,15 @@ export default function HomeTab() {
 
   function handlePerdreDefinitif() {
     if (!currentProspect) return;
-    if (window.confirm(`Perdre définitivement ${currentProspect.name} ? Il ne réapparaîtra plus dans la file.`)) {
-      dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "perdu" } });
-      setProspectIdx((i) => i + 1);
-      resetCallFlow();
-    }
+    setConfirmOpen(true);
+  }
+
+  function confirmPerdre() {
+    if (!currentProspect) return;
+    dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "perdu" } });
+    setProspectIdx((i) => i + 1);
+    resetCallFlow();
+    setConfirmOpen(false);
   }
 
   const totalCallsYes = state.totalCallsYes ?? 0;
@@ -178,6 +237,19 @@ export default function HomeTab() {
 
   return (
     <div className="max-w-4xl mx-auto">
+
+      {/* Custom confirm modal */}
+      {confirmOpen && currentProspect && (
+        <ConfirmModal
+          title="PERDRE DÉFINITIVEMENT ?"
+          body={`${currentProspect.name} sera marqué comme perdu et ne réapparaîtra plus dans la file d'appels.`}
+          confirmLabel="PERDRE"
+          danger
+          onConfirm={confirmPerdre}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      )}
+
       <div className="lg:grid lg:gap-4" style={{ gridTemplateColumns: "1fr 260px" } as React.CSSProperties}>
 
         {/* ── LEFT COLUMN ─────────────────────────────────────────────────── */}
