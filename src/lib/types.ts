@@ -53,6 +53,7 @@ export interface Prospect {
   website?: string;
   googleMapsUrl?: string;
   reviewsCount?: number;
+  callDuration?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -71,7 +72,7 @@ export type GameAction =
   | { type: "DISMISS_ALL_TOASTS" }
   | { type: "LOG_SALE" }
   | { type: "ADD_PROSPECT"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt"> }
-  | { type: "UPDATE_PROSPECT"; id: string; changes: Partial<Pick<Prospect, "status" | "notes" | "rappelDate" | "reponse" | "premierContact" | "pourquoi" | "relanceCount" | "website" | "googleMapsUrl" | "reviewsCount">> }
+  | { type: "UPDATE_PROSPECT"; id: string; changes: Partial<Pick<Prospect, "status" | "notes" | "rappelDate" | "reponse" | "premierContact" | "pourquoi" | "relanceCount" | "website" | "googleMapsUrl" | "reviewsCount" | "callDuration">> }
   | { type: "DELETE_PROSPECT"; id: string }
   | { type: "IMPORT_PROSPECTS"; data: Omit<Prospect, "id" | "createdAt" | "updatedAt">[] }
   | { type: "TICK" }

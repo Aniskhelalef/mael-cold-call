@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGame } from "@/lib/gameContext";
 import { getRank, getNextRank, RANK_MONEY_REWARDS } from "@/lib/gameData";
 import { fetchLeaderboard, LeaderboardEntry } from "@/lib/supabase";
@@ -74,7 +74,7 @@ function fmt(ms: number): string {
 const CARD_BG = "#232323";
 const BORDER  = "#383838";
 
-export default function HomeTab() {
+export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { state, dispatch } = useGame();
   const [now, setNow] = useState(Date.now());
 
@@ -125,9 +125,12 @@ export default function HomeTab() {
     const d = new Date(); d.setDate(d.getDate() + 1);
     return d.toISOString().split("T")[0];
   });
-  const [editingNotes, setEditingNotes] = useState(false);
-  const [notesDraft,   setNotesDraft]   = useState("");
-  const [confirmOpen,  setConfirmOpen]  = useState(false);
+  const [editingNotes,  setEditingNotes]  = useState(false);
+  const [notesDraft,    setNotesDraft]    = useState("");
+  const [confirmOpen,   setConfirmOpen]   = useState(false);
+  const [timerStart,    setTimerStart]    = useState<number | null>(null);
+  const [timerElapsed,  setTimerElapsed]  = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const STATUS_LABEL: Record<string, string> = {
     a_appeler: "À APPELER", rappel: "RAPPEL", rdv: "RDV",
@@ -156,6 +159,25 @@ export default function HomeTab() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeIdx, prospectIdx]);
 
+  function startTimer() {
+    const start = Date.now();
+    setTimerStart(start);
+    setTimerElapsed(0);
+    timerRef.current = setInterval(() => {
+      setTimerElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+  }
+  function stopTimer(): number {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    const duration = timerStart ? Math.floor((Date.now() - timerStart) / 1000) : 0;
+    setTimerStart(null);
+    setTimerElapsed(0);
+    return duration;
+  }
+  function fmtTimer(s: number) {
+    return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  }
+
   function resetCallFlow() {
     setCallStage("idle");
     setCallAnsweredYes(false);
@@ -170,10 +192,12 @@ export default function HomeTab() {
   function handleOui() {
     setCallAnsweredYes(true);
     setCallStage("booked_q");
+    startTimer();
   }
   function handleBooked() {
+    const dur = stopTimer();
     dispatch({ type: "LOG_CALL_BOOKING" });
-    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "rdv", reponse: "rdv" } });
+    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "rdv", reponse: "rdv", callDuration: dur } });
     setProspectIdx((i) => i + 1);
     resetCallFlow();
   }
@@ -184,11 +208,13 @@ export default function HomeTab() {
   }
   function handleRelanceOui() { setCallStage("relance_date"); }
   function handleRelanceNon() {
-    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "perdu" } });
+    const dur = stopTimer();
+    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "perdu", callDuration: dur || undefined } });
     setProspectIdx((i) => i + 1);
     resetCallFlow();
   }
   function handleRelanceConfirm() {
+    const dur = stopTimer();
     if (currentProspect) dispatch({
       type: "UPDATE_PROSPECT",
       id: currentProspect.id,
@@ -196,6 +222,7 @@ export default function HomeTab() {
         status: "rappel",
         rappelDate: relanceDate,
         relanceCount: (currentProspect.relanceCount ?? 0) + 1,
+        callDuration: dur || undefined,
       },
     });
     setProspectIdx((i) => i + 1);
@@ -519,6 +546,15 @@ export default function HomeTab() {
 
             {callStage === "booked_q" && (
               <div>
+                {/* Live timer */}
+                <div className="text-center mb-2">
+                  <span
+                    className="font-game text-2xl tracking-widest"
+                    style={{ color: "#FF5500", fontVariantNumeric: "tabular-nums" }}
+                  >
+                    {fmtTimer(timerElapsed)}
+                  </span>
+                </div>
                 <div className="font-game text-[10px] tracking-widest text-center mb-3" style={{ color: "#848484" }}>
                   LE CALL EST BOOKÉ ?
                 </div>
@@ -545,6 +581,13 @@ export default function HomeTab() {
 
             {callStage === "relance_q" && (
               <div>
+                {timerStart && (
+                  <div className="text-center mb-2">
+                    <span className="font-game text-xl tracking-widest" style={{ color: "#848484", fontVariantNumeric: "tabular-nums" }}>
+                      {fmtTimer(timerElapsed)}
+                    </span>
+                  </div>
+                )}
                 <div className="font-game text-[10px] tracking-widest text-center mb-3" style={{ color: "#848484" }}>
                   ON LE RELANCE ?
                 </div>
@@ -941,6 +984,30 @@ export default function HomeTab() {
         </div>
 
       </div>
+
+      {/* ── "Recharger les leads" floating shortcut ── */}
+      {onNavigate && (
+        <button
+          onClick={() => onNavigate("scraper")}
+          className="fixed bottom-6 right-6 z-40 font-game text-xs tracking-wider rounded-sm px-4 py-3 transition-all active:scale-95"
+          style={{
+            background: "#232323",
+            border: "1px solid #383838",
+            color: "#848484",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "#FF5500";
+            e.currentTarget.style.color = "#FF5500";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "#383838";
+            e.currentTarget.style.color = "#848484";
+          }}
+        >
+          🔫 RECHARGER LES LEADS
+        </button>
+      )}
     </div>
   );
 }

@@ -29,7 +29,7 @@ export default function GameApp() {
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="max-w-6xl mx-auto px-4 py-5 pb-24">
-        {activeTab === "home"         && <HomeTab />}
+        {activeTab === "home"         && <HomeTab onNavigate={setActiveTab} />}
         {activeTab === "leads"        && <LeadsTab />}
         {activeTab === "scraper"      && <ScraperTab />}
         {activeTab === "leaderboard"  && <LeaderboardTab />}

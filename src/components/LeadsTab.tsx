@@ -269,6 +269,15 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
         ) : <span style={{ color: "#383838", fontSize: "0.72rem" }}>—</span>}
       </td>
 
+      {/* DURÉE */}
+      <td style={{ padding: "8px 12px", textAlign: "center", whiteSpace: "nowrap" }}>
+        {prospect.callDuration
+          ? <span style={{ color: "#f59e0b", fontSize: "0.75rem", fontFamily: "monospace" }}>
+              {String(Math.floor(prospect.callDuration / 60)).padStart(2, "0")}:{String(prospect.callDuration % 60).padStart(2, "0")}
+            </span>
+          : <span style={{ color: "#383838", fontSize: "0.75rem" }}>—</span>}
+      </td>
+
       {/* COMMENTAIRES */}
       <td style={{ padding: "8px 12px", minWidth: 180, maxWidth: 260 }}>
         <Cell
@@ -508,6 +517,7 @@ export default function LeadsTab() {
               <TH>DATE RELANCE</TH>
               <TH>POURQUOI</TH>
               <TH style={{ textAlign: "center" }}>FICHE</TH>
+              <TH style={{ textAlign: "center" }}>DURÉE</TH>
               <TH>COMMENTAIRES</TH>
               <TH></TH>
             </tr>
@@ -515,7 +525,7 @@ export default function LeadsTab() {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={12} style={{ padding: "32px", textAlign: "center", color: "#484848", fontSize: "0.85rem" }}>
+                <td colSpan={13} style={{ padding: "32px", textAlign: "center", color: "#484848", fontSize: "0.85rem" }}>
                   {total === 0 ? "Aucun lead — cliquer sur « Charger les 34 leads »" : "Aucun résultat"}
                 </td>
               </tr>
