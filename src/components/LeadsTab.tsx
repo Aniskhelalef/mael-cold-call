@@ -397,15 +397,33 @@ function ScraperPanel() {
     } catch { /* keep polling */ }
   }
 
-  const BOOKING_PLATFORMS = [
-    "doctolib.fr", "resalib.fr", "calendly.com", "mondocteur.fr",
-    "kine-direct.fr", "clicrdv.com", "livi.fr", "maiia.com",
-    "qare.fr", "soignez-moi.fr", "softorino.com",
+  const NON_PERSONAL_DOMAINS = [
+    // Plateformes de réservation santé
+    "doctolib.fr", "resalib.fr", "mondocteur.fr", "kine-direct.fr",
+    "clicrdv.com", "livi.fr", "maiia.com", "qare.fr", "soignez-moi.fr",
+    "calendly.com", "cal.com",
+    // Annuaires santé
+    "oosteo.com", "therapeutes.com", "praticiens.fr", "annuairesante.fr",
+    "kiné-direct.fr", "psychologue.net", "psychologue.fr",
+    "annuaire-sophrologie.fr", "osteopathe-france.fr", "kinegarde.com",
+    "paramedicaux.fr", "sante.fr",
+    // Annuaires généralistes
+    "pagesjaunes.fr", "pagesjaunesante.fr", "118000.fr", "118218.fr",
+    "yelp.fr", "justacote.com", "hoodspot.fr", "local.fr",
+    "kompass.com", "europages.fr", "trouvez.com", "annuaire.fr",
+    "hotfrog.fr", "cylex.fr", "enrollbusiness.com",
+    // Builders bas de gamme
+    "wix.com", "wixsite.com", "jimdo.com", "jimdosite.com",
+    "weebly.com", "webnode.fr", "webnode.com", "site123.com",
+    "strikingly.com", "yola.com", "over-blog.com", "blogspot.com",
+    "wordpress.com", "tumblr.com",
+    // Réseaux sociaux utilisés comme site
+    "facebook.com", "instagram.com", "linkedin.com", "linktr.ee",
   ];
   function isTargetable(website?: string): boolean {
     if (!website) return true;
     const w = website.toLowerCase();
-    return BOOKING_PLATFORMS.some((p) => w.includes(p));
+    return NON_PERSONAL_DOMAINS.some((p) => w.includes(p));
   }
   const displayed     = results.filter((r) => !!r.phone && isTargetable(r.website));
   const selectedCount = displayed.filter((r) => selected.has(results.indexOf(r))).length;
@@ -481,7 +499,7 @@ function ScraperPanel() {
             <span style={{ color: "#484848" }}>·</span>
             <span className="font-game text-xs" style={{ color: "#60a5fa" }}>{displayed.length} ciblables</span>
             <span style={{ color: "#484848" }}>·</span>
-            <span className="font-game text-xs" style={{ color: "#484848" }}>{results.filter((r) => !!r.phone && !isTargetable(r.website)).length} exclus (site perso)</span>
+            <span className="font-game text-xs" style={{ color: "#484848" }}>{results.filter((r) => !!r.phone && !isTargetable(r.website)).length} exclus</span>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
