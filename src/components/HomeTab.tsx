@@ -315,16 +315,17 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
             ))}
           </div>
 
-          {/* ── Daily goal ──────────────────────────────────────────────── */}
-          <div
-            className="rounded-sm px-4 py-3"
-            style={{
-              background: CARD_BG,
-              border: `1px solid ${goalMet ? "rgba(28,228,0,0.4)" : BORDER}`,
-            }}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
+          {/* ── Daily goal + recharge ───────────────────────────────────── */}
+          <div className="flex gap-3 items-stretch">
+            {/* Objectif */}
+            <div
+              className="flex-1 rounded-sm px-4 py-3"
+              style={{
+                background: CARD_BG,
+                border: `1px solid ${goalMet ? "rgba(28,228,0,0.4)" : BORDER}`,
+              }}
+            >
+              <div className="flex items-center justify-between mb-2">
                 <div>
                   <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
                     OBJECTIF JOURNALIER
@@ -335,36 +336,42 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
                     </span>
                   )}
                 </div>
-                {onNavigate && (
-                  <button
-                    onClick={() => onNavigate("scraper")}
-                    className="font-game text-[9px] tracking-wider rounded-sm px-2 py-1 transition-all active:scale-95"
-                    style={{ background: "#1a1a1a", border: "1px solid #383838", color: "#848484", whiteSpace: "nowrap" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF5500"; e.currentTarget.style.color = "#FF5500"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
-                  >
-                    🔫 RECHARGER
-                  </button>
-                )}
+                <span className="font-game text-xs" style={{ color: goalMet ? "#1CE400" : "#C0C0C0" }}>
+                  {goalMet ? "✅ OBJECTIF ATTEINT" : `${state.dailyCalls} / ${dailyGoal} CALLS`}
+                </span>
               </div>
-              <span className="font-game text-xs" style={{ color: goalMet ? "#1CE400" : "#C0C0C0" }}>
-                {goalMet ? "✅ OBJECTIF ATTEINT" : `${state.dailyCalls} / ${dailyGoal} CALLS`}
-              </span>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
+                <div
+                  className="h-full rounded-full progress-bar"
+                  style={{
+                    width: `${goalPct}%`,
+                    background: goalMet
+                      ? "linear-gradient(90deg,#15803d,#22c55e)"
+                      : "linear-gradient(90deg,#CC4400,#FF5500)",
+                    boxShadow: goalMet
+                      ? "0 0 6px rgba(34,197,94,0.5)"
+                      : "0 0 6px rgba(255,85,0,0.4)",
+                  }}
+                />
+              </div>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
-              <div
-                className="h-full rounded-full progress-bar"
+
+            {/* Recharger */}
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate("scraper")}
+                className="rounded-sm font-game text-xs tracking-wider transition-all active:scale-95 flex flex-col items-center justify-center gap-1.5"
                 style={{
-                  width: `${goalPct}%`,
-                  background: goalMet
-                    ? "linear-gradient(90deg,#15803d,#22c55e)"
-                    : "linear-gradient(90deg,#CC4400,#FF5500)",
-                  boxShadow: goalMet
-                    ? "0 0 6px rgba(34,197,94,0.5)"
-                    : "0 0 6px rgba(255,85,0,0.4)",
+                  background: CARD_BG, border: `1px solid ${BORDER}`,
+                  color: "#848484", width: "90px", flexShrink: 0,
                 }}
-              />
-            </div>
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF5500"; e.currentTarget.style.color = "#FF5500"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = "#848484"; }}
+              >
+                <span style={{ fontSize: "1.4rem" }}>🔫</span>
+                <span>RECHARGER</span>
+              </button>
+            )}
           </div>
 
           {/* ── Call flow ───────────────────────────────────────────────── */}
