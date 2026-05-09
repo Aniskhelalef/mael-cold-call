@@ -127,9 +127,26 @@ export default function HomeTab() {
     resetCallFlow();
   }
   function handleRelanceConfirm() {
-    if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "rappel", rappelDate: relanceDate } });
+    if (currentProspect) dispatch({
+      type: "UPDATE_PROSPECT",
+      id: currentProspect.id,
+      changes: {
+        status: "rappel",
+        rappelDate: relanceDate,
+        relanceCount: (currentProspect.relanceCount ?? 0) + 1,
+      },
+    });
     setProspectIdx((i) => i + 1);
     resetCallFlow();
+  }
+
+  function handlePerdreDefinitif() {
+    if (!currentProspect) return;
+    if (window.confirm(`Perdre définitivement ${currentProspect.name} ? Il ne réapparaîtra plus dans la file.`)) {
+      dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "perdu" } });
+      setProspectIdx((i) => i + 1);
+      resetCallFlow();
+    }
   }
 
   const totalCallsYes = state.totalCallsYes ?? 0;
@@ -264,33 +281,63 @@ export default function HomeTab() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {/* Relance count badge */}
+                    {(currentProspect.relanceCount ?? 0) > 0 && (
+                      <span
+                        className="font-game text-[9px] px-1.5 py-0.5 rounded-sm"
+                        style={{ background: "rgba(93,199,229,0.12)", color: "#5DC7E5", border: "1px solid rgba(93,199,229,0.3)" }}
+                        title="Nombre de relances"
+                      >
+                        🔄 {currentProspect.relanceCount}
+                      </span>
+                    )}
+
+                    {/* Status badge */}
                     <span
                       className="font-game text-[9px] tracking-widest px-1.5 py-0.5 rounded-sm"
                       style={{ background: `${STATUS_COLOR[currentProspect.status] ?? "#848484"}18`, color: STATUS_COLOR[currentProspect.status] ?? "#848484", border: `1px solid ${STATUS_COLOR[currentProspect.status] ?? "#848484"}30` }}
                     >
                       {STATUS_LABEL[currentProspect.status] ?? currentProspect.status}
                     </span>
-                    {callableProspects.length > 1 && callStage === "idle" && (
+
+                    {callStage === "idle" && (
                       <div className="flex items-center gap-1">
+                        {/* Perdre définitivement */}
                         <button
-                          onClick={() => setProspectIdx((i) => (i - 1 + callableProspects.length) % callableProspects.length)}
+                          onClick={handlePerdreDefinitif}
                           className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
-                          style={{ color: "#848484", border: "1px solid #383838" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                          style={{ color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)" }}
+                          title="Perdre définitivement"
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                         >
-                          ←
+                          ✕
                         </button>
-                        <button
-                          onClick={() => setProspectIdx((i) => i + 1)}
-                          className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
-                          style={{ color: "#848484", border: "1px solid #383838" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
-                        >
-                          →
-                        </button>
+
+                        {/* Prev / Next */}
+                        {callableProspects.length > 1 && (
+                          <>
+                            <button
+                              onClick={() => setProspectIdx((i) => (i - 1 + callableProspects.length) % callableProspects.length)}
+                              className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
+                              style={{ color: "#848484", border: "1px solid #383838" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                            >
+                              ←
+                            </button>
+                            <button
+                              onClick={() => setProspectIdx((i) => i + 1)}
+                              className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
+                              style={{ color: "#848484", border: "1px solid #383838" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = "#C0C0C0"; e.currentTarget.style.borderColor = "#FF5500"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                            >
+                              →
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
