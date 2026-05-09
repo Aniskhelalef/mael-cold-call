@@ -6,7 +6,6 @@ import { ProspectStatus } from "@/lib/types";
 
 const CARD_BG = "#232323";
 const BORDER  = "#383838";
-const LS_TOKEN = "ccr_apify_token";
 
 // Platforms that don't count as a real website
 const PLATFORM_DOMAINS = ["doctolib", "facebook", "instagram", "twitter", "linkedin", "pages.google", "google.com/maps"];
@@ -72,10 +71,6 @@ const INPUT_STYLE: React.CSSProperties = {
 export default function ScraperTab() {
   const { dispatch, state } = useGame();
 
-  const [token,        setToken]        = useState(() =>
-    typeof window !== "undefined" ? (localStorage.getItem(LS_TOKEN) ?? "") : ""
-  );
-  const [showToken,    setShowToken]    = useState(false);
   const [searchTerm,   setSearchTerm]   = useState("ostéopathe");
   const [location,     setLocation]     = useState("");
   const [maxResults,   setMaxResults]   = useState(100);
@@ -89,12 +84,6 @@ export default function ScraperTab() {
 
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const tokenRef = useRef(token);
-  tokenRef.current = token;
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && token) localStorage.setItem(LS_TOKEN, token);
-  }, [token]);
 
   useEffect(() => () => { stopTimers(); }, []);
 
@@ -104,7 +93,6 @@ export default function ScraperTab() {
   }
 
   async function startScrape() {
-    if (!token.trim())      return setErrMsg("Entre ton token Apify ci-dessous.");
     if (!searchTerm.trim()) return setErrMsg("Entre un métier à chercher.");
     if (!location.trim())   return setErrMsg("Entre une ville ou région.");
 
@@ -121,7 +109,7 @@ export default function ScraperTab() {
       const res = await fetch("/api/apify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, searchTerm, location, maxResults }),
+        body: JSON.stringify({ searchTerm, location, maxResults }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
@@ -137,7 +125,7 @@ export default function ScraperTab() {
 
   async function pollRun(runId: string) {
     try {
-      const res  = await fetch(`/api/apify?runId=${runId}&token=${encodeURIComponent(tokenRef.current)}`);
+      const res  = await fetch(`/api/apify?runId=${runId}`);
       const data = await res.json() as { status: string; items?: ApifyItem[] };
 
       if (data.status === "SUCCEEDED") {
@@ -271,40 +259,6 @@ export default function ScraperTab() {
           <div className="flex justify-between" style={{ color: "#484848", fontSize: "0.62rem", marginTop: 2 }}>
             <span>25</span><span>500</span>
           </div>
-        </div>
-
-        {/* Token */}
-        <div className="mb-4">
-          <label style={{ display: "block", fontSize: "0.62rem", color: "#848484", letterSpacing: "0.1em", marginBottom: 6 }}>
-            TOKEN APIFY <span style={{ color: "#484848" }}>(stocké localement)</span>
-          </label>
-          <div className="flex gap-2">
-            <input
-              type={showToken ? "text" : "password"}
-              style={{ ...INPUT_STYLE, flex: 1 }}
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="apify_api_xxxxxxxxxxxx"
-              onFocus={(e) => { e.target.style.borderColor = "#FF5500"; }}
-              onBlur={(e)  => { e.target.style.borderColor = BORDER;    }}
-            />
-            <button
-              onClick={() => setShowToken(!showToken)}
-              style={{
-                background: "#181818", border: `1px solid ${BORDER}`, borderRadius: 3,
-                color: "#848484", padding: "0 12px", cursor: "pointer", fontSize: "0.8rem", flexShrink: 0,
-              }}
-            >
-              {showToken ? "🙈" : "👁"}
-            </button>
-          </div>
-          <p style={{ color: "#484848", fontSize: "0.65rem", marginTop: 4 }}>
-            Trouve ton token sur{" "}
-            <a href="https://console.apify.com/account/integrations" target="_blank" rel="noopener noreferrer"
-              style={{ color: "#848484", textDecoration: "underline" }}>
-              console.apify.com → Integrations
-            </a>
-          </p>
         </div>
 
         {errMsg && (
