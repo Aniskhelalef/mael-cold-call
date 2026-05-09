@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { GameState } from "@/lib/types";
 import { RANKS } from "@/lib/gameData";
-import { fetchAllStates, isSupabaseConfigured } from "@/lib/supabase";
+import { fetchAllStates, deleteAccount, isSupabaseConfigured } from "@/lib/supabase";
 import { Prospect, ProspectStatus } from "@/lib/types";
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "coldcall2024";
@@ -565,6 +565,8 @@ export default function AdminPage() {
   const [selectedEmail,  setSelectedEmail]  = useState<string | null>(null);
   const [loading,        setLoading]        = useState(false);
   const [activeTab,      setActiveTab]      = useState<"stats" | "pipeline">("stats");
+  const [confirmDelete,  setConfirmDelete]  = useState(false);
+  const [deleting,       setDeleting]       = useState(false);
 
   useEffect(() => {
     if (sessionStorage.getItem("admin_auth") === "true") setAuthenticated(true);
@@ -595,6 +597,17 @@ export default function AdminPage() {
 
   const selected = allUsers.find((u) => u.email === selectedEmail) ?? null;
 
+  async function handleDelete() {
+    if (!selectedEmail) return;
+    setDeleting(true);
+    await deleteAccount(selectedEmail);
+    setConfirmDelete(false);
+    setDeleting(false);
+    const remaining = allUsers.filter((u) => u.email !== selectedEmail);
+    setAllUsers(remaining);
+    setSelectedEmail(remaining[0]?.email ?? null);
+  }
+
   if (!selected && !loading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f1117" }}>
@@ -609,6 +622,43 @@ export default function AdminPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#0f1117" }}>
+
+      {/* ── Delete confirmation modal ── */}
+      {confirmDelete && selected && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onClick={() => setConfirmDelete(false)}
+        >
+          <div
+            style={{ background: "#1a1b26", border: "1px solid #383838", borderRadius: "0.5rem", padding: "1.5rem", maxWidth: "380px", width: "100%", boxShadow: "0 24px 60px rgba(0,0,0,0.7)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "1rem", fontWeight: 700, color: "#fff", letterSpacing: "0.08em", marginBottom: "0.5rem" }}>
+              SUPPRIMER LE COMPTE
+            </div>
+            <p style={{ color: "#6b7280", fontSize: "0.82rem", lineHeight: 1.5, marginBottom: "1.25rem" }}>
+              Supprimer définitivement <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{selected.state.playerName}</span> ({selected.email}) ?<br />
+              Toutes les données seront perdues.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                style={{ flex: 1, padding: "0.6rem", background: "transparent", border: "1px solid #374151", borderRadius: "0.375rem", color: "#6b7280", fontFamily: "Rajdhani, sans-serif", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer", letterSpacing: "0.08em" }}
+              >
+                ANNULER
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ flex: 1, padding: "0.6rem", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.5)", borderRadius: "0.375rem", color: "#ef4444", fontFamily: "Rajdhani, sans-serif", fontWeight: 700, fontSize: "0.8rem", cursor: deleting ? "not-allowed" : "pointer", letterSpacing: "0.08em" }}
+              >
+                {deleting ? "SUPPRESSION…" : "🗑 SUPPRIMER"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Top bar ── */}
       <div style={{ background: "#1a1b26", borderBottom: "1px solid #2a2b3d", position: "sticky", top: 0, zIndex: 20 }}>
         <div style={{ maxWidth: "72rem", margin: "0 auto", padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
@@ -644,6 +694,19 @@ export default function AdminPage() {
             >
               {loading ? "..." : "🔄 Sync"}
             </button>
+            {selected && (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                style={{
+                  padding: "0.4rem 0.875rem", borderRadius: "0.5rem",
+                  background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)",
+                  color: "#ef4444", fontSize: "0.75rem", cursor: "pointer",
+                  fontFamily: "Rajdhani, sans-serif", fontWeight: 700, letterSpacing: "0.06em",
+                }}
+              >
+                🗑 Supprimer
+              </button>
+            )}
           </div>
         </div>
 

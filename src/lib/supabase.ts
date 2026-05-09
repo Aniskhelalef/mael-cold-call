@@ -86,6 +86,18 @@ export async function castScriptVote(id: string, type: "like" | "dislike", delta
   }
 }
 
+// ── Delete account (admin) ───────────────────────────────────────────────────
+
+export async function deleteAccount(email: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase.from("game_state").delete().eq("id", email);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 // ── All users (admin) ────────────────────────────────────────────────────────
 
 export async function fetchAllStates(): Promise<{ email: string; state: GameState; syncedAt: string }[]> {
