@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { GameState } from "@/lib/types";
-import { ACHIEVEMENTS, RANKS } from "@/lib/gameData";
+import { RANKS } from "@/lib/gameData";
 import { fetchAllStates, isSupabaseConfigured } from "@/lib/supabase";
 import { Prospect, ProspectStatus } from "@/lib/types";
 
@@ -35,12 +35,6 @@ function timeAgo(date: Date) {
 function today() {
   return new Date().toISOString().split("T")[0];
 }
-
-const TIER = {
-  bronze: { border: "#cd7f32", text: "#cd7f32", bg: "rgba(205,127,50,0.12)" },
-  silver: { border: "#808090", text: "#c8d0e0", bg: "rgba(192,192,192,0.08)" },
-  gold:   { border: "#ffd700", text: "#ffd700", bg: "rgba(255,215,0,0.12)" },
-};
 
 // ─── Password Gate ─────────────────────────────────────────────────────────────
 
@@ -272,8 +266,6 @@ function AdminDashboard({
     ? ((state.totalBookings - rank.minBookings) / (nextRank.minBookings - rank.minBookings)) * 100
     : 100;
 
-  const unlocked = ACHIEVEMENTS.filter((a) => state.unlockedAchievements.includes(a.id));
-
   return (
     <div>
       {/* ── Player summary banner (when not hidden) ── */}
@@ -422,49 +414,6 @@ function AdminDashboard({
           </div>
         </div>
 
-        {/* ── Achievements ── */}
-        <div style={{ background: "#1a1b26", border: "1px solid #2a2b3d", borderRadius: "0.75rem", padding: "1.25rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-            <div style={{ fontSize: "0.65rem", color: "#4b5563", letterSpacing: "0.15em" }}>🏆 HAUTS FAITS</div>
-            <div style={{ fontSize: "0.875rem", color: "#6b7280" }}>
-              <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{unlocked.length}</span>
-              <span style={{ color: "#374151" }}> / {ACHIEVEMENTS.length}</span>
-            </div>
-          </div>
-          {/* Progress bar */}
-          <div style={{ height: "4px", borderRadius: "9999px", background: "#1f2937", marginBottom: "1.25rem" }}>
-            <div style={{
-              height: "100%", borderRadius: "9999px",
-              width: `${(unlocked.length / ACHIEVEMENTS.length) * 100}%`,
-              background: "linear-gradient(to right, #cd7f32, #ffd700)",
-              transition: "width 0.5s",
-            }} />
-          </div>
-          {unlocked.length === 0 ? (
-            <div style={{ textAlign: "center", color: "#374151", padding: "2rem 0", fontSize: "0.875rem" }}>
-              Aucun haut fait débloqué pour l&apos;instant
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "0.75rem" }}>
-              {unlocked.map((ach) => {
-                const s = TIER[ach.tier];
-                return (
-                  <div
-                    key={ach.id}
-                    style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: "0.625rem", padding: "0.875rem" }}
-                  >
-                    <div style={{ fontSize: "1.75rem", marginBottom: "0.4rem" }}>{ach.icon}</div>
-                    <div style={{ fontFamily: "Rajdhani, sans-serif", fontSize: "0.8rem", fontWeight: 700, color: s.text, marginBottom: "0.25rem" }}>
-                      {ach.title}
-                    </div>
-                    <div style={{ fontSize: "0.7rem", color: "#6b7280", marginBottom: "0.5rem" }}>{ach.description}</div>
-                    <div style={{ fontSize: "0.7rem", color: s.text, fontWeight: 600 }}>+{ach.xpReward} XP</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
         <div style={{ textAlign: "center", fontSize: "0.7rem", color: "#1f2937", paddingBottom: "1rem" }}>
           Cold Call of Duty Admin — Données en lecture seule
