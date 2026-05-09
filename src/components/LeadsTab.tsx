@@ -346,7 +346,7 @@ const INPUT_STYLE: React.CSSProperties = {
 };
 
 function ScraperPanel() {
-  const { dispatch } = useGame();
+  const { state, dispatch } = useGame();
   const [searchTerm,   setSearchTerm]   = useState("ostéopathe");
   const [location,     setLocation]     = useState("");
   const [maxResults,   setMaxResults]   = useState(100);
@@ -397,6 +397,14 @@ function ScraperPanel() {
     } catch { /* keep polling */ }
   }
 
+  const pipelinePhones = new Set(
+    (state.prospects ?? []).map((p) => p.phone.replace(/\s/g, "")).filter(Boolean)
+  );
+  function alreadyInPipeline(phone?: string): boolean {
+    if (!phone) return false;
+    return pipelinePhones.has(phone.replace(/\s/g, ""));
+  }
+
   const NON_PERSONAL_DOMAINS = [
     // Plateformes de réservation santé
     "doctolib.fr", "resalib.fr", "mondocteur.fr", "kine-direct.fr",
@@ -425,7 +433,8 @@ function ScraperPanel() {
     const w = website.toLowerCase();
     return NON_PERSONAL_DOMAINS.some((p) => w.includes(p));
   }
-  const displayed     = results.filter((r) => !!r.phone && isTargetable(r.website));
+  const alreadyKnown  = results.filter((r) => !!r.phone && alreadyInPipeline(r.phone)).length;
+  const displayed     = results.filter((r) => !!r.phone && isTargetable(r.website) && !alreadyInPipeline(r.phone));
   const selectedCount = displayed.filter((r) => selected.has(results.indexOf(r))).length;
   const allChecked    = displayed.length > 0 && displayed.every((r) => selected.has(results.indexOf(r)));
 
@@ -495,11 +504,17 @@ function ScraperPanel() {
       {scrapeStatus === "done" && results.length > 0 && (
         <div style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: 4, overflow: "hidden" }}>
           <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
-            <span className="font-game text-xs" style={{ color: "#848484" }}>{results.length} fiches Google</span>
-            <span style={{ color: "#484848" }}>·</span>
-            <span className="font-game text-xs" style={{ color: "#60a5fa" }}>{displayed.length} ciblables</span>
-            <span style={{ color: "#484848" }}>·</span>
-            <span className="font-game text-xs" style={{ color: "#484848" }}>{results.filter((r) => !!r.phone && !isTargetable(r.website)).length} exclus</span>
+            <span className="font-game text-xs" style={{ color: "#848484" }}>{results.length} fiches</span>
+            <span style={{ color: "#383838" }}>·</span>
+            <span className="font-game text-xs" style={{ color: "#1CE400" }}>{displayed.length} nouveaux</span>
+            {alreadyKnown > 0 && (<>
+              <span style={{ color: "#383838" }}>·</span>
+              <span className="font-game text-xs" style={{ color: "#5DC7E5" }}>{alreadyKnown} déjà en pipeline</span>
+            </>)}
+            {results.filter((r) => !!r.phone && !isTargetable(r.website)).length > 0 && (<>
+              <span style={{ color: "#383838" }}>·</span>
+              <span className="font-game text-xs" style={{ color: "#484848" }}>{results.filter((r) => !!r.phone && !isTargetable(r.website)).length} exclus</span>
+            </>)}
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
