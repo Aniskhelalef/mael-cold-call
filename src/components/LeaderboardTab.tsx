@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/gameContext";
-import { fetchLeaderboard, LeaderboardEntry, isSupabaseConfigured } from "@/lib/supabase";
+import { fetchLeaderboard, fetchStateFromSupabase, LeaderboardEntry, isSupabaseConfigured } from "@/lib/supabase";
 import { getRank } from "@/lib/gameData";
+import { GameState } from "@/lib/types";
 
 function getInitials(name: string): string {
   return name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase();
@@ -24,13 +25,102 @@ const MEDAL = ["🥇", "🥈", "🥉"];
 const CARD_BG = "#232323";
 const BORDER  = "#383838";
 
+// ── Player detail modal ───────────────────────────────────────────────────────
+
+function PlayerModal({ entry, onClose }: { entry: LeaderboardEntry; onClose: () => void }) {
+  const [playerState, setPlayerState] = useState<GameState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const rank = getRank(entry.totalBookings);
+
+  useEffect(() => {
+    fetchStateFromSupabase(entry.email)
+      .then((r) => { if (r) setPlayerState(r.state); })
+      .finally(() => setLoading(false));
+  }, [entry.email]);
+
+  const taux = playerState && playerState.totalCalls > 0
+    ? Math.round((playerState.totalBookings / playerState.totalCalls) * 100)
+    : 0;
+  const todayKey = new Date().toISOString().split("T")[0];
+  const todayEntry = playerState?.history?.find((h) => h.date === todayKey);
+
+  const stats = playerState ? [
+    { label: "Calls total",     value: playerState.totalCalls.toLocaleString("fr-FR"),    color: "#FF5500" },
+    { label: "RDV total",       value: playerState.totalBookings.toLocaleString("fr-FR"), color: "#1CE400" },
+    { label: "Sites vendus",    value: (playerState.totalSales ?? 0).toString(),           color: "#f59e0b" },
+    { label: "Taux conversion", value: `${taux}%`,                                         color: "#60a5fa" },
+    { label: "Streak actuel",   value: `${playerState.currentStreak}j`,                    color: "#f97316" },
+    { label: "Record streak",   value: `${playerState.longestStreak}j`,                    color: "#848484" },
+    { label: "Calls aujourd'hui", value: todayEntry ? todayEntry.calls.toString() : "0",  color: "#FF5500" },
+    { label: "RDV aujourd'hui", value: todayEntry ? todayEntry.bookings.toString() : "0", color: "#1CE400" },
+  ] : [];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-sm overflow-hidden"
+        style={{ background: "#1a1a1a", border: "1px solid #383838", boxShadow: "0 24px 60px rgba(0,0,0,0.7)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-5 flex items-center gap-4" style={{ borderBottom: "1px solid #2D2D2D" }}>
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center font-game text-lg flex-shrink-0"
+            style={{ background: `${rank.color}22`, border: `2px solid ${rank.color}`, color: rank.color }}
+          >
+            {getInitials(entry.name)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-game text-base text-white truncate">{entry.name}</div>
+            <div className="font-game text-xs mt-0.5" style={{ color: rank.color }}>{rank.name}</div>
+            <div style={{ color: "#484848", fontSize: "0.65rem", marginTop: "2px" }}>{timeAgo(entry.updatedAt)}</div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", color: "#848484", fontSize: "1.2rem", cursor: "pointer", padding: "4px" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#fff"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#848484"; }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="p-5">
+          {loading ? (
+            <div className="font-game text-xs text-center py-6" style={{ color: "#848484" }}>CHARGEMENT…</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {stats.map((s) => (
+                <div key={s.label} className="rounded-sm p-3" style={{ background: "#232323", border: "1px solid #2D2D2D" }}>
+                  <div style={{ color: "#484848", fontSize: "0.6rem", letterSpacing: "0.08em", marginBottom: "4px" }}>
+                    {s.label.toUpperCase()}
+                  </div>
+                  <div className="font-game text-xl" style={{ color: s.color, lineHeight: 1 }}>
+                    {s.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LeaderboardTab() {
   const { state } = useGame();
-  const [entries,   setEntries]   = useState<LeaderboardEntry[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState<string | null>(null);
-  const [sortBy,    setSortBy]    = useState<"rdv" | "calls" | "streak">("rdv");
-  const [refreshed, setRefreshed] = useState(0);
+  const [entries,        setEntries]        = useState<LeaderboardEntry[]>([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState<string | null>(null);
+  const [sortBy,         setSortBy]         = useState<"rdv" | "calls" | "streak">("rdv");
+  const [refreshed,      setRefreshed]      = useState(0);
+  const [selectedPlayer, setSelectedPlayer] = useState<LeaderboardEntry | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -96,6 +186,9 @@ export default function LeaderboardTab() {
 
   return (
     <div className="space-y-3 max-w-3xl mx-auto">
+      {selectedPlayer && (
+        <PlayerModal entry={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+      )}
 
       {/* ── Header card ──────────────────────────────────────────────────── */}
       <div
@@ -187,13 +280,18 @@ export default function LeaderboardTab() {
             return (
               <div
                 key={pos}
+                onClick={() => { if (!isSelf) setSelectedPlayer(entry); }}
                 className={`rounded-sm flex flex-col items-center justify-end ${heights[col]} pb-3 relative overflow-hidden`}
                 style={{
                   background: isSelf
                     ? "rgba(255,85,0,0.1)"
                     : pos === 0 ? "rgba(255,215,0,0.06)" : "#232323",
                   border: `1px solid ${isSelf ? "rgba(255,85,0,0.4)" : pos === 0 ? "rgba(255,215,0,0.25)" : "#383838"}`,
+                  cursor: isSelf ? "default" : "pointer",
+                  transition: "opacity 0.15s",
                 }}
+                onMouseEnter={(e) => { if (!isSelf) (e.currentTarget as HTMLDivElement).style.opacity = "0.8"; }}
+                onMouseLeave={(e) => { if (!isSelf) (e.currentTarget as HTMLDivElement).style.opacity = "1"; }}
               >
                 <div className="absolute top-2 left-0 right-0 text-center" style={{ fontSize: col === 1 ? "1.4rem" : "1.1rem" }}>
                   {MEDAL[pos]}
@@ -265,11 +363,15 @@ export default function LeaderboardTab() {
               <div
                 key={entry.email || entry.name}
                 className={`lb-row grid px-4 py-3 items-center ${isSelf ? "lb-row-self" : ""}`}
+                onClick={() => { if (!isSelf) setSelectedPlayer(entry); }}
                 style={{
                   gridTemplateColumns: "36px 1fr 56px 80px 60px 50px",
                   gap: "8px",
                   borderBottom: "1px solid #2D2D2D",
+                  cursor: isSelf ? "default" : "pointer",
                 }}
+                onMouseEnter={(e) => { if (!isSelf) (e.currentTarget as HTMLDivElement).style.background = "#252525"; }}
+                onMouseLeave={(e) => { if (!isSelf) (e.currentTarget as HTMLDivElement).style.background = ""; }}
               >
                 {/* Rank */}
                 <div className="font-game text-sm" style={{ color: rank <= 3 ? "#FF5500" : "#848484" }}>

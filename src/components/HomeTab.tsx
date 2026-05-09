@@ -324,14 +324,27 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
             }}
           >
             <div className="flex items-center justify-between mb-2">
-              <div>
-                <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
-                  OBJECTIF JOURNALIER
-                </span>
-                {dailyGoal < 80 && (
-                  <span className="font-game text-[9px] ml-2" style={{ color: "#484848" }}>
-                    → {dailyGoal + 10} la semaine prochaine
+              <div className="flex items-center gap-3">
+                <div>
+                  <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
+                    OBJECTIF JOURNALIER
                   </span>
+                  {dailyGoal < 80 && (
+                    <span className="font-game text-[9px] ml-2" style={{ color: "#484848" }}>
+                      → {dailyGoal + 10} sem. prochaine
+                    </span>
+                  )}
+                </div>
+                {onNavigate && (
+                  <button
+                    onClick={() => onNavigate("scraper")}
+                    className="font-game text-[9px] tracking-wider rounded-sm px-2 py-1 transition-all active:scale-95"
+                    style={{ background: "#1a1a1a", border: "1px solid #383838", color: "#848484", whiteSpace: "nowrap" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF5500"; e.currentTarget.style.color = "#FF5500"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
+                  >
+                    🔫 RECHARGER
+                  </button>
                 )}
               </div>
               <span className="font-game text-xs" style={{ color: goalMet ? "#1CE400" : "#C0C0C0" }}>
@@ -985,29 +998,6 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
 
       </div>
 
-      {/* ── "Recharger les leads" floating shortcut ── */}
-      {onNavigate && (
-        <button
-          onClick={() => onNavigate("scraper")}
-          className="fixed bottom-6 right-6 z-40 font-game text-xs tracking-wider rounded-sm px-4 py-3 transition-all active:scale-95"
-          style={{
-            background: "#232323",
-            border: "1px solid #383838",
-            color: "#848484",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "#FF5500";
-            e.currentTarget.style.color = "#FF5500";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "#383838";
-            e.currentTarget.style.color = "#848484";
-          }}
-        >
-          🔫 RECHARGER LES LEADS
-        </button>
-      )}
     </div>
   );
 }
