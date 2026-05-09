@@ -144,6 +144,62 @@ export async function fetchAllStates(): Promise<{ email: string; state: GameStat
   }
 }
 
+// ── Script variants (contributions utilisateurs) ─────────────────────────────
+// Table: script_variants (id TEXT PK, step_id TEXT, author TEXT, text TEXT, likes INT DEFAULT 0, created_at TIMESTAMPTZ)
+
+export interface ScriptVariant {
+  id: string;
+  step_id: string;
+  author: string;
+  text: string;
+  likes: number;
+  created_at: string;
+}
+
+export async function fetchScriptVariants(): Promise<ScriptVariant[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("script_variants")
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (error || !data) return [];
+    return data as ScriptVariant[];
+  } catch {
+    return [];
+  }
+}
+
+export async function addScriptVariant(step_id: string, author: string, text: string): Promise<ScriptVariant | null> {
+  if (!supabase) return null;
+  try {
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const { data, error } = await supabase
+      .from("script_variants")
+      .insert({ id, step_id, author, text, likes: 0 })
+      .select()
+      .single();
+    if (error || !data) return null;
+    return data as ScriptVariant;
+  } catch {
+    return null;
+  }
+}
+
+export async function likeScriptVariant(id: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.from("script_variants").select("likes").eq("id", id).single();
+    const cur = (data as { likes: number } | null)?.likes ?? 0;
+    await supabase.from("script_variants").update({ likes: cur + 1 }).eq("id", id);
+  } catch {}
+}
+
+export async function deleteScriptVariant(id: string): Promise<void> {
+  if (!supabase) return;
+  try { await supabase.from("script_variants").delete().eq("id", id); } catch {}
+}
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 
 export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
