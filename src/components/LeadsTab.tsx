@@ -397,7 +397,17 @@ function ScraperPanel() {
     } catch { /* keep polling */ }
   }
 
-  const displayed     = results.filter((r) => !!r.phone);
+  const BOOKING_PLATFORMS = [
+    "doctolib.fr", "resalib.fr", "calendly.com", "mondocteur.fr",
+    "kine-direct.fr", "clicrdv.com", "livi.fr", "maiia.com",
+    "qare.fr", "soignez-moi.fr", "softorino.com",
+  ];
+  function isTargetable(website?: string): boolean {
+    if (!website) return true;
+    const w = website.toLowerCase();
+    return BOOKING_PLATFORMS.some((p) => w.includes(p));
+  }
+  const displayed     = results.filter((r) => !!r.phone && isTargetable(r.website));
   const selectedCount = displayed.filter((r) => selected.has(results.indexOf(r))).length;
   const allChecked    = displayed.length > 0 && displayed.every((r) => selected.has(results.indexOf(r)));
 
@@ -469,7 +479,9 @@ function ScraperPanel() {
           <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
             <span className="font-game text-xs" style={{ color: "#848484" }}>{results.length} fiches Google</span>
             <span style={{ color: "#484848" }}>·</span>
-            <span className="font-game text-xs" style={{ color: "#60a5fa" }}>{displayed.length} avec téléphone</span>
+            <span className="font-game text-xs" style={{ color: "#60a5fa" }}>{displayed.length} ciblables</span>
+            <span style={{ color: "#484848" }}>·</span>
+            <span className="font-game text-xs" style={{ color: "#484848" }}>{results.filter((r) => !!r.phone && !isTargetable(r.website)).length} exclus (site perso)</span>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
