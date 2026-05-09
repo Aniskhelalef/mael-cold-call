@@ -174,24 +174,6 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
               </div>
             </div>
 
-            {/* Reset stats */}
-            <button
-              onClick={handleResetStats}
-              title="Réinitialiser les stats"
-              className="w-7 h-7 rounded flex items-center justify-center transition-colors duration-150"
-              style={{ background: "transparent", border: "1px solid #383838", color: "#848484" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#f59e0b";
-                e.currentTarget.style.color = "#f59e0b";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#383838";
-                e.currentTarget.style.color = "#848484";
-              }}
-            >
-              <span style={{ fontSize: "0.75rem" }}>↺</span>
-            </button>
-
             {/* Logout */}
             <button
               onClick={handleLogout}
