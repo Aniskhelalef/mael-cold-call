@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { fetchScriptVotes, castScriptVote, ScriptVote, isSupabaseConfigured } from "@/lib/supabase";
+import {
+  fetchScriptVotes, castScriptVote, ScriptVote, isSupabaseConfigured,
+  fetchScriptVariants, addScriptVariant, likeScriptVariant, ScriptVariant,
+} from "@/lib/supabase";
+import { useGame } from "@/lib/gameContext";
 
 const CARD_BG = "#232323";
 const BORDER  = "#383838";
@@ -19,6 +23,27 @@ function saveLocalVotes(v: Record<string, "like" | "dislike">) {
   localStorage.setItem(LS_KEY, JSON.stringify(v));
 }
 
+// ── Active variants (per-step localStorage) ───────────────────────────────────
+
+const LS_ACTIVE_KEY = "script_active_variants";
+function loadActiveVariants(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(LS_ACTIVE_KEY) ?? "{}"); } catch { return {}; }
+}
+function saveActiveVariants(v: Record<string, string>) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(LS_ACTIVE_KEY, JSON.stringify(v));
+}
+
+// ── Author color ──────────────────────────────────────────────────────────────
+
+const AUTHOR_PALETTE = ["#FF5500", "#5DC7E5", "#1CE400", "#FF9500", "#AE00FC", "#f59e0b", "#06b6d4", "#f43f5e"];
+function authorColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AUTHOR_PALETTE[Math.abs(hash) % AUTHOR_PALETTE.length];
+}
+
 function useVotes() {
   const [votes,      setVotes]      = useState<Record<string, ScriptVote>>({});
   const [myVotes,    setMyVotes]    = useState<Record<string, "like" | "dislike">>({});
@@ -34,7 +59,6 @@ function useVotes() {
     const newMyVotes = { ...myVotes };
 
     if (prev === type) {
-      // Toggle off
       delete newMyVotes[id];
       saveLocalVotes(newMyVotes);
       setMyVotes(newMyVotes);
@@ -44,7 +68,6 @@ function useVotes() {
       });
       await castScriptVote(id, type, -1);
     } else {
-      // Cancel previous if any
       if (prev) {
         setVotes((cur) => {
           const base = cur[id] ?? { id, likes: 0, dislikes: 0 };
@@ -52,7 +75,6 @@ function useVotes() {
         });
         await castScriptVote(id, prev, -1);
       }
-      // Add new vote
       newMyVotes[id] = type;
       saveLocalVotes(newMyVotes);
       setMyVotes(newMyVotes);
@@ -62,7 +84,6 @@ function useVotes() {
       });
       await castScriptVote(id, type, 1);
     }
-    // Re-fetch after a short delay to get server truth
     setTimeout(() => setRefreshKey((k) => k + 1), 800);
   }, [myVotes]);
 
@@ -163,7 +184,7 @@ const OBJECTIONS = [
 
 const VARIANTS = [
   { num: 1, name: "POP Classique",       profil: "Défaut — tous profils",                    script: "« POP ! Allô, je suis bien avec le meilleur ostéo de [ville] ? »" },
-  { num: 2, name: "L'Aveu Direct",        profil: "Profils méfiants, qui filtrent",            script: "« Allô [Prénom] ? Si je vous dis que c'est un appel de prospection, vous me raccrochez au nez ou vous me laissez 10 secondes ? »" },
+  { num: 2, name: "L'Aveu Direct",        profil: "Profils méfiants, qui filtrent",            script: "« Allô [Prénom] ? Si je vous dit que c'est un appel de prospection, vous me raccrochez au nez ou vous me laissez 10 secondes ? »" },
   { num: 3, name: "Trigger Doctolib",     profil: "Profils avec beaucoup d'avis Doctolib",     script: "« Allô [Prénom] ? Vous avez 4.8 étoiles sur 80 avis, c'est solide. Par contre quand je tape «ostéo [ville]» sur Google, vous sortez nulle part. C'est pour ça que je vous appelle, vous me laissez 30 secondes ? »" },
   { num: 4, name: "Faux Numéro Confus",   profil: "Cabinets avec secrétariat, surbookés",      script: "« Allô ? Je suis bien chez Dr [Nom] ? L'ostéo ? ... Ah ouf. Bon, je vais être transparent : c'est un appel de prospection. Mais avant que vous raccrochiez, je vous propose un truc : 20 secondes pour expliquer, après c'est vous qui décidez. Deal ? »" },
   { num: 5, name: "Curiosité Chirurgicale", profil: "Seniors installés, se croient à l'abri", script: "« Allô [Prénom] ? Sur 10 nouveaux patients, vous sauriez me dire combien viennent du bouche à oreille, combien de Google, combien de Doctolib ? ... La plupart des ostéos pensaient 80% bouche à oreille — quand on a tracké, c'était 40%. Le reste leur passait sous le nez. C'est pour ça que je vous appelle. 5 minutes ? »" },
@@ -205,36 +226,222 @@ function CopyBtn({ text }: { text: string }) {
 
 type VoteProps = { votes: Record<string, ScriptVote>; myVotes: Record<string, "like" | "dislike">; vote: (id: string, type: "like" | "dislike") => void; };
 
-function ScriptSection({ votes, myVotes, vote }: VoteProps) {
+interface ScriptSectionProps extends VoteProps {
+  variants:       ScriptVariant[];
+  activeVariants: Record<string, string>;
+  playerName:     string;
+  onLike:         (id: string) => void;
+  onSetActive:    (step_id: string, variant_id: string | null) => void;
+  onAdd:          (step_id: string, text: string) => Promise<void>;
+}
+
+function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerName, onLike, onSetActive, onAdd }: ScriptSectionProps) {
+  const [openVarFor,  setOpenVarFor]  = useState<number | null>(null);
+  const [addingFor,   setAddingFor]   = useState<number | null>(null);
+  const [draftText,   setDraftText]   = useState("");
+  const [submitting,  setSubmitting]  = useState(false);
+
+  async function handleSubmit(i: number, step_id: string) {
+    if (!draftText.trim()) return;
+    setSubmitting(true);
+    await onAdd(step_id, draftText.trim());
+    setDraftText("");
+    setAddingFor(null);
+    setSubmitting(false);
+  }
+
   return (
     <div className="space-y-2">
       {SCRIPT_STEPS.map((step, i) => {
-        const id = `script_${i}`;
+        const step_id     = `script_${i}`;
+        const activeVarId = activeVariants[step_id];
+        const activeVar   = activeVarId ? variants.find((v) => v.id === activeVarId) : null;
+        const stepVars    = variants.filter((v) => v.step_id === step_id);
+        const displayText = activeVar ? activeVar.text : step.text;
+        const isVarOpen   = openVarFor === i;
+
         return (
           <div
             key={i}
             className="rounded-sm p-4"
-            style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${step.color}` }}
+            style={{
+              background:  CARD_BG,
+              border:      `1px solid ${BORDER}`,
+              borderLeft:  `3px solid ${activeVar ? authorColor(activeVar.author) : step.color}`,
+            }}
           >
+            {/* Header row */}
             <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
-              <span
-                className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
-                style={{ color: step.color, background: `${step.color}14` }}
-              >
-                {step.tag}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
+                  style={{ color: step.color, background: `${step.color}14` }}
+                >
+                  {step.tag}
+                </span>
+                {activeVar && (
+                  <span
+                    className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
+                    style={{ color: authorColor(activeVar.author), background: `${authorColor(activeVar.author)}18`, border: `1px solid ${authorColor(activeVar.author)}40` }}
+                  >
+                    {activeVar.author}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-1.5">
-                <VoteBar id={id} votes={votes} myVotes={myVotes} vote={vote} />
-                <CopyBtn text={step.text} />
+                <VoteBar id={`script_${i}`} votes={votes} myVotes={myVotes} vote={vote} />
+                <CopyBtn text={displayText} />
               </div>
             </div>
+
+            {/* Text */}
             <p style={{ color: "#FFFFFF", fontSize: "0.88rem", lineHeight: 1.7, margin: 0 }}>
-              {step.text}
+              {displayText}
             </p>
-            {step.note && (
+            {!activeVar && step.note && (
               <p style={{ color: "#848484", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>
                 {step.note}
               </p>
+            )}
+
+            {/* Variants toggle */}
+            {isSupabaseConfigured && (
+              <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${BORDER}` }}>
+                <button
+                  onClick={() => { setOpenVarFor(isVarOpen ? null : i); setAddingFor(null); setDraftText(""); }}
+                  className="font-game text-[9px] tracking-widest transition-colors"
+                  style={{ color: isVarOpen ? "#FF5500" : "#686868", background: "transparent", border: "none", cursor: "pointer" }}
+                >
+                  {isVarOpen ? "▼" : "▶"} VARIANTES COMMUNAUTAIRES ({stepVars.length})
+                </button>
+
+                {isVarOpen && (
+                  <div className="mt-2 space-y-2">
+                    {/* Existing variants */}
+                    {stepVars.map((v) => {
+                      const isActive = activeVarId === v.id;
+                      const col      = authorColor(v.author);
+                      return (
+                        <div
+                          key={v.id}
+                          className="rounded-sm p-3"
+                          style={{
+                            background: isActive ? `${col}0a` : "#1a1a1a",
+                            border:     `1px solid ${isActive ? `${col}40` : "#2e2e2e"}`,
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span
+                              className="font-game text-[9px] tracking-widest px-1.5 py-0.5 rounded-sm"
+                              style={{ color: col, background: `${col}18`, border: `1px solid ${col}30` }}
+                            >
+                              {v.author}
+                            </span>
+                            <div className="flex items-center gap-1.5 ml-auto">
+                              <button
+                                onClick={() => onLike(v.id)}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                                style={{
+                                  background: "rgba(255,255,255,0.03)",
+                                  border:     "1px solid #383838",
+                                  color:      "#848484",
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = "#1CE400"; e.currentTarget.style.borderColor = "rgba(28,228,0,0.4)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                              >
+                                👍 {v.likes > 0 ? v.likes : ""}
+                              </button>
+                              <button
+                                onClick={() => onSetActive(step_id, isActive ? null : v.id)}
+                                className="px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                                style={{
+                                  background: isActive ? `${col}20` : "rgba(255,255,255,0.03)",
+                                  border:     `1px solid ${isActive ? `${col}60` : "#383838"}`,
+                                  color:      isActive ? col : "#848484",
+                                }}
+                              >
+                                {isActive ? "✓ ACTIF" : "UTILISER"}
+                              </button>
+                            </div>
+                          </div>
+                          <p style={{ color: "#C0C0C0", fontSize: "0.82rem", lineHeight: 1.65, margin: 0 }}>
+                            {v.text}
+                          </p>
+                        </div>
+                      );
+                    })}
+
+                    {/* Add variant */}
+                    {addingFor === i ? (
+                      <div
+                        className="rounded-sm p-3 space-y-2"
+                        style={{ background: "#1a1a1a", border: `1px solid rgba(255,85,0,0.25)` }}
+                      >
+                        <div className="font-game text-[9px] tracking-widest" style={{ color: "#FF5500" }}>
+                          MA VARIANTE — {playerName || "ANONYME"}
+                        </div>
+                        <textarea
+                          value={draftText}
+                          onChange={(e) => setDraftText(e.target.value)}
+                          placeholder="Tape ta version ici…"
+                          rows={3}
+                          style={{
+                            width:        "100%",
+                            background:   "#232323",
+                            border:       "1px solid #383838",
+                            borderRadius: "3px",
+                            padding:      "0.5rem 0.75rem",
+                            color:        "#FFFFFF",
+                            fontSize:     "0.82rem",
+                            lineHeight:   1.6,
+                            outline:      "none",
+                            resize:       "vertical",
+                          }}
+                          onFocus={(e) => { e.target.style.borderColor = "#FF5500"; }}
+                          onBlur={(e)  => { e.target.style.borderColor = "#383838"; }}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleSubmit(i, step_id)}
+                            disabled={submitting || !draftText.trim()}
+                            className="px-3 py-1.5 rounded-sm font-game text-[9px] tracking-wider"
+                            style={{
+                              background: "rgba(255,85,0,0.15)",
+                              border:     "1px solid rgba(255,85,0,0.5)",
+                              color:      "#FF5500",
+                              opacity:    submitting || !draftText.trim() ? 0.5 : 1,
+                              cursor:     submitting || !draftText.trim() ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            {submitting ? "..." : "PUBLIER"}
+                          </button>
+                          <button
+                            onClick={() => { setAddingFor(null); setDraftText(""); }}
+                            className="px-3 py-1.5 rounded-sm font-game text-[9px] tracking-wider"
+                            style={{ background: "transparent", border: "1px solid #383838", color: "#848484" }}
+                          >
+                            ANNULER
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setAddingFor(i)}
+                        className="w-full py-2 rounded-sm font-game text-[9px] tracking-widest transition-all"
+                        style={{
+                          background: "transparent",
+                          border:     "1px dashed #383838",
+                          color:      "#686868",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,85,0,0.4)"; e.currentTarget.style.color = "#FF5500"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#686868"; }}
+                      >
+                        + AJOUTER MA VARIANTE
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         );
@@ -253,20 +460,19 @@ function ObjectionsSection({ votes, myVotes, vote }: VoteProps) {
 
   return (
     <div className="space-y-2">
-      {/* Search */}
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Chercher une objection…"
         style={{
-          width: "100%",
-          background: CARD_BG,
-          border: `1px solid ${BORDER}`,
+          width:        "100%",
+          background:   CARD_BG,
+          border:       `1px solid ${BORDER}`,
           borderRadius: "3px",
-          padding: "0.5rem 0.75rem",
-          color: "#FFFFFF",
-          fontSize: "0.85rem",
-          outline: "none",
+          padding:      "0.5rem 0.75rem",
+          color:        "#FFFFFF",
+          fontSize:     "0.85rem",
+          outline:      "none",
         }}
         onFocus={(e) => { e.target.style.borderColor = "#FF5500"; }}
         onBlur={(e)  => { e.target.style.borderColor = BORDER;    }}
@@ -389,8 +595,38 @@ const SECTIONS = [
 ];
 
 export default function ScriptTab() {
-  const [activeSection, setActiveSection] = useState("script");
-  const { votes, myVotes, vote } = useVotes();
+  const [activeSection,  setActiveSection]  = useState("script");
+  const { votes, myVotes, vote }            = useVotes();
+  const { state }                           = useGame();
+
+  const [scriptVariants,  setScriptVariants]  = useState<ScriptVariant[]>([]);
+  const [activeVariants,  setActiveVariants]  = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setActiveVariants(loadActiveVariants());
+    if (isSupabaseConfigured) {
+      fetchScriptVariants().then(setScriptVariants);
+    }
+  }, []);
+
+  function handleLikeVariant(id: string) {
+    setScriptVariants((cur) => cur.map((v) => v.id === id ? { ...v, likes: v.likes + 1 } : v));
+    void likeScriptVariant(id);
+  }
+
+  function handleSetActive(step_id: string, variant_id: string | null) {
+    const next = { ...activeVariants };
+    if (variant_id === null) delete next[step_id];
+    else next[step_id] = variant_id;
+    setActiveVariants(next);
+    saveActiveVariants(next);
+  }
+
+  async function handleAddVariant(step_id: string, text: string) {
+    const author = state.playerName || "Anonyme";
+    const result = await addScriptVariant(step_id, author, text);
+    if (result) setScriptVariants((cur) => [...cur, result]);
+  }
 
   return (
     <div className="space-y-3 max-w-3xl mx-auto">
@@ -441,7 +677,17 @@ export default function ScriptTab() {
       </div>
 
       {/* Content */}
-      {activeSection === "script"     && <ScriptSection     votes={votes} myVotes={myVotes} vote={vote} />}
+      {activeSection === "script" && (
+        <ScriptSection
+          votes={votes} myVotes={myVotes} vote={vote}
+          variants={scriptVariants}
+          activeVariants={activeVariants}
+          playerName={state.playerName}
+          onLike={handleLikeVariant}
+          onSetActive={handleSetActive}
+          onAdd={handleAddVariant}
+        />
+      )}
       {activeSection === "objections" && <ObjectionsSection votes={votes} myVotes={myVotes} vote={vote} />}
       {activeSection === "variants"   && <VariantsSection   votes={votes} myVotes={myVotes} vote={vote} />}
     </div>
