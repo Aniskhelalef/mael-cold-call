@@ -403,7 +403,7 @@ function ScraperPanel() {
     "clicrdv.com", "livi.fr", "maiia.com", "qare.fr", "soignez-moi.fr",
     "calendly.com", "cal.com",
     // Annuaires santé
-    "oosteo.com", "therapeutes.com", "praticiens.fr", "annuairesante.fr",
+    "oosteo.com", "reflexosteo.com", "therapeutes.com", "praticiens.fr", "annuairesante.fr",
     "kiné-direct.fr", "psychologue.net", "psychologue.fr",
     "annuaire-sophrologie.fr", "osteopathe-france.fr", "kinegarde.com",
     "paramedicaux.fr", "sante.fr",
