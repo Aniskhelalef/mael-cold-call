@@ -96,8 +96,15 @@ export default function HomeTab() {
   const rank     = getRank(state.totalBookings);
   const nextRank = getNextRank(state.totalBookings);
 
-  const goalPct = Math.min(100, Math.round((state.dailyCalls / 20) * 100));
-  const goalMet = state.dailyCalls >= 20;
+  // Progressive daily goal: starts at 20, +10 each week, capped at 80
+  const dailyGoal = (() => {
+    const firstDay = state.history[0]?.date ?? new Date().toISOString().split("T")[0];
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weeksSince = Math.floor((Date.now() - new Date(firstDay + "T00:00:00").getTime()) / msPerWeek);
+    return Math.min(80, 20 + weeksSince * 10);
+  })();
+  const goalPct = Math.min(100, Math.round((state.dailyCalls / dailyGoal) * 100));
+  const goalMet = state.dailyCalls >= dailyGoal;
 
   const rankGroupIcon =
     rank.group === "global"   ? "👑" :
@@ -290,11 +297,18 @@ export default function HomeTab() {
             }}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
-                OBJECTIF JOURNALIER
-              </span>
+              <div>
+                <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
+                  OBJECTIF JOURNALIER
+                </span>
+                {dailyGoal < 80 && (
+                  <span className="font-game text-[9px] ml-2" style={{ color: "#484848" }}>
+                    → {dailyGoal + 10} la semaine prochaine
+                  </span>
+                )}
+              </div>
               <span className="font-game text-xs" style={{ color: goalMet ? "#1CE400" : "#C0C0C0" }}>
-                {goalMet ? "✅ OBJECTIF ATTEINT" : `${state.dailyCalls} / 20 CALLS`}
+                {goalMet ? "✅ OBJECTIF ATTEINT" : `${state.dailyCalls} / ${dailyGoal} CALLS`}
               </span>
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#383838" }}>
