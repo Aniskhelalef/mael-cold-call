@@ -340,6 +340,29 @@ function PipelinePanel() {
 
 type ScrapeStatus = "idle" | "running" | "done" | "error";
 
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+function cacheKey(term: string, loc: string) {
+  return `sc_${term.trim().toLowerCase()}|${loc.trim().toLowerCase()}`;
+}
+function loadCache(term: string, loc: string): { items: ApifyItem[]; cachedAt: string } | null {
+  try {
+    const raw = localStorage.getItem(cacheKey(term, loc));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { items: ApifyItem[]; cachedAt: string };
+    if (Date.now() - new Date(parsed.cachedAt).getTime() > CACHE_TTL) {
+      localStorage.removeItem(cacheKey(term, loc));
+      return null;
+    }
+    return parsed;
+  } catch { return null; }
+}
+function saveCache(term: string, loc: string, items: ApifyItem[]) {
+  try {
+    localStorage.setItem(cacheKey(term, loc), JSON.stringify({ items, cachedAt: new Date().toISOString() }));
+  } catch { /* quota */ }
+}
+
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%", background: "#181818", border: `1px solid ${BORDER}`,
   borderRadius: 3, padding: "10px 12px", color: "#fff", fontSize: "0.85rem", outline: "none",
@@ -356,6 +379,7 @@ function ScraperPanel() {
   const [results,      setResults]      = useState<ApifyItem[]>([]);
   const [selected,     setSelected]     = useState<Set<number>>(new Set());
   const [imported,     setImported]     = useState(false);
+  const [cachedAt,     setCachedAt]     = useState<string | null>(null);
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -366,9 +390,27 @@ function ScraperPanel() {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   }
 
-  async function startScrape() {
+  function applyResults(items: ApifyItem[]) {
+    setResults(items);
+    setSelected(new Set(items.map((_, i) => i).filter((i) => !!(items[i].phone))));
+    setScrapeStatus("done");
+  }
+
+  async function startScrape(forceNew = false) {
     if (!searchTerm.trim()) return setErrMsg("Entre un métier à chercher.");
     if (!location.trim())   return setErrMsg("Entre une ville ou région.");
+
+    if (!forceNew) {
+      const cached = loadCache(searchTerm, location);
+      if (cached) {
+        setCachedAt(cached.cachedAt);
+        setImported(false); setErrMsg("");
+        applyResults(cached.items);
+        return;
+      }
+    }
+
+    setCachedAt(null);
     setErrMsg(""); setImported(false); setScrapeStatus("running"); setResults([]); setSelected(new Set()); setElapsed(0);
     timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
     try {
@@ -387,9 +429,8 @@ function ScraperPanel() {
       if (data.status === "SUCCEEDED") {
         stopTimers();
         const items = data.items ?? [];
-        setResults(items);
-        setSelected(new Set(items.map((_, i) => i).filter((i) => !!(items[i].phone))));
-        setScrapeStatus("done");
+        saveCache(searchTerm, location, items);
+        applyResults(items);
       } else if (["FAILED", "ABORTED", "TIMED-OUT"].includes(data.status)) {
         stopTimers(); setScrapeStatus("error");
         setErrMsg(data.errorMessage ? `Run ${data.status.toLowerCase()} : ${data.errorMessage}` : `Run ${data.status.toLowerCase()} — vérifie les paramètres et réessaie.`);
@@ -486,7 +527,23 @@ function ScraperPanel() {
           <div className="flex justify-between" style={{ color: "#484848", fontSize: "0.62rem", marginTop: 2 }}><span>25</span><span>500</span></div>
         </div>
         {errMsg && <div style={{ color: "#ef4444", fontSize: "0.78rem", marginBottom: 12 }}>{errMsg}</div>}
-        <button onClick={startScrape} disabled={scrapeStatus === "running"}
+        {cachedAt && scrapeStatus === "done" && (
+          <div className="flex items-center justify-between mb-3 px-3 py-2 rounded-sm" style={{ background: "rgba(93,199,229,0.08)", border: "1px solid rgba(93,199,229,0.25)" }}>
+            <span style={{ color: "#5DC7E5", fontSize: "0.72rem" }}>
+              ⚡ Cache du {new Date(cachedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} — 0 crédit Apify consommé
+            </span>
+            <button
+              onClick={() => startScrape(true)}
+              className="font-game text-xs tracking-wider px-3 py-1 rounded-sm"
+              style={{ background: "transparent", border: "1px solid rgba(93,199,229,0.4)", color: "#5DC7E5", cursor: "pointer" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              🔄 Nouveau scrape
+            </button>
+          </div>
+        )}
+        <button onClick={() => startScrape()} disabled={scrapeStatus === "running"}
           className="w-full py-3 rounded-sm font-game text-sm tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ background: scrapeStatus === "running" ? "rgba(255,85,0,0.1)" : "#FF5500", border: "1px solid #FF5500", color: scrapeStatus === "running" ? "#FF5500" : "#fff" }}>
           {scrapeStatus === "running" ? `⏳ EN COURS… ${elapsed}s` : "▶ LANCER LE SCRAPING"}
