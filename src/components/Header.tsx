@@ -81,7 +81,7 @@ function getInitials(name: string): string {
 
 export default function Header({ activeTab, setActiveTab }: HeaderProps) {
   const { state, dispatch } = useGame();
-  const [modal, setModal] = useState<"logout" | "reset" | "wipe" | null>(null);
+  const [modal, setModal] = useState<"logout" | "reset" | null>(null);
 
   const handleLogout = () => setModal("logout");
   const handleResetStats = () => setModal("reset");
@@ -117,17 +117,7 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
         onCancel={() => setModal(null)}
       />
     )}
-    {modal === "wipe" && (
-      <ConfirmModal
-        title="TOUT RÉINITIALISER"
-        body="Stats ET pipeline seront entièrement effacés. Ton compte reste actif. Action irréversible."
-        confirmLabel="💣 TOUT EFFACER"
-        danger
-        onConfirm={() => { dispatch({ type: "WIPE_ALL" }); setModal(null); }}
-        onCancel={() => setModal(null)}
-      />
-    )}
-    <header
+<header
       className="sticky top-0 z-40"
       style={{ background: "#181818", borderBottom: "1px solid #383838" }}
     >
@@ -233,24 +223,6 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                 </div>
               </div>
             </div>
-
-            {/* Wipe all */}
-            <button
-              onClick={() => setModal("wipe")}
-              title="Tout réinitialiser (stats + pipeline)"
-              className="w-7 h-7 rounded flex items-center justify-center transition-colors duration-150"
-              style={{ background: "transparent", border: "1px solid #383838", color: "#848484" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#ef4444";
-                e.currentTarget.style.color = "#ef4444";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#383838";
-                e.currentTarget.style.color = "#848484";
-              }}
-            >
-              <span style={{ fontSize: "0.75rem" }}>💣</span>
-            </button>
 
             {/* Logout */}
             <button
