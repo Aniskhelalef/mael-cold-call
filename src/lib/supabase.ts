@@ -153,6 +153,7 @@ export interface ScriptVariant {
   author: string;
   text: string;
   likes: number;
+  dislikes: number;
   created_at: string;
 }
 
@@ -192,6 +193,15 @@ export async function likeScriptVariant(id: string): Promise<void> {
     const { data } = await supabase.from("script_variants").select("likes").eq("id", id).single();
     const cur = (data as { likes: number } | null)?.likes ?? 0;
     await supabase.from("script_variants").update({ likes: cur + 1 }).eq("id", id);
+  } catch {}
+}
+
+export async function dislikeScriptVariant(id: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.from("script_variants").select("dislikes").eq("id", id).single();
+    const cur = (data as { dislikes: number } | null)?.dislikes ?? 0;
+    await supabase.from("script_variants").update({ dislikes: cur + 1 }).eq("id", id);
   } catch {}
 }
 

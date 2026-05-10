@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   fetchScriptVotes, castScriptVote, ScriptVote, isSupabaseConfigured,
-  fetchScriptVariants, addScriptVariant, likeScriptVariant, ScriptVariant,
+  fetchScriptVariants, addScriptVariant, likeScriptVariant, dislikeScriptVariant, deleteScriptVariant, ScriptVariant,
 } from "@/lib/supabase";
 import { useGame } from "@/lib/gameContext";
 
@@ -231,11 +231,13 @@ interface ScriptSectionProps extends VoteProps {
   activeVariants: Record<string, string>;
   playerName:     string;
   onLike:         (id: string) => void;
+  onDislike:      (id: string) => void;
+  onDelete:       (id: string) => void;
   onSetActive:    (step_id: string, variant_id: string | null) => void;
   onAdd:          (step_id: string, text: string) => Promise<void>;
 }
 
-function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerName, onLike, onSetActive, onAdd }: ScriptSectionProps) {
+function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerName, onLike, onDislike, onDelete, onSetActive, onAdd }: ScriptSectionProps) {
   const [openVarFor,  setOpenVarFor]  = useState<number | null>(null);
   const [addingFor,   setAddingFor]   = useState<number | null>(null);
   const [draftText,   setDraftText]   = useState("");
@@ -340,15 +342,20 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
                               <button
                                 onClick={() => onLike(v.id)}
                                 className="flex items-center gap-1 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
-                                style={{
-                                  background: "rgba(255,255,255,0.03)",
-                                  border:     "1px solid #383838",
-                                  color:      "#848484",
-                                }}
+                                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #383838", color: "#848484" }}
                                 onMouseEnter={(e) => { e.currentTarget.style.color = "#1CE400"; e.currentTarget.style.borderColor = "rgba(28,228,0,0.4)"; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
                               >
                                 👍 {v.likes > 0 ? v.likes : ""}
+                              </button>
+                              <button
+                                onClick={() => onDislike(v.id)}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #383838", color: "#848484" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.4)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                              >
+                                👎 {(v.dislikes ?? 0) > 0 ? v.dislikes : ""}
                               </button>
                               <button
                                 onClick={() => onSetActive(step_id, isActive ? null : v.id)}
@@ -360,6 +367,16 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
                                 }}
                               >
                                 {isActive ? "✓ ACTIF" : "UTILISER"}
+                              </button>
+                              <button
+                                onClick={() => onDelete(v.id)}
+                                className="px-1.5 py-0.5 rounded-sm transition-all"
+                                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #383838", color: "#686868", fontSize: "0.75rem" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.4)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = "#686868"; e.currentTarget.style.borderColor = "#383838"; }}
+                                title="Supprimer"
+                              >
+                                🗑
                               </button>
                             </div>
                           </div>
@@ -612,6 +629,23 @@ export default function ScriptTab() {
     void likeScriptVariant(id);
   }
 
+  function handleDislikeVariant(id: string) {
+    setScriptVariants((cur) => cur.map((v) => v.id === id ? { ...v, dislikes: (v.dislikes ?? 0) + 1 } : v));
+    void dislikeScriptVariant(id);
+  }
+
+  function handleDeleteVariant(id: string) {
+    setScriptVariants((cur) => cur.filter((v) => v.id !== id));
+    // Also clear active if it was this variant
+    setActiveVariants((cur) => {
+      const next = { ...cur };
+      for (const key of Object.keys(next)) { if (next[key] === id) delete next[key]; }
+      saveActiveVariants(next);
+      return next;
+    });
+    void deleteScriptVariant(id);
+  }
+
   function handleSetActive(step_id: string, variant_id: string | null) {
     const next = { ...activeVariants };
     if (variant_id === null) delete next[step_id];
@@ -682,6 +716,8 @@ export default function ScriptTab() {
           activeVariants={activeVariants}
           playerName={state.playerName}
           onLike={handleLikeVariant}
+          onDislike={handleDislikeVariant}
+          onDelete={handleDeleteVariant}
           onSetActive={handleSetActive}
           onAdd={handleAddVariant}
         />
