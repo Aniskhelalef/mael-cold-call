@@ -482,11 +482,11 @@ function ScraperPanel() {
     return NON_PERSONAL_DOMAINS.some((p) => w.includes(p));
   }
   const alreadyKnown  = results.filter((r) => !!r.phone && alreadyInPipeline(r.phone)).length;
-  const displayed     = results.filter((r) => !!r.phone && isTargetable(r.website) && !alreadyInPipeline(r.phone) && !r.temporarilyClosed && !r.permanentlyClosed && (r.reviewsCount ?? 0) >= 1);
+  const displayed     = results.filter((r) => !!r.phone && !alreadyInPipeline(r.phone) && !r.temporarilyClosed && !r.permanentlyClosed && (r.reviewsCount ?? 0) >= 1 && isTargetable(r.website));
 
   function importItems(items: ApifyItem[]) {
     const toImport = items.filter(
-      (r) => !!r.phone && isTargetable(r.website) && !alreadyInPipeline(r.phone) && !r.temporarilyClosed && !r.permanentlyClosed && (r.reviewsCount ?? 0) >= 1
+      (r) => !!r.phone && !alreadyInPipeline(r.phone) && !r.temporarilyClosed && !r.permanentlyClosed && (r.reviewsCount ?? 0) >= 1 && isTargetable(r.website)
     );
     if (toImport.length === 0) { setImported(true); return; }
     const leads = toImport.map((r) => ({
@@ -567,10 +567,6 @@ function ScraperPanel() {
             {alreadyKnown > 0 && (<>
               <span style={{ color: "#383838" }}>·</span>
               <span className="font-game text-xs" style={{ color: "#5DC7E5" }}>{alreadyKnown} déjà en pipeline</span>
-            </>)}
-            {results.filter((r) => !!r.phone && !isTargetable(r.website)).length > 0 && (<>
-              <span style={{ color: "#383838" }}>·</span>
-              <span className="font-game text-xs" style={{ color: "#484848" }}>{results.filter((r) => !!r.phone && !isTargetable(r.website)).length} exclus</span>
             </>)}
           </div>
           <div style={{ overflowX: "auto" }}>
