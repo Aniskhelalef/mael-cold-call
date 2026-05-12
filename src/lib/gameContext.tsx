@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef } from "react";
 import { GameState, GameAction } from "./types";
 import { syncStateToSupabase, supabase } from "./supabase";
-import { syncAllLocalRecordings } from "./recordings";
+import { syncAllLocalRecordings, getRecording } from "./recordings";
 import {
   ACHIEVEMENTS,
   ACHIEVEMENT_MONEY_REWARDS,
@@ -699,7 +699,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     supabase?.from("game_state").delete().eq("id", "mael").then(() => {});
   }, []);
 
-  // Auto-sync: upload any local IndexedDB recording keys to Supabase
+  // Auto-sync: upload local IndexedDB keys to Supabase, or fallback to base64 data URL
   const autoSyncRunning = useRef(false);
   const localKeySignature = (state.prospects ?? [])
     .flatMap((p) => (p.recordings ?? []).filter((r) => !r.startsWith("http") && !r.startsWith("data:")))
@@ -709,18 +709,37 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const prospects = state.prospects ?? [];
     const localKeys = Array.from(new Set(localKeySignature.split(",").filter(Boolean)));
     autoSyncRunning.current = true;
-    syncAllLocalRecordings(localKeys).then((map) => {
-      if (map.size > 0) {
-        for (const p of prospects) {
-          const recs = p.recordings ?? [];
-          const updated = recs.map((r) => map.get(r) ?? r);
-          if (updated.some((r, i) => r !== recs[i])) {
-            dispatch({ type: "UPDATE_PROSPECT", id: p.id, changes: { recordings: updated } });
+
+    async function resolveKey(key: string): Promise<string | null> {
+      // Try Supabase upload first
+      const { uploadToSupabase } = await import("./recordings");
+      const blob = await getRecording(key);
+      if (!blob) return null;
+      const url = await uploadToSupabase(key, blob);
+      if (url) return url;
+      // Fallback: base64 data URL so it travels via game_state sync
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror  = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    Promise.all(localKeys.map(async (key) => ({ key, resolved: await resolveKey(key) })))
+      .then((results) => {
+        const map = new Map(results.filter((r) => r.resolved).map((r) => [r.key, r.resolved as string]));
+        if (map.size > 0) {
+          for (const p of prospects) {
+            const recs = p.recordings ?? [];
+            const updated = recs.map((r) => map.get(r) ?? r);
+            if (updated.some((r, i) => r !== recs[i])) {
+              dispatch({ type: "UPDATE_PROSPECT", id: p.id, changes: { recordings: updated } });
+            }
           }
         }
-      }
-      autoSyncRunning.current = false;
-    });
+        autoSyncRunning.current = false;
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localKeySignature]);
 
