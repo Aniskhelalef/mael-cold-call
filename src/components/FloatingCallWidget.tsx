@@ -320,7 +320,21 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
                       {currentProspect.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-game text-sm text-white leading-tight truncate">{currentProspect.name}</div>
+                      {currentProspect.googleMapsUrl ? (
+                        <a
+                          href={currentProspect.googleMapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-game text-sm leading-tight truncate block"
+                          style={{ color: "#FFFFFF", textDecoration: "none" }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#FF5500"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#FFFFFF"; }}
+                        >
+                          {currentProspect.name} <span style={{ fontSize: "0.6rem", opacity: 0.6 }}>↗</span>
+                        </a>
+                      ) : (
+                        <div className="font-game text-sm text-white leading-tight truncate">{currentProspect.name}</div>
+                      )}
                       <div style={{ color: "#848484", fontSize: "0.65rem", marginTop: "1px" }}>
                         {[currentProspect.specialite, currentProspect.ville].filter(Boolean).join(" · ")}
                         {currentProspect.rappelDate && (
