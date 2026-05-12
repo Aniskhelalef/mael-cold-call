@@ -451,30 +451,44 @@ function ScraperPanel() {
     // Plateformes de réservation santé
     "doctolib.fr", "resalib.fr", "mondocteur.fr", "kine-direct.fr",
     "clicrdv.com", "livi.fr", "maiia.com", "qare.fr", "soignez-moi.fr",
-    "calendly.com", "cal.com",
+    "calendly.com", "cal.com", "keldoc.com", "crenolib.fr",
+    "perfactive.fr", "moncabinetliberal.fr", "medoucine.com",
+    "liberlo.com", "docorga.com", "simplybook.me", "setmore.com",
+    "booksy.com", "zenchef.com", "timify.com",
     // Annuaires santé
-    "oosteo.com", "reflexosteo.com", "therapeutes.com", "praticiens.fr", "annuairesante.fr",
-    "kiné-direct.fr", "psychologue.net", "psychologue.fr",
+    "oosteo.com", "reflexosteo.com", "therapeutes.com", "praticiens.fr",
+    "annuairesante.fr", "psychologue.net", "psychologue.fr",
     "annuaire-sophrologie.fr", "osteopathe-france.fr", "kinegarde.com",
-    "paramedicaux.fr", "sante.fr",
+    "paramedicaux.fr", "sante.fr", "passeportsante.net",
+    "proxibienetre.fr", "theraneo.com", "medecin.fr",
+    "indexsante.fr", "naturosante.fr", "therapeutes-de-france.fr",
     // Annuaires généralistes
-    "pagesjaunes.fr", "pagesjaunesante.fr", "118000.fr", "118218.fr",
-    "yelp.fr", "justacote.com", "hoodspot.fr", "local.fr",
-    "kompass.com", "europages.fr", "trouvez.com", "annuaire.fr",
-    "hotfrog.fr", "cylex.fr", "enrollbusiness.com",
+    "pagesjaunes.fr", "118000.fr", "118218.fr",
+    "yelp.fr", "justacote.com", "hoodspot.fr",
+    "kompass.com", "europages.fr", "hotfrog.fr", "cylex.fr",
+    "misterwhat.fr", "cybo.com", "brownbook.net", "infobel.com",
+    "local.fr", "trouvez.com", "annuaire.fr", "enrollbusiness.com",
     // Builders bas de gamme
     "wix.com", "wixsite.com", "jimdo.com", "jimdosite.com",
     "weebly.com", "webnode.fr", "webnode.com", "site123.com",
     "strikingly.com", "yola.com", "over-blog.com", "blogspot.com",
-    "wordpress.com", "tumblr.com",
-    // Réseaux sociaux utilisés comme site
-    "facebook.com", "instagram.com", "linkedin.com", "linktr.ee", "linktree.com",
-    // Chambres syndicales & ordres professionnels
+    "wordpress.com", "tumblr.com", "sites.google.com",
+    "mozello.com", "webself.net", "e-monsite.com", "sitew.com", "orson.io",
+    // Réseaux sociaux
+    "facebook.com", "instagram.com", "linkedin.com",
+    "linktr.ee", "linktree.com", "tiktok.com",
+    "pinterest.fr", "pinterest.com", "youtube.com",
+    "threads.net", "x.com", "twitter.com",
+    "beacons.ai", "carrd.co",
+    // Syndicats / ordres / fédérations
     "osteopathie.org", "ufof.fr", "ffmkr.com", "ordremk.fr",
     "syndicat-kinesitherapeutes.fr", "fede-kine.fr", "chambresyndic",
     "chambre-syndicale", "federation-osteopathes.fr", "ufdo.fr",
     "syndicat-osteopathes.fr", "sof.asso.fr", "sofmer.com",
-    "fno.fr", "federation-kinesitherapeutes.fr",
+    "fno.fr", "federation-kinesitherapeutes.fr", "snmkr.fr",
+    "ff2p.fr", "ordre.medecin.fr",
+    // Cartes / visibilité locale
+    "maps.google", "maps.apple.com", "bing.com/maps", "waze.com", "g.page",
   ];
   function isTargetable(website?: string): boolean {
     if (!website) return true;
