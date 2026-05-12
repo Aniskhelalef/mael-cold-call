@@ -337,6 +337,19 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
                           📞 {currentProspect.phone}
                         </a>
                       )}
+                      {currentProspect.website && (
+                        <a
+                          href={currentProspect.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#f97316", fontSize: "0.65rem", textDecoration: "none", display: "block", marginTop: "2px", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#fb923c"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#f97316"; }}
+                          title={currentProspect.website}
+                        >
+                          🌐 {currentProspect.website.replace(/^https?:\/\/(www\.)?/, "")}
+                        </a>
+                      )}
                     </div>
                   </div>
 
