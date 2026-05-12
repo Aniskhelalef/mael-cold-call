@@ -136,36 +136,37 @@ const SCRIPT_STEPS = [
     tag: "OPENER", color: "#FF5500",
     text: "« Allô, je suis bien avec le meilleur ostéo de [VILLE] ? »",
     note: "(rire / « ah ah pas vraiment »)",
+    objIdxs: [9, 3],
   },
   {
     tag: "PERMISSION", color: "#5DC7E5",
     text: "« Super. Si je vous dis que c'est un appel de prospection, vous jetez le téléphone par la fenêtre ou vous me laissez 10 petites secondes pour expliquer ? »",
     note: "(attendre la réponse)",
+    objIdxs: [6, 3],
   },
   {
     tag: "ACCROCHE", color: "#1CE400",
     text: "« Cool, merci. J'étais en train de me promener sur internet, je cherchais un ostéo sur [VILLE], et j'ai vu que vous n'aviez pas de site web. Je me doute qu'on vous appelle déjà tout le temps pour vous en vendre un, hein ? »",
     note: "(réaction)",
+    objIdxs: [0, 2, 1],
   },
   {
     tag: "DIFFÉRENCIATION", color: "#FF9500",
     text: "« Voilà, la grande différence avec les agences classiques, c'est que moi j'ai déjà pris la liberté de vous le créer directement, juste pour que vous voyiez à quoi ça ressemble. Vous avez 5 petites minutes pour y jeter un petit coup d'œil ? »",
     note: null,
+    objIdxs: [4, 7, 3],
   },
   {
     tag: "SI OUI ✓", color: "#1CE400",
     text: "→ Tu envoies le lien WhatsApp ou SMS sur l'instant, tu restes au tél.",
     note: null,
-  },
-  {
-    tag: "SI NON ✗", color: "#ef4444",
-    text: "« Pas de souci, je vous prends en dépourvu. Quand est-ce que vous finissez vos consults aujourd'hui ? Si je vous dis 18h c'est bon ? »",
-    note: "(négocier le créneau précis)",
+    objIdxs: [] as number[],
   },
   {
     tag: "CLOSE RAPPEL", color: "#AE00FC",
     text: "« Top, alors je vous rappelle à 18h, je vous envoie le lien et je prends 5 minutes pour vous le montrer. »",
     note: null,
+    objIdxs: [5, 8],
   },
 ];
 
@@ -242,6 +243,7 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
   const [addingFor,   setAddingFor]   = useState<number | null>(null);
   const [draftText,   setDraftText]   = useState("");
   const [submitting,  setSubmitting]  = useState(false);
+  const [openObj,     setOpenObj]     = useState<string | null>(null);
 
   async function handleSubmit(i: number, step_id: string) {
     if (!draftText.trim()) return;
@@ -304,6 +306,53 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
               <p style={{ color: "#848484", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>
                 {step.note}
               </p>
+            )}
+
+            {/* Objection shortcuts */}
+            {step.objIdxs.length > 0 && (
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {step.objIdxs.map((oi) => {
+                    const obj    = OBJECTIONS[oi];
+                    const key    = `${i}_${oi}`;
+                    const isOpen = openObj === key;
+                    return (
+                      <button
+                        key={oi}
+                        onClick={() => setOpenObj(isOpen ? null : key)}
+                        className="px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                        style={{
+                          background: isOpen ? "rgba(93,199,229,0.12)" : "rgba(255,255,255,0.04)",
+                          border:     `1px solid ${isOpen ? "rgba(93,199,229,0.45)" : "#383838"}`,
+                          color:      isOpen ? "#5DC7E5" : "#848484",
+                        }}
+                      >
+                        {obj.trigger}
+                      </button>
+                    );
+                  })}
+                </div>
+                {step.objIdxs.map((oi) => {
+                  const obj    = OBJECTIONS[oi];
+                  const key    = `${i}_${oi}`;
+                  if (openObj !== key) return null;
+                  return (
+                    <div
+                      key={oi}
+                      className="mt-2 rounded-sm px-3 py-2.5"
+                      style={{ background: "rgba(93,199,229,0.06)", border: "1px solid rgba(93,199,229,0.2)" }}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-game text-[9px] tracking-widest" style={{ color: "#5DC7E5" }}>RÉPONSE</span>
+                        <CopyBtn text={obj.response} />
+                      </div>
+                      <p style={{ color: "#D0D0D0", fontSize: "0.82rem", lineHeight: 1.65, margin: 0 }}>
+                        {obj.response}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
             {/* Variants toggle */}
