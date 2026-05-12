@@ -250,6 +250,11 @@ function performDailyReset(state: GameState, today: string): GameState {
   // Keep only last 365 days
   const trimmedHistory = newHistory.slice(-365);
 
+  // Auto-archive perdu prospects at day boundary
+  const prospectsArchived = (state.prospects ?? []).map((p) =>
+    p.status === "perdu" && !p.archived ? { ...p, archived: true } : p
+  );
+
   return {
     ...state,
     dailyCalls: 0,
@@ -258,6 +263,7 @@ function performDailyReset(state: GameState, today: string): GameState {
     lastResetDate: today,
     history: trimmedHistory,
     noScopeEligible: true,
+    prospects: prospectsArchived,
   };
 }
 
@@ -610,6 +616,15 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...currentState,
         prospects: (currentState.prospects ?? []).filter((p) => p.id !== action.id),
+      };
+    }
+
+    case "ARCHIVE_PERDUS": {
+      return {
+        ...currentState,
+        prospects: (currentState.prospects ?? []).map((p) =>
+          p.status === "perdu" && !p.archived ? { ...p, archived: true } : p
+        ),
       };
     }
 

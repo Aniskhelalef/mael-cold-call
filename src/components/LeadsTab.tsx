@@ -219,12 +219,18 @@ function PipelinePanel() {
   const [search,       setSearch]       = useState("");
   const [filterStatus, setFilterStatus] = useState<ProspectStatus | "all">("all");
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
-  const prospects = state.prospects ?? [];
+  const [archiveOpen,  setArchiveOpen]  = useState(false);
+
+  const allProspects     = state.prospects ?? [];
+  const prospects        = allProspects.filter((p) => !p.archived);
+  const archivedProspects = allProspects.filter((p) => p.archived);
+
   const total       = prospects.length;
   const reached     = prospects.filter((p) => p.reponse === "Oui" || p.reponse === "Non").length;
   const oui         = prospects.filter((p) => p.reponse === "Oui").length;
   const relancePend = prospects.filter((p) => p.status === "rappel").length;
   const rdvCount    = prospects.filter((p) => p.status === "rdv").length;
+  const perdus      = prospects.filter((p) => p.status === "perdu").length;
   const tauxReponse = reached > 0 ? Math.round((oui / reached) * 100) : 0;
 
   const filtered = useMemo(() => {
@@ -306,6 +312,17 @@ function PipelinePanel() {
         <div style={{ color: "#484848", fontSize: "0.72rem", marginLeft: 4 }}>
           {filtered.length} affiché{filtered.length !== 1 ? "s" : ""}
         </div>
+        {perdus > 0 && !someChecked && (
+          <button
+            onClick={() => { if (window.confirm(`Archiver ${perdus} prospect${perdus > 1 ? "s" : ""} perdu${perdus > 1 ? "s" : ""} ?`)) dispatch({ type: "ARCHIVE_PERDUS" }); }}
+            className="font-game text-xs tracking-wider px-3 py-2 rounded-sm ml-auto"
+            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", cursor: "pointer" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.15)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.08)"; }}
+          >
+            📦 ARCHIVER LES PERDUS ({perdus})
+          </button>
+        )}
         {someChecked && (
           <div className="flex items-center gap-3 ml-auto">
             <span className="font-game text-xs" style={{ color: "#FF5500" }}>{selectedCount} sélectionné{selectedCount !== 1 ? "s" : ""}</span>
@@ -345,6 +362,66 @@ function PipelinePanel() {
           </tbody>
         </table>
       </div>
+
+      {/* Archives */}
+      {archivedProspects.length > 0 && (
+        <div style={{ borderRadius: 4, border: "1px solid #2a2a2a", overflow: "hidden" }}>
+          <button
+            onClick={() => setArchiveOpen((o) => !o)}
+            className="w-full flex items-center gap-2 px-4 py-3 font-game text-xs tracking-widest"
+            style={{ background: "#1a1a1a", border: "none", cursor: "pointer", color: "#484848", textAlign: "left" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#686868"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#484848"; }}
+          >
+            <span>📦</span>
+            <span>ARCHIVES</span>
+            <span style={{ background: "#2a2a2a", borderRadius: 2, padding: "1px 6px", fontSize: "0.65rem" }}>{archivedProspects.length}</span>
+            <span style={{ fontSize: "0.65rem", color: "#383838" }}>— prospects perdus archivés automatiquement</span>
+            <span className="ml-auto">{archiveOpen ? "▲" : "▼"}</span>
+          </button>
+          {archiveOpen && (
+            <div style={{ overflowX: "auto", borderTop: "1px solid #222" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    {["NOM", "SPÉCIALITÉ", "VILLE", "TÉL", "1er CONTACT", "COMMENTAIRES", ""].map((h) => (
+                      <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "0.62rem", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, letterSpacing: "0.1em", color: "#484848", borderBottom: "1px solid #222", background: "#161616", whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {archivedProspects.map((p, i) => (
+                    <tr key={p.id} style={{ borderBottom: i < archivedProspects.length - 1 ? "1px solid #1e1e1e" : "none", background: i % 2 === 0 ? "#181818" : "#1a1a1a" }}>
+                      <td style={{ padding: "7px 12px", fontSize: "0.78rem", color: "#686868", whiteSpace: "nowrap" }}>{p.name}</td>
+                      <td style={{ padding: "7px 12px", fontSize: "0.72rem", color: "#484848" }}>{p.specialite}</td>
+                      <td style={{ padding: "7px 12px", fontSize: "0.72rem", color: "#484848" }}>{p.ville}</td>
+                      <td style={{ padding: "7px 12px", fontSize: "0.72rem", color: "#484848", whiteSpace: "nowrap" }}>{p.phone}</td>
+                      <td style={{ padding: "7px 12px", fontSize: "0.72rem", color: "#484848", whiteSpace: "nowrap" }}>{fmtDate(p.premierContact) ?? "—"}</td>
+                      <td style={{ padding: "7px 12px", fontSize: "0.72rem", color: "#484848", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.notes || "—"}</td>
+                      <td style={{ padding: "7px 12px", whiteSpace: "nowrap" }}>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => dispatch({ type: "UPDATE_PROSPECT", id: p.id, changes: { archived: false, status: "a_appeler" } })}
+                            style={{ background: "none", border: "1px solid #2a2a2a", borderRadius: 3, color: "#484848", cursor: "pointer", fontSize: "0.65rem", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, letterSpacing: "0.08em", padding: "3px 8px" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = "#5DC7E5"; e.currentTarget.style.borderColor = "rgba(93,199,229,0.4)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = "#484848"; e.currentTarget.style.borderColor = "#2a2a2a"; }}
+                          >↩ RÉACTIVER</button>
+                          <button
+                            onClick={() => dispatch({ type: "DELETE_PROSPECT", id: p.id })}
+                            style={{ background: "none", border: "none", color: "#2a2a2a", cursor: "pointer", fontSize: "0.9rem" }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#ef4444"; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#2a2a2a"; }}
+                          >🗑</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
