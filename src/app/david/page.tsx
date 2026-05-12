@@ -605,9 +605,6 @@ export default function DavidPage() {
           </div>
         )}
 
-        {/* Stats */}
-        {selectedUser && <StatsSection s={selectedUser.state} />}
-
         {/* Pipeline */}
         {selectedUser && <PipelinePanel user={selectedUser} color={selectedColor} />}
 
