@@ -662,11 +662,33 @@ const VOICEMAIL_SCRIPTS = [
   },
 ];
 
-function VoicemailSection() {
+interface VoicemailSectionProps {
+  variants:       ScriptVariant[];
+  activeVariants: Record<string, string>;
+  playerName:     string;
+  onLike:         (id: string) => void;
+  onDislike:      (id: string) => void;
+  onDelete:       (id: string) => void;
+  onSetActive:    (step_id: string, variant_id: string | null) => void;
+  onAdd:          (step_id: string, text: string) => Promise<void>;
+}
+
+function VoicemailSection({ variants, activeVariants, playerName, onLike, onDislike, onDelete, onSetActive, onAdd }: VoicemailSectionProps) {
+  const [openVarFor, setOpenVarFor] = useState<number | null>(null);
+  const [addingFor,  setAddingFor]  = useState<number | null>(null);
+  const [draftText,  setDraftText]  = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(i: number, step_id: string) {
+    if (!draftText.trim()) return;
+    setSubmitting(true);
+    await onAdd(step_id, draftText.trim());
+    setDraftText(""); setAddingFor(null); setSubmitting(false);
+  }
+
   return (
     <div className="space-y-3">
-      <div
-        className="rounded-sm p-3 flex items-start gap-2"
+      <div className="rounded-sm p-3 flex items-start gap-2"
         style={{ background: "rgba(255,85,0,0.06)", border: "1px solid rgba(255,85,0,0.2)" }}
       >
         <span style={{ fontSize: "0.8rem" }}>💡</span>
@@ -676,31 +698,135 @@ function VoicemailSection() {
       </div>
 
       <div className="space-y-2">
-        {VOICEMAIL_SCRIPTS.map((s, i) => (
-          <div
-            key={i}
-            className="rounded-sm p-4"
-            style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${s.color}` }}
-          >
-            <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
-              <span
-                className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
-                style={{ color: s.color, background: `${s.color}14` }}
-              >
-                {s.tag}
-              </span>
-              <CopyBtn text={s.text} />
+        {VOICEMAIL_SCRIPTS.map((s, i) => {
+          const step_id     = `vm_${i}`;
+          const activeVarId = activeVariants[step_id];
+          const activeVar   = activeVarId ? variants.find((v) => v.id === activeVarId) : null;
+          const stepVars    = variants.filter((v) => v.step_id === step_id);
+          const displayText = activeVar ? activeVar.text : s.text;
+          const isVarOpen   = openVarFor === i;
+
+          return (
+            <div key={i} className="rounded-sm p-4"
+              style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${activeVar ? authorColor(activeVar.author) : s.color}` }}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
+                    style={{ color: s.color, background: `${s.color}14` }}>
+                    {s.tag}
+                  </span>
+                  {activeVar && (
+                    <span className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
+                      style={{ color: authorColor(activeVar.author), background: `${authorColor(activeVar.author)}18`, border: `1px solid ${authorColor(activeVar.author)}40` }}>
+                      {activeVar.author}
+                    </span>
+                  )}
+                </div>
+                <CopyBtn text={displayText} />
+              </div>
+
+              {/* Text */}
+              <p style={{ color: "#FFFFFF", fontSize: "0.88rem", lineHeight: 1.7, margin: 0 }}>{displayText}</p>
+              {!activeVar && s.note && (
+                <p style={{ color: "#848484", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>{s.note}</p>
+              )}
+
+              {/* Variants toggle */}
+              <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${BORDER}` }}>
+                <button
+                  onClick={() => { setOpenVarFor(isVarOpen ? null : i); setAddingFor(null); setDraftText(""); }}
+                  className="font-game text-[9px] tracking-widest transition-colors"
+                  style={{ color: isVarOpen ? "#AE00FC" : "#686868", background: "transparent", border: "none", cursor: "pointer" }}
+                >
+                  {isVarOpen ? "▼" : "▶"} VARIANTES ({stepVars.length})
+                </button>
+
+                {isVarOpen && (
+                  <div className="mt-2 space-y-2">
+                    {stepVars.map((v) => {
+                      const isActive = activeVarId === v.id;
+                      const col      = authorColor(v.author);
+                      return (
+                        <div key={v.id} className="rounded-sm p-3"
+                          style={{ background: isActive ? `${col}0a` : "#1a1a1a", border: `1px solid ${isActive ? `${col}40` : "#2e2e2e"}` }}
+                        >
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className="font-game text-[9px] tracking-widest px-1.5 py-0.5 rounded-sm"
+                              style={{ color: col, background: `${col}18`, border: `1px solid ${col}30` }}>
+                              {v.author}
+                            </span>
+                            <div className="flex items-center gap-1.5 ml-auto">
+                              <button onClick={() => onLike(v.id)}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #383838", color: "#848484" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = "#1CE400"; e.currentTarget.style.borderColor = "rgba(28,228,0,0.4)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                              >👍 {v.likes > 0 ? v.likes : ""}</button>
+                              <button onClick={() => onDislike(v.id)}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #383838", color: "#848484" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.4)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = "#848484"; e.currentTarget.style.borderColor = "#383838"; }}
+                              >👎 {(v.dislikes ?? 0) > 0 ? v.dislikes : ""}</button>
+                              <button onClick={() => onSetActive(step_id, isActive ? null : v.id)}
+                                className="px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                                style={{ background: isActive ? `${col}20` : "rgba(255,255,255,0.03)", border: `1px solid ${isActive ? `${col}60` : "#383838"}`, color: isActive ? col : "#848484" }}
+                              >{isActive ? "✓ ACTIF" : "UTILISER"}</button>
+                              <button onClick={() => onDelete(v.id)}
+                                className="px-1.5 py-0.5 rounded-sm transition-all"
+                                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #383838", color: "#686868", fontSize: "0.75rem" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.4)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = "#686868"; e.currentTarget.style.borderColor = "#383838"; }}
+                                title="Supprimer"
+                              >🗑</button>
+                            </div>
+                          </div>
+                          <p style={{ color: "#C0C0C0", fontSize: "0.82rem", lineHeight: 1.65, margin: 0 }}>{v.text}</p>
+                        </div>
+                      );
+                    })}
+
+                    {addingFor === i ? (
+                      <div className="rounded-sm p-3 space-y-2"
+                        style={{ background: "#1a1a1a", border: "1px solid rgba(174,0,252,0.25)" }}
+                      >
+                        <div className="font-game text-[9px] tracking-widest" style={{ color: "#AE00FC" }}>
+                          MA VARIANTE — {playerName || "ANONYME"}
+                        </div>
+                        <textarea value={draftText} onChange={(e) => setDraftText(e.target.value)}
+                          placeholder="Tape ta version ici…" rows={3}
+                          style={{ width: "100%", background: "#232323", border: "1px solid #383838", borderRadius: "3px", padding: "0.5rem 0.75rem", color: "#FFFFFF", fontSize: "0.82rem", lineHeight: 1.6, outline: "none", resize: "vertical" }}
+                          onFocus={(e) => { e.target.style.borderColor = "#AE00FC"; }}
+                          onBlur={(e)  => { e.target.style.borderColor = "#383838"; }}
+                        />
+                        <div className="flex gap-2">
+                          <button onClick={() => handleSubmit(i, step_id)}
+                            disabled={submitting || !draftText.trim()}
+                            className="px-3 py-1.5 rounded-sm font-game text-[9px] tracking-wider"
+                            style={{ background: "rgba(174,0,252,0.15)", border: "1px solid rgba(174,0,252,0.5)", color: "#AE00FC", opacity: submitting || !draftText.trim() ? 0.5 : 1, cursor: submitting || !draftText.trim() ? "not-allowed" : "pointer" }}
+                          >{submitting ? "..." : "PUBLIER"}</button>
+                          <button onClick={() => { setAddingFor(null); setDraftText(""); }}
+                            className="px-3 py-1.5 rounded-sm font-game text-[9px] tracking-wider"
+                            style={{ background: "transparent", border: "1px solid #383838", color: "#848484" }}
+                          >ANNULER</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setAddingFor(i)}
+                        className="w-full py-2 rounded-sm font-game text-[9px] tracking-widest transition-all"
+                        style={{ background: "transparent", border: "1px dashed #383838", color: "#686868" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(174,0,252,0.4)"; e.currentTarget.style.color = "#AE00FC"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#686868"; }}
+                      >+ AJOUTER MA VARIANTE</button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-            <p style={{ color: "#FFFFFF", fontSize: "0.88rem", lineHeight: 1.7, margin: 0 }}>
-              {s.text}
-            </p>
-            {s.note && (
-              <p style={{ color: "#848484", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>
-                {s.note}
-              </p>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -827,7 +953,18 @@ export default function ScriptTab() {
           onAdd={handleAddVariant}
         />
       )}
-      {activeSection === "messagerie" && <VoicemailSection />}
+      {activeSection === "messagerie" && (
+        <VoicemailSection
+          variants={scriptVariants}
+          activeVariants={activeVariants}
+          playerName={state.playerName}
+          onLike={handleLikeVariant}
+          onDislike={handleDislikeVariant}
+          onDelete={handleDeleteVariant}
+          onSetActive={handleSetActive}
+          onAdd={handleAddVariant}
+        />
+      )}
       {activeSection === "liens"      && <LinksSection />}
     </div>
   );
