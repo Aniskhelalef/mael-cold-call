@@ -622,15 +622,6 @@ export default function DavidPage() {
           </div>
         )}
 
-        {/* Pipeline */}
-        {selectedUser && <PipelinePanel user={selectedUser} color={selectedColor} onProspectDeleted={(id) => {
-          setUsers((prev) => prev.map((u) =>
-            u.email === selectedUser.email
-              ? { ...u, state: { ...u.state, prospects: (u.state.prospects ?? []).filter((p) => p.id !== id) } }
-              : u
-          ));
-        }} />}
-
         {!loading && users.length === 0 && (
           <div style={{ padding: "60px", textAlign: "center", color: "#383838" }}>
             <div className="font-game text-2xl mb-2" style={{ color: "#FF5500" }}>CCOD</div>
