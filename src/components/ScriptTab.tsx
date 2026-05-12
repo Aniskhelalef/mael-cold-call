@@ -514,81 +514,6 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
   );
 }
 
-function ObjectionsSection({ votes, myVotes, vote }: VoteProps) {
-  const [open,   setOpen]   = useState<number | null>(null);
-  const [search, setSearch] = useState("");
-
-  const filtered = OBJECTIONS.filter(
-    (o) => !search || o.trigger.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <div className="space-y-2">
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Chercher une objection…"
-        style={{
-          width:        "100%",
-          background:   CARD_BG,
-          border:       `1px solid ${BORDER}`,
-          borderRadius: "3px",
-          padding:      "0.5rem 0.75rem",
-          color:        "#FFFFFF",
-          fontSize:     "0.85rem",
-          outline:      "none",
-        }}
-        onFocus={(e) => { e.target.style.borderColor = "#FF5500"; }}
-        onBlur={(e)  => { e.target.style.borderColor = BORDER;    }}
-      />
-
-      {filtered.map((obj, i) => {
-        const realIdx = OBJECTIONS.indexOf(obj);
-        return (
-          <div
-            key={i}
-            className="rounded-sm overflow-hidden"
-            style={{ border: `1px solid ${open === realIdx ? "rgba(255,85,0,0.35)" : BORDER}` }}
-          >
-            <button
-              className="w-full text-left px-4 py-3 flex items-center justify-between transition-colors"
-              style={{ background: open === realIdx ? "rgba(255,85,0,0.07)" : CARD_BG }}
-              onClick={() => setOpen(open === realIdx ? null : realIdx)}
-            >
-              <span style={{ color: open === realIdx ? "#FF7733" : "#FFFFFF", fontSize: "0.875rem", fontWeight: 600 }}>
-                {obj.trigger}
-              </span>
-              <span style={{ color: "#848484", fontSize: "0.85rem" }}>{open === realIdx ? "▲" : "▼"}</span>
-            </button>
-            {open === realIdx && (
-              <div
-                className="px-4 pb-4 pt-2"
-                style={{ background: "#171717", borderTop: `1px solid ${BORDER}` }}
-              >
-                <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                  <span className="font-game text-[9px] tracking-widest" style={{ color: "#FF5500" }}>RÉPONSE</span>
-                  <div className="flex items-center gap-1.5">
-                    <VoteBar id={`obj_${realIdx}`} votes={votes} myVotes={myVotes} vote={vote} />
-                    <CopyBtn text={obj.response} />
-                  </div>
-                </div>
-                <p style={{ color: "#D0D0D0", fontSize: "0.875rem", lineHeight: 1.75, margin: 0 }}>
-                  {obj.response}
-                </p>
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {filtered.length === 0 && (
-        <div className="text-center py-8 font-game text-xs" style={{ color: "#848484" }}>
-          Aucun résultat
-        </div>
-      )}
-    </div>
-  );
-}
 
 function VariantsSection({ votes, myVotes, vote }: VoteProps) {
   const [open, setOpen] = useState<number | null>(0);
@@ -653,9 +578,8 @@ function VariantsSection({ votes, myVotes, vote }: VoteProps) {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 const SECTIONS = [
-  { id: "script",     label: "Script",      icon: "📞", color: "#FF5500" },
-  { id: "objections", label: "Objections",  icon: "🛡️", color: "#5DC7E5" },
-  { id: "variants",   label: "Variantes",   icon: "🎯", color: "#1CE400" },
+  { id: "script",   label: "Script",    icon: "📞", color: "#FF5500" },
+  { id: "variants", label: "Variantes", icon: "🎯", color: "#1CE400" },
 ];
 
 export default function ScriptTab() {
@@ -771,8 +695,7 @@ export default function ScriptTab() {
           onAdd={handleAddVariant}
         />
       )}
-      {activeSection === "objections" && <ObjectionsSection votes={votes} myVotes={myVotes} vote={vote} />}
-      {activeSection === "variants"   && <VariantsSection   votes={votes} myVotes={myVotes} vote={vote} />}
+      {activeSection === "variants" && <VariantsSection votes={votes} myVotes={myVotes} vote={vote} />}
     </div>
   );
 }
