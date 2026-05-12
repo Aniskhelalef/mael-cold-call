@@ -43,6 +43,7 @@ interface ApifyItem {
   title?: string; phone?: string; email?: string; website?: string;
   url?: string; address?: string; city?: string; neighborhood?: string;
   categoryName?: string; totalScore?: number; reviewsCount?: number;
+  temporarilyClosed?: boolean; permanentlyClosed?: boolean;
 }
 
 function extractCity(item: ApifyItem, fallback: string): string {
@@ -377,7 +378,6 @@ function ScraperPanel() {
   const [errMsg,       setErrMsg]       = useState("");
   const [elapsed,      setElapsed]      = useState(0);
   const [results,      setResults]      = useState<ApifyItem[]>([]);
-  const [selected,     setSelected]     = useState<Set<number>>(new Set());
   const [imported,     setImported]     = useState(false);
   const [cachedAt,     setCachedAt]     = useState<string | null>(null);
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -392,7 +392,6 @@ function ScraperPanel() {
 
   function applyResults(items: ApifyItem[]) {
     setResults(items);
-    setSelected(new Set(items.map((_, i) => i).filter((i) => !!(items[i].phone))));
     setScrapeStatus("done");
   }
 
@@ -404,14 +403,15 @@ function ScraperPanel() {
       const cached = loadCache(searchTerm, location);
       if (cached) {
         setCachedAt(cached.cachedAt);
-        setImported(false); setErrMsg("");
+        setErrMsg("");
         applyResults(cached.items);
+        importItems(cached.items);
         return;
       }
     }
 
     setCachedAt(null);
-    setErrMsg(""); setImported(false); setScrapeStatus("running"); setResults([]); setSelected(new Set()); setElapsed(0);
+    setErrMsg(""); setImported(false); setScrapeStatus("running"); setResults([]); setElapsed(0);
     timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
     try {
       const res = await fetch("/api/apify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ searchTerm, location, maxResults }) });
@@ -431,6 +431,7 @@ function ScraperPanel() {
         const items = data.items ?? [];
         saveCache(searchTerm, location, items);
         applyResults(items);
+        importItems(items);
       } else if (["FAILED", "ABORTED", "TIMED-OUT"].includes(data.status)) {
         stopTimers(); setScrapeStatus("error");
         setErrMsg(data.errorMessage ? `Run ${data.status.toLowerCase()} : ${data.errorMessage}` : `Run ${data.status.toLowerCase()} — vérifie les paramètres et réessaie.`);
@@ -467,7 +468,13 @@ function ScraperPanel() {
     "strikingly.com", "yola.com", "over-blog.com", "blogspot.com",
     "wordpress.com", "tumblr.com",
     // Réseaux sociaux utilisés comme site
-    "facebook.com", "instagram.com", "linkedin.com", "linktr.ee",
+    "facebook.com", "instagram.com", "linkedin.com", "linktr.ee", "linktree.com",
+    // Chambres syndicales & ordres professionnels
+    "osteopathie.org", "ufof.fr", "ffmkr.com", "ordremk.fr",
+    "syndicat-kinesitherapeutes.fr", "fede-kine.fr", "chambresyndic",
+    "chambre-syndicale", "federation-osteopathes.fr", "ufdo.fr",
+    "syndicat-osteopathes.fr", "sof.asso.fr", "sofmer.com",
+    "fno.fr", "federation-kinesitherapeutes.fr",
   ];
   function isTargetable(website?: string): boolean {
     if (!website) return true;
@@ -475,27 +482,20 @@ function ScraperPanel() {
     return NON_PERSONAL_DOMAINS.some((p) => w.includes(p));
   }
   const alreadyKnown  = results.filter((r) => !!r.phone && alreadyInPipeline(r.phone)).length;
-  const displayed     = results.filter((r) => !!r.phone && isTargetable(r.website) && !alreadyInPipeline(r.phone));
-  const selectedCount = displayed.filter((r) => selected.has(results.indexOf(r))).length;
-  const allChecked    = displayed.length > 0 && displayed.every((r) => selected.has(results.indexOf(r)));
+  const displayed     = results.filter((r) => !!r.phone && isTargetable(r.website) && !alreadyInPipeline(r.phone) && !r.temporarilyClosed && !r.permanentlyClosed);
 
-  function toggleAll() {
-    const idxs = displayed.map((r) => results.indexOf(r));
-    const next = new Set(selected);
-    if (allChecked) idxs.forEach((i) => next.delete(i)); else idxs.forEach((i) => next.add(i));
-    setSelected(next);
-  }
-  function toggleOne(globalIdx: number) {
-    const next = new Set(selected); if (next.has(globalIdx)) next.delete(globalIdx); else next.add(globalIdx); setSelected(next);
-  }
-  function importSelected() {
-    const leads = displayed.filter((r) => selected.has(results.indexOf(r))).map((r) => ({
+  function importItems(items: ApifyItem[]) {
+    const toImport = items.filter(
+      (r) => !!r.phone && isTargetable(r.website) && !alreadyInPipeline(r.phone) && !r.temporarilyClosed && !r.permanentlyClosed
+    );
+    if (toImport.length === 0) { setImported(true); return; }
+    const leads = toImport.map((r) => ({
       name: r.title?.trim() || "Sans nom", phone: r.phone ?? "",
       ville: extractCity(r, location), specialite: guessSpecialite(r.categoryName ?? "", searchTerm),
       status: "a_appeler" as ProspectStatus, notes: "", googleMapsUrl: r.url || undefined,
     }));
     dispatch({ type: "IMPORT_PROSPECTS", data: leads });
-    setImported(true); setSelected(new Set());
+    setImported(true);
   }
 
   return (
@@ -577,58 +577,43 @@ function ScraperPanel() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#1a1a1a" }}>
-                  <th style={{ padding: "8px 12px", width: 36 }}>
-                    <input type="checkbox" checked={allChecked} onChange={toggleAll} style={{ accentColor: "#FF5500", cursor: "pointer" }} />
-                  </th>
                   {["NOM", "TÉL", "VILLE", "FICHE GOOGLE"].map((h) => (
                     <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "0.62rem", color: "#848484", letterSpacing: "0.1em", fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {displayed.map((r, displayIdx) => {
-                  const globalIdx  = results.indexOf(r);
-                  const isSelected = selected.has(globalIdx);
-                  return (
-                    <tr key={globalIdx} onClick={() => toggleOne(globalIdx)}
-                      style={{ borderTop: "1px solid #252525", background: isSelected ? "rgba(255,85,0,0.04)" : displayIdx % 2 === 0 ? "#1c1c1c" : "#181818", cursor: "pointer" }}>
-                      <td style={{ padding: "8px 12px" }}>
-                        <input type="checkbox" checked={isSelected} onChange={() => {}} style={{ accentColor: "#FF5500", cursor: "pointer" }} />
-                      </td>
-                      <td style={{ padding: "8px 12px", maxWidth: 200 }}>
-                        <div style={{ color: "#f1f5f9", fontSize: "0.82rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.title}</div>
-                      </td>
-                      <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
-                        <a href={`tel:${(r.phone ?? "").replace(/\s/g, "")}`} onClick={(e) => e.stopPropagation()}
-                          style={{ color: "#60a5fa", fontSize: "0.78rem", textDecoration: "none", fontFamily: "monospace" }}>{r.phone}</a>
-                      </td>
-                      <td style={{ padding: "8px 12px", color: "#848484", fontSize: "0.78rem", whiteSpace: "nowrap" }}>{extractCity(r, location)}</td>
-                      <td style={{ padding: "8px 12px" }}>
-                        {r.url ? (
-                          <a href={r.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                            style={{ color: "#60a5fa", fontSize: "0.72rem", textDecoration: "none" }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#93c5fd"; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa"; }}>
-                            Maps ↗
-                          </a>
-                        ) : <span style={{ color: "#383838", fontSize: "0.72rem" }}>—</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {displayed.map((r, displayIdx) => (
+                  <tr key={results.indexOf(r)}
+                    style={{ borderTop: "1px solid #252525", background: displayIdx % 2 === 0 ? "#1c1c1c" : "#181818" }}>
+                    <td style={{ padding: "8px 12px", maxWidth: 200 }}>
+                      <div style={{ color: "#f1f5f9", fontSize: "0.82rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.title}</div>
+                    </td>
+                    <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
+                      <a href={`tel:${(r.phone ?? "").replace(/\s/g, "")}`}
+                        style={{ color: "#60a5fa", fontSize: "0.78rem", textDecoration: "none", fontFamily: "monospace" }}>{r.phone}</a>
+                    </td>
+                    <td style={{ padding: "8px 12px", color: "#848484", fontSize: "0.78rem", whiteSpace: "nowrap" }}>{extractCity(r, location)}</td>
+                    <td style={{ padding: "8px 12px" }}>
+                      {r.url ? (
+                        <a href={r.url} target="_blank" rel="noopener noreferrer"
+                          style={{ color: "#60a5fa", fontSize: "0.72rem", textDecoration: "none" }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#93c5fd"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa"; }}>
+                          Maps ↗
+                        </a>
+                      ) : <span style={{ color: "#383838", fontSize: "0.72rem" }}>—</span>}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between gap-3 px-4 py-3" style={{ borderTop: `1px solid ${BORDER}`, background: "#1a1a1a" }}>
-            {imported
-              ? <span className="font-game text-xs" style={{ color: "#1CE400" }}>✓ Leads importés dans le pipeline !</span>
-              : <span style={{ color: "#848484", fontSize: "0.75rem" }}>{selectedCount} lead{selectedCount !== 1 ? "s" : ""} sélectionné{selectedCount !== 1 ? "s" : ""}</span>}
-            <button onClick={importSelected} disabled={selectedCount === 0}
-              className="font-game text-xs tracking-wider px-5 py-2.5 rounded-sm transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: "rgba(28,228,0,0.12)", border: "1px solid rgba(28,228,0,0.4)", color: "#1CE400" }}>
-              📥 IMPORTER {selectedCount > 0 ? selectedCount : ""} LEADS
-            </button>
-          </div>
+          {imported && (
+            <div className="px-4 py-3" style={{ borderTop: `1px solid ${BORDER}`, background: "#1a1a1a" }}>
+              <span className="font-game text-xs" style={{ color: "#1CE400" }}>✓ Leads importés automatiquement dans le pipeline</span>
+            </div>
+          )}
         </div>
       )}
 
