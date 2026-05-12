@@ -637,11 +637,81 @@ function LinksSection() {
   );
 }
 
+// ── Voicemail section ─────────────────────────────────────────────────────────
+
+const VOICEMAIL_SCRIPTS = [
+  {
+    tag: "VERSION COURTE", color: "#FF5500",
+    text: "« Bonjour [Prénom], c'est [Votre prénom] de Theralys. Je vous ai préparé quelque chose pour votre cabinet — ça prend 3 minutes à regarder et je pense que ça va vous intéresser. Je vous rappelle ce soir vers [HEURE], sinon n'hésitez pas à me rappeler au [NUMÉRO]. Bonne journée ! »",
+    note: "~15 secondes — idéal si tu veux rappeler toi-même",
+  },
+  {
+    tag: "VERSION CURIOSITÉ", color: "#5DC7E5",
+    text: "« Allô [Prénom], c'est [Votre prénom] de Theralys. J'ai fait quelque chose ce matin spécialement pour vous — c'est gratuit, ça prend 2 minutes, et je pense honnêtement que vous allez être surpris. Je vous rappelle demain vers [HEURE] ou rappellez-moi au [NUMÉRO]. À très vite ! »",
+    note: "~20 secondes — crée de la curiosité sans dévoiler l'offre",
+  },
+  {
+    tag: "VERSION RAPPEL IMMÉDIAT", color: "#1CE400",
+    text: "« Bonjour [Prénom], [Votre prénom] de Theralys. Je vous appelle parce que j'ai vu votre cabinet sur Google et j'avais quelque chose de concret à vous montrer — pas un pitch, quelque chose que j'ai déjà créé pour vous. Je vous laisse mon numéro : [NUMÉRO]. À très vite, bonne journée ! »",
+    note: "~20 secondes — pour inciter le prospect à rappeler lui-même",
+  },
+  {
+    tag: "VERSION CONFRÈRE", color: "#AE00FC",
+    text: "« Allô [Prénom], c'est [Votre prénom] de Theralys. Je viens de terminer le site de [Confrère / cabinet de la même ville] — il m'a dit de vous appeler aussi. Je vous rappelle à [HEURE] ou rappellez-moi au [NUMÉRO]. À bientôt ! »",
+    note: "~15 secondes — à utiliser dès que vous avez un client sur la même zone",
+  },
+];
+
+function VoicemailSection() {
+  return (
+    <div className="space-y-3">
+      <div
+        className="rounded-sm p-3 flex items-start gap-2"
+        style={{ background: "rgba(255,85,0,0.06)", border: "1px solid rgba(255,85,0,0.2)" }}
+      >
+        <span style={{ fontSize: "0.8rem" }}>💡</span>
+        <p style={{ color: "#848484", fontSize: "0.75rem", lineHeight: 1.6, margin: 0 }}>
+          Ne jamais dévoiler l&apos;offre sur messagerie. Crée la curiosité, laisse un horaire de rappel précis. Max 20 secondes.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {VOICEMAIL_SCRIPTS.map((s, i) => (
+          <div
+            key={i}
+            className="rounded-sm p-4"
+            style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderLeft: `3px solid ${s.color}` }}
+          >
+            <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+              <span
+                className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
+                style={{ color: s.color, background: `${s.color}14` }}
+              >
+                {s.tag}
+              </span>
+              <CopyBtn text={s.text} />
+            </div>
+            <p style={{ color: "#FFFFFF", fontSize: "0.88rem", lineHeight: 1.7, margin: 0 }}>
+              {s.text}
+            </p>
+            {s.note && (
+              <p style={{ color: "#848484", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>
+                {s.note}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 const SECTIONS = [
-  { id: "script", label: "Script", icon: "📞", color: "#FF5500" },
-  { id: "liens",  label: "Liens",  icon: "🔗", color: "#5DC7E5" },
+  { id: "script",     label: "Script",     icon: "📞", color: "#FF5500" },
+  { id: "messagerie", label: "Messagerie", icon: "📬", color: "#AE00FC" },
+  { id: "liens",      label: "Liens",      icon: "🔗", color: "#5DC7E5" },
 ];
 
 export default function ScriptTab() {
@@ -757,7 +827,8 @@ export default function ScriptTab() {
           onAdd={handleAddVariant}
         />
       )}
-      {activeSection === "liens" && <LinksSection />}
+      {activeSection === "messagerie" && <VoicemailSection />}
+      {activeSection === "liens"      && <LinksSection />}
     </div>
   );
 }
