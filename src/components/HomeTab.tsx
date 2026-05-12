@@ -116,19 +116,30 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
   const tauxReponse    = state.totalCalls > 0 ? Math.round((totalCallsYes / state.totalCalls) * 100) : 0;
   const tauxConversion = state.totalCalls > 0 ? Math.round((state.totalBookings / state.totalCalls) * 100) : 0;
 
-  const [lbEntries, setLbEntries] = useState<LeaderboardEntry[]>([]);
-  const [lastActive, setLastActive] = useState<{ name: string; type: "call" | "booking"; syncedAt: string } | null>(null);
+  type ActivityEntry = { userName: string; prospectName: string | null; type: "call" | "booking"; syncedAt: string; };
+
+  const [lbEntries,    setLbEntries]    = useState<LeaderboardEntry[]>([]);
+  const [activityLog,  setActivityLog]  = useState<ActivityEntry[]>([]);
+  const [logOpen,      setLogOpen]      = useState(false);
 
   useEffect(() => {
     fetchLeaderboard().then(setLbEntries).catch(() => {});
     fetchAllStates().then((all) => {
-      const best = all
+      const entries: ActivityEntry[] = all
         .filter((r) => r.state.totalCalls > 0)
-        .sort((a, b) => new Date(b.syncedAt).getTime() - new Date(a.syncedAt).getTime())[0];
-      if (best) {
-        const hasBooking = (best.state.totalBookings ?? 0) > 0;
-        setLastActive({ name: best.state.playerName, type: hasBooking ? "booking" : "call", syncedAt: best.syncedAt });
-      }
+        .map((r) => {
+          const lastProspect = [...(r.state.prospects ?? [])]
+            .filter((p) => p.premierContact)
+            .sort((a, b) => (b.premierContact ?? "").localeCompare(a.premierContact ?? ""))[0];
+          return {
+            userName:     r.state.playerName,
+            prospectName: lastProspect?.name ?? null,
+            type:         ((r.state.totalBookings ?? 0) > 0 ? "booking" : "call") as "call" | "booking",
+            syncedAt:     r.syncedAt,
+          };
+        })
+        .sort((a, b) => new Date(b.syncedAt).getTime() - new Date(a.syncedAt).getTime());
+      setActivityLog(entries);
     }).catch(() => {});
   }, []);
 
@@ -161,19 +172,63 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
   return (
     <div className="max-w-4xl mx-auto">
 
-      {/* ── Last active banner ─────────────────────────────────────────────── */}
-      {lastActive && (
-        <div
-          className="flex items-center gap-2 px-3 py-2 rounded-sm mb-3 font-game text-[10px] tracking-widest"
-          style={{ background: "#1a1a1a", border: "1px solid #2e2e2e", color: "#848484" }}
-        >
-          <span style={{ fontSize: "0.75rem" }}>{lastActive.type === "booking" ? "🎯" : "📞"}</span>
-          <span>DERNIER {lastActive.type === "booking" ? "BOOKING" : "CALL"}</span>
-          <span style={{ color: "#FF5500" }}>{lastActive.name.toUpperCase()}</span>
-          <span style={{ color: "#484848" }}>·</span>
-          <span>{relativeTime(lastActive.syncedAt)}</span>
-        </div>
-      )}
+      {/* ── Activity log banner ────────────────────────────────────────────── */}
+      {activityLog.length > 0 && (() => {
+        const top = activityLog[0];
+        return (
+          <div className="rounded-sm mb-3 overflow-hidden" style={{ background: "#1a1a1a", border: "1px solid #2e2e2e" }}>
+            {/* Top row */}
+            <button
+              className="w-full flex items-center gap-2 px-3 py-2 font-game text-[10px] tracking-widest text-left"
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "#848484" }}
+              onClick={() => setLogOpen((o) => !o)}
+            >
+              <span style={{ fontSize: "0.75rem" }}>{top.type === "booking" ? "🎯" : "📞"}</span>
+              <span>DERNIER {top.type === "booking" ? "BOOKING" : "CALL"}</span>
+              <span style={{ color: "#FF5500" }}>{top.userName.toUpperCase()}</span>
+              {top.prospectName && (
+                <>
+                  <span style={{ color: "#484848" }}>→</span>
+                  <span style={{ color: "#C0C0C0" }}>{top.prospectName}</span>
+                </>
+              )}
+              <span style={{ color: "#484848" }}>·</span>
+              <span>{relativeTime(top.syncedAt)}</span>
+              <span className="ml-auto" style={{ color: "#484848", fontSize: "0.7rem" }}>
+                {logOpen ? "▲" : "▼"}
+              </span>
+            </button>
+
+            {/* Expandable log */}
+            {logOpen && (
+              <div
+                className="overflow-y-auto"
+                style={{ maxHeight: "180px", borderTop: "1px solid #2e2e2e" }}
+              >
+                {activityLog.map((entry, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 px-3 py-1.5 font-game text-[9px] tracking-widest"
+                    style={{ borderBottom: i < activityLog.length - 1 ? "1px solid #222" : "none", color: "#686868" }}
+                  >
+                    <span style={{ fontSize: "0.7rem" }}>{entry.type === "booking" ? "🎯" : "📞"}</span>
+                    <span style={{ color: "#C0C0C0", minWidth: 60 }}>{entry.userName}</span>
+                    {entry.prospectName && (
+                      <>
+                        <span style={{ color: "#383838" }}>→</span>
+                        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {entry.prospectName}
+                        </span>
+                      </>
+                    )}
+                    <span className="ml-auto flex-shrink-0">{relativeTime(entry.syncedAt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="lg:grid lg:gap-4" style={{ gridTemplateColumns: "1fr 260px" } as React.CSSProperties}>
 
