@@ -570,6 +570,13 @@ const LINKS = [
     color:    "#5DC7E5",
     embed:    true,
   },
+  {
+    label:    "YASSINE",
+    sublabel: "Calendly — Point Theralys",
+    url:      "https://calendly.com/yassineallaoui910/point-theralys",
+    color:    "#FF5500",
+    embed:    true,
+  },
 ];
 
 function LinksSection() {
