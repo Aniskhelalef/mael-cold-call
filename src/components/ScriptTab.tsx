@@ -169,7 +169,7 @@ const SCRIPT_STEPS = [
     tag: "DIFFÉRENCIATION", color: "#FF9500",
     text: "« Voilà, la grande différence avec les agences classiques, c'est que moi j'ai déjà pris la liberté de vous le créer directement, juste pour que vous voyiez à quoi ça ressemble. Vous avez 5 petites minutes pour y jeter un petit coup d'œil ? »",
     note: null,
-    objIdxs: [4, 7, 3], presets: [] as typeof OPENER_PRESETS,
+    objIdxs: [4, 7, 3, 5, 8], presets: [] as typeof OPENER_PRESETS,
   },
   {
     tag: "SI OUI ✓", color: "#1CE400",
@@ -181,7 +181,7 @@ const SCRIPT_STEPS = [
     tag: "CLOSE RAPPEL", color: "#AE00FC",
     text: "« Top, alors je vous rappelle à 18h, je vous envoie le lien et je prends 5 minutes pour vous le montrer. »",
     note: null,
-    objIdxs: [5, 8], presets: [] as typeof OPENER_PRESETS,
+    objIdxs: [], presets: [] as typeof OPENER_PRESETS,
   },
 ];
 
