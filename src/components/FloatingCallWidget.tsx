@@ -230,11 +230,16 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
   function fmtTimer(s: number) {
     return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   }
+  const mimeTypeRef = useRef<string>("audio/webm");
+
   async function startRecording() {
     setRecError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
+      const preferred = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus", "audio/mp4"];
+      const mime = preferred.find((m) => MediaRecorder.isTypeSupported(m)) ?? "";
+      mimeTypeRef.current = mime || "audio/webm";
+      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       chunksRef.current = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mr.start();
@@ -248,23 +253,22 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
   function stopRecording(prospect?: { id: string; name: string }) {
     const mr = mediaRecorderRef.current;
     if (!mr) return;
+    const mime = mimeTypeRef.current;
     mr.onstop = async () => {
-      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+      const blob = new Blob(chunksRef.current, { type: mime });
+      const ext  = mime.includes("ogg") ? "ogg" : mime.includes("mp4") ? "mp4" : "webm";
       const date = new Date().toISOString().split("T")[0];
       const slug = (prospect?.name ?? "appel").replace(/\s+/g, "_").replace(/[^a-z0-9_]/gi, "");
       const key  = `${prospect?.id ?? "unknown"}_${Date.now()}`;
-      // Save to IndexedDB
       await saveRecording(key, blob);
-      // Update prospect with recording key
       if (prospect) {
         const existing = currentProspect?.recordings ?? [];
         dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes: { recordings: [...existing, key] } });
       }
-      // Also auto-download as backup
       const url = URL.createObjectURL(blob);
       const a   = document.createElement("a");
       a.href     = url;
-      a.download = `${slug}_${date}.webm`;
+      a.download = `${slug}_${date}.${ext}`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
       chunksRef.current = [];
