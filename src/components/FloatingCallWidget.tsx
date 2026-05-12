@@ -47,36 +47,72 @@ function ConfirmModal({ title, body, confirmLabel = "CONFIRMER", onConfirm, onCa
   );
 }
 
+const MIN_W = 280;
+const MAX_W = 680;
+const MIN_H = 120;
+
 export default function FloatingCallWidget() {
   const { state, dispatch } = useGame();
 
-  // ── Position & UI state ───────────────────────────────────────────────────
-  const [pos,       setPos]       = useState({ x: 20, y: 120 });
+  // ── Position, size & UI state ─────────────────────────────────────────────
+  const [pos,       setPos]       = useState({ x: -1, y: -1 }); // -1 = init pending
+  const [size,      setSize]      = useState({ w: 360, h: -1 }); // -1 h = auto
   const [minimized, setMinimized] = useState(false);
   const dragging   = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
+  const resizing   = useRef(false);
+  const resizeStart = useRef({ mx: 0, my: 0, w: 360, h: 0, x: 0, y: 0 });
+
+  // Set default position bottom-right after mount
+  useEffect(() => {
+    setPos({ x: window.innerWidth - 380, y: window.innerHeight - 520 });
+  }, []);
 
   useEffect(() => {
     function onMove(e: MouseEvent) {
-      if (!dragging.current) return;
-      setPos({
-        x: Math.max(0, Math.min(window.innerWidth  - 380, e.clientX - dragOffset.current.x)),
-        y: Math.max(0, Math.min(window.innerHeight - 60,  e.clientY - dragOffset.current.y)),
-      });
+      if (dragging.current) {
+        setPos({
+          x: Math.max(0, Math.min(window.innerWidth  - size.w, e.clientX - dragOffset.current.x)),
+          y: Math.max(0, Math.min(window.innerHeight - 60,      e.clientY - dragOffset.current.y)),
+        });
+      }
+      if (resizing.current) {
+        const dx = e.clientX - resizeStart.current.mx;
+        const dy = e.clientY - resizeStart.current.my;
+        setSize({
+          w: Math.max(MIN_W, Math.min(MAX_W, resizeStart.current.w + dx)),
+          h: Math.max(MIN_H, resizeStart.current.h + dy),
+        });
+      }
     }
-    function onUp() { dragging.current = false; }
+    function onUp() { dragging.current = false; resizing.current = false; }
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup",   onUp);
     return () => {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup",   onUp);
     };
-  }, []);
+  }, [size.w]);
 
   function startDrag(e: React.MouseEvent) {
-    dragging.current    = true;
-    dragOffset.current  = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    dragging.current   = true;
+    dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
     e.preventDefault();
+  }
+
+  function startResize(e: React.MouseEvent) {
+    const el = (e.currentTarget as HTMLElement).closest("[data-widget]") as HTMLElement | null;
+    resizing.current    = true;
+    resizeStart.current = {
+      mx: e.clientX,
+      my: e.clientY,
+      w:  size.w,
+      h:  el ? el.offsetHeight : (size.h > 0 ? size.h : 400),
+      x:  pos.x,
+      y:  pos.y,
+    };
+    e.preventDefault();
+    e.stopPropagation();
   }
 
   // ── Call flow state ───────────────────────────────────────────────────────
@@ -181,7 +217,7 @@ export default function FloatingCallWidget() {
     setConfirmOpen(false);
   }
 
-  if (!state.playerName) return null;
+  if (!state.playerName || pos.x === -1) return null;
 
   const col = currentProspect ? (STATUS_COLOR[currentProspect.status] ?? "#848484") : "#FF5500";
 
@@ -198,17 +234,21 @@ export default function FloatingCallWidget() {
       )}
 
       <div
+        data-widget
         style={{
-          position:  "fixed",
-          left:      pos.x,
-          top:       pos.y,
-          zIndex:    150,
-          width:     "360px",
-          boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+          position:     "fixed",
+          left:         pos.x,
+          top:          pos.y,
+          zIndex:       150,
+          width:        size.w,
+          height:       minimized ? undefined : (size.h > 0 ? size.h : undefined),
+          overflow:     minimized ? "hidden" : "auto",
+          boxShadow:    "0 8px 40px rgba(0,0,0,0.6)",
           borderRadius: "4px",
-          overflow:  "hidden",
-          border:    `1px solid ${callStage !== "idle" ? "rgba(255,85,0,0.5)" : BORDER}`,
-          userSelect: "none",
+          border:       `1px solid ${callStage !== "idle" ? "rgba(255,85,0,0.5)" : BORDER}`,
+          userSelect:   "none",
+          display:      "flex",
+          flexDirection: "column",
         }}
       >
         {/* ── Drag handle / title bar ─────────────────────────────────────── */}
@@ -263,7 +303,7 @@ export default function FloatingCallWidget() {
 
         {/* ── Expanded body ────────────────────────────────────────────────── */}
         {!minimized && (
-          <div style={{ background: "#232323", padding: "12px" }}>
+          <div style={{ background: "#232323", padding: "12px", flex: 1, overflowY: "auto" }}>
 
             {/* Prospect card */}
             {currentProspect ? (
@@ -527,6 +567,30 @@ export default function FloatingCallWidget() {
                 {callableProspects.length} prospect{callableProspects.length !== 1 ? "s" : ""} en attente
               </span>
             </div>
+          </div>
+        )}
+
+        {/* ── Resize handle (bottom-right) ─────────────────────────────────── */}
+        {!minimized && (
+          <div
+            onMouseDown={startResize}
+            style={{
+              position:   "absolute",
+              bottom:     0,
+              right:      0,
+              width:      18,
+              height:     18,
+              cursor:     "nwse-resize",
+              display:    "flex",
+              alignItems: "flex-end",
+              justifyContent: "flex-end",
+              padding:    "3px",
+              zIndex:     10,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M9 1L1 9M9 5L5 9M9 9" stroke="#484848" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
           </div>
         )}
       </div>
