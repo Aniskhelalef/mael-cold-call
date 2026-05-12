@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useGame } from "@/lib/gameContext";
-import { saveRecording } from "@/lib/recordings";
+import { saveRecording, uploadToSupabase } from "@/lib/recordings";
 
 const BORDER = "#383838";
 
@@ -257,10 +257,18 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
     mr.onstop = async () => {
       const blob = new Blob(chunksRef.current, { type: mime });
       const key  = `${prospect?.id ?? "unknown"}_${Date.now()}`;
+      // Save locally first (instantané), puis upload Supabase (asynchrone)
       await saveRecording(key, blob);
       if (prospect) {
         const existing = currentProspect?.recordings ?? [];
+        // Stocker la clé locale d'abord, remplacer par l'URL Supabase si upload réussi
         dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes: { recordings: [...existing, key] } });
+        uploadToSupabase(key, blob).then((url) => {
+          if (url) {
+            const updated = [...existing, url];
+            dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes: { recordings: updated } });
+          }
+        });
       }
       chunksRef.current = [];
       mediaRecorderRef.current = null;

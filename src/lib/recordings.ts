@@ -1,3 +1,5 @@
+import { supabase } from "./supabase";
+
 const DB_NAME = "ccod_recordings";
 const STORE   = "recordings";
 
@@ -40,11 +42,27 @@ export async function deleteRecording(key: string): Promise<void> {
   });
 }
 
-export function playOrDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a   = document.createElement("a");
-  a.href     = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+// Upload vers Supabase Storage → retourne l'URL publique ou null
+export async function uploadToSupabase(key: string, blob: Blob): Promise<string | null> {
+  if (!supabase) return null;
+  try {
+    const ext  = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "mp4" : "webm";
+    const path = `${key}.${ext}`;
+    const { error } = await supabase.storage
+      .from("recordings")
+      .upload(path, blob, { contentType: blob.type, upsert: true });
+    if (error) return null;
+    const { data } = supabase.storage.from("recordings").getPublicUrl(path);
+    return data.publicUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Résout une référence (URL http ou clé IndexedDB) en URL utilisable pour <audio>
+export async function resolveAudioUrl(ref: string): Promise<string | null> {
+  if (ref.startsWith("http")) return ref;
+  const blob = await getRecording(ref);
+  if (!blob) return null;
+  return URL.createObjectURL(blob);
 }

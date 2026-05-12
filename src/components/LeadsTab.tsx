@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useGame } from "@/lib/gameContext";
 import { Prospect, ProspectStatus } from "@/lib/types";
-import { getRecording } from "@/lib/recordings";
+import { resolveAudioUrl } from "@/lib/recordings";
 
 const BORDER = "#383838";
 const CARD_BG = "#232323";
@@ -126,15 +126,14 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
       setPlayerOpen(false);
       return;
     }
-    const keys = prospect.recordings ?? [];
-    if (keys.length === 0) return;
+    const refs = prospect.recordings ?? [];
+    if (refs.length === 0) return;
     const loaded: { key: string; url: string }[] = [];
-    for (const key of keys) {
-      const blob = await getRecording(key);
-      if (blob) {
-        const url = URL.createObjectURL(blob);
-        urlsRef.current.push(url);
-        loaded.push({ key, url });
+    for (const ref of refs) {
+      const url = await resolveAudioUrl(ref);
+      if (url) {
+        if (!ref.startsWith("http")) urlsRef.current.push(url); // only revoke blob URLs
+        loaded.push({ key: ref, url });
       }
     }
     setAudioUrls(loaded);
