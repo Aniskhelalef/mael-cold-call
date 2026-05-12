@@ -10,6 +10,7 @@ import RankTab from "./RankTab";
 import ScriptTab from "./ScriptTab";
 import LeaderboardTab from "./LeaderboardTab";
 import LeadsTab from "./LeadsTab";
+import FloatingCallWidget from "./FloatingCallWidget";
 
 export default function GameApp() {
   const { state } = useGame();
@@ -38,6 +39,8 @@ export default function GameApp() {
   return (
     <div className="min-h-screen bg-game-bg">
       <Header activeTab={activeTab} setActiveTab={(t) => handleNavigate(t)} />
+
+      <FloatingCallWidget />
 
       <main className="max-w-6xl mx-auto px-4 py-5 pb-24">
         {activeTab === "home"         && <HomeTab onNavigate={handleNavigate} />}
