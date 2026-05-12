@@ -51,7 +51,7 @@ const MIN_W = 280;
 const MAX_W = 680;
 const MIN_H = 120;
 
-export default function FloatingCallWidget() {
+export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (target: string) => void }) {
   const { state, dispatch } = useGame();
 
   // ── Position, size & UI state ─────────────────────────────────────────────
@@ -421,16 +421,29 @@ export default function FloatingCallWidget() {
 
             {/* ── Step machine ── */}
             {callStage === "idle" && (
-              <button
-                onClick={() => setCallStage("answered_q")}
-                className="w-full py-5 rounded-sm font-game text-sm tracking-widest transition-all active:scale-95 btn-pulse"
-                style={{ background: "#FF5500", border: "1px solid #FF5500", color: "#FFF" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "#FF6B1A"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "#FF5500"; }}
-              >
-                <div style={{ fontSize: "1.3rem", marginBottom: "4px" }}>📞</div>
-                CALL LANCÉ
-              </button>
+              callableProspects.length === 0 ? (
+                <button
+                  onClick={() => onNavigate?.("leads:scraper")}
+                  className="w-full py-5 rounded-sm font-game text-sm tracking-widest transition-all active:scale-95"
+                  style={{ background: "rgba(93,199,229,0.1)", border: "1px solid rgba(93,199,229,0.4)", color: "#5DC7E5" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.2)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; }}
+                >
+                  <div style={{ fontSize: "1.3rem", marginBottom: "4px" }}>🔫</div>
+                  TROUVER DES PROSPECTS
+                </button>
+              ) : (
+                <button
+                  onClick={() => setCallStage("answered_q")}
+                  className="w-full py-5 rounded-sm font-game text-sm tracking-widest transition-all active:scale-95 btn-pulse"
+                  style={{ background: "#FF5500", border: "1px solid #FF5500", color: "#FFF" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#FF6B1A"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "#FF5500"; }}
+                >
+                  <div style={{ fontSize: "1.3rem", marginBottom: "4px" }}>📞</div>
+                  CALL LANCÉ
+                </button>
+              )
             )}
 
             {callStage === "answered_q" && (

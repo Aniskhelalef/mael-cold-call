@@ -40,7 +40,7 @@ export default function GameApp() {
     <div className="min-h-screen bg-game-bg">
       <Header activeTab={activeTab} setActiveTab={(t) => handleNavigate(t)} />
 
-      <FloatingCallWidget />
+      <FloatingCallWidget onNavigate={handleNavigate} />
 
       <main className="max-w-6xl mx-auto px-4 py-5 pb-24">
         {activeTab === "home"         && <HomeTab onNavigate={handleNavigate} />}
