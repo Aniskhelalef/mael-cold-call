@@ -191,6 +191,12 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
   const [timerElapsed, setTimerElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ── Recording ─────────────────────────────────────────────────────────────
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef        = useRef<Blob[]>([]);
+  const [recording, setRecording] = useState(false);
+  const [recError,  setRecError]  = useState<string | null>(null);
+
   const callableProspects = (state.prospects ?? [])
     .filter((p) => p.status === "a_appeler" || p.status === "rappel")
     .sort((a, b) => {
@@ -223,7 +229,47 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
   function fmtTimer(s: number) {
     return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   }
-  function resetCallFlow() { setCallStage("idle"); setCallAnsweredYes(false); }
+  async function startRecording() {
+    setRecError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunksRef.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setRecording(true);
+    } catch {
+      setRecError("Micro refusé");
+    }
+  }
+
+  function stopRecording(prospectName?: string) {
+    const mr = mediaRecorderRef.current;
+    if (!mr) return;
+    mr.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      const date = new Date().toISOString().split("T")[0];
+      const slug = (prospectName ?? "appel").replace(/\s+/g, "_").replace(/[^a-z0-9_]/gi, "");
+      a.href     = url;
+      a.download = `${slug}_${date}.webm`;
+      a.click();
+      URL.revokeObjectURL(url);
+      chunksRef.current = [];
+      mediaRecorderRef.current = null;
+      mr.stream.getTracks().forEach((t) => t.stop());
+    };
+    mr.stop();
+    setRecording(false);
+  }
+
+  function resetCallFlow() {
+    if (mediaRecorderRef.current) stopRecording();
+    setCallStage("idle");
+    setCallAnsweredYes(false);
+  }
 
   function handleNon() {
     dispatch({ type: "LOG_CALL", prospectName: currentProspect?.name });
@@ -235,6 +281,7 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
     setCallAnsweredYes(true);
     setCallStage("booked_q");
     startTimer();
+    startRecording();
     if (currentProspect && !currentProspect.premierContact) {
       const today = new Date().toISOString().split("T")[0];
       dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { premierContact: today } });
@@ -242,12 +289,14 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
   }
   function handleBooked() {
     const dur = stopTimer();
+    stopRecording(currentProspect?.name);
     dispatch({ type: "LOG_CALL_BOOKING", prospectName: currentProspect?.name });
     if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "rdv", reponse: "rdv", callDuration: dur } });
     setProspectIdx((i) => i + 1);
     resetCallFlow();
   }
   function handleNotBooked() {
+    stopRecording(currentProspect?.name);
     dispatch({ type: "LOG_CALL_YES", prospectName: currentProspect?.name });
     if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { reponse: "oui_non_booké" } });
     setCallStage("pourquoi_q");
@@ -579,10 +628,20 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
 
             {callStage === "booked_q" && (
               <div>
-                <div className="text-center mb-2">
+                <div className="flex items-center justify-center gap-3 mb-2">
                   <span className="font-game text-2xl tracking-widest" style={{ color: "#FF5500", fontVariantNumeric: "tabular-nums" }}>
                     {fmtTimer(timerElapsed)}
                   </span>
+                  {recording && (
+                    <span className="flex items-center gap-1 font-game text-[9px] tracking-widest px-2 py-1 rounded-sm"
+                      style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.4)", color: "#ef4444" }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", display: "inline-block", animation: "pulse 1s infinite" }} />
+                      REC
+                    </span>
+                  )}
+                  {recError && (
+                    <span className="font-game text-[9px]" style={{ color: "#f97316" }} title={recError}>🎙 refusé</span>
+                  )}
                 </div>
 
                 {/* ── Objections rapides ── */}
