@@ -71,14 +71,15 @@ function ProspectRow({ p, i, total }: { p: Prospect; i: number; total: number })
         <td style={{ padding: "8px 12px", fontSize: "0.72rem", color: "#686868", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {p.notes || "—"}
         </td>
-        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+        <td style={{ padding: "8px 12px" }}>
           {urls.length > 0 && (
             <button
               onClick={() => setOpen((o) => !o)}
-              title={`${urls.length} enregistrement(s)`}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.9rem", color: open ? "#FF5500" : "#5DC7E5" }}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "0.7rem", letterSpacing: "0.06em", color: open ? "#FF5500" : "#5DC7E5" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.75"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
             >
-              🎙{urls.length > 1 && <sup style={{ fontSize: "0.55rem" }}>{urls.length}</sup>}
+              🎙 ÉCOUTER{urls.length > 1 && ` (${urls.length})`}
             </button>
           )}
         </td>

@@ -233,14 +233,11 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
         {(prospect.recordings?.length ?? 0) > 0 && (
           <button
             onClick={togglePlayer}
-            title={`${prospect.recordings?.length} enregistrement(s) — cliquer pour écouter`}
-            style={{ background: "none", border: "none", color: playerOpen ? "#FF5500" : "#5DC7E5", cursor: "pointer", fontSize: "0.85rem", marginRight: 4 }}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "0.7rem", letterSpacing: "0.06em", color: playerOpen ? "#FF5500" : "#5DC7E5" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.75"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
           >
-            🎙{(prospect.recordings?.length ?? 0) > 1 && (
-              <span style={{ fontSize: "0.55rem", verticalAlign: "super" }}>{prospect.recordings?.length}</span>
-            )}
+            🎙 ÉCOUTER{(prospect.recordings?.length ?? 0) > 1 && ` (${prospect.recordings?.length})`}
           </button>
         )}
         <button
