@@ -112,11 +112,41 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
     update({ reponse: next });
   };
 
+  // ── Recording player ─────────────────────────────────────────────────────
+  const [playerOpen, setPlayerOpen] = useState(false);
+  const [audioUrls,  setAudioUrls]  = useState<{ key: string; url: string }[]>([]);
+  const urlsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    return () => { urlsRef.current.forEach((u) => URL.revokeObjectURL(u)); };
+  }, []);
+
+  async function togglePlayer() {
+    if (playerOpen) {
+      setPlayerOpen(false);
+      return;
+    }
+    const keys = prospect.recordings ?? [];
+    if (keys.length === 0) return;
+    const loaded: { key: string; url: string }[] = [];
+    for (const key of keys) {
+      const blob = await getRecording(key);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        urlsRef.current.push(url);
+        loaded.push({ key, url });
+      }
+    }
+    setAudioUrls(loaded);
+    setPlayerOpen(true);
+  }
+
   const sc  = STATUS_CFG[prospect.status] ?? STATUS_CFG.a_appeler;
   const rowBg = idx % 2 === 0 ? "#1c1c1c" : "#181818";
 
   return (
-    <tr style={{ borderBottom: "1px solid #252525", background: checked ? "rgba(255,85,0,0.04)" : rowBg }}>
+    <>
+    <tr style={{ borderBottom: playerOpen ? "none" : "1px solid #252525", background: checked ? "rgba(255,85,0,0.04)" : rowBg }}>
       <td style={{ padding: "8px 12px" }}>
         <input type="checkbox" checked={checked} onChange={onToggle} style={{ accentColor: "#FF5500", cursor: "pointer" }} />
       </td>
@@ -203,25 +233,14 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
       <td style={{ padding: "8px 12px", textAlign: "center", whiteSpace: "nowrap" }}>
         {(prospect.recordings?.length ?? 0) > 0 && (
           <button
-            onClick={async () => {
-              const keys = prospect.recordings ?? [];
-              const key  = keys[keys.length - 1];
-              const blob = await getRecording(key);
-              if (blob) {
-                const slug = prospect.name.replace(/\s+/g, "_").replace(/[^a-z0-9_]/gi, "");
-                playOrDownload(blob, `${slug}_rec.webm`);
-              } else {
-                alert("Enregistrement introuvable (stockage local effacé ?)");
-              }
-            }}
-            title={`${prospect.recordings?.length} enregistrement(s)`}
-            style={{ background: "none", border: "none", color: "#5DC7E5", cursor: "pointer", fontSize: "0.85rem", marginRight: 4 }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#93c5fd"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#5DC7E5"; }}
+            onClick={togglePlayer}
+            title={`${prospect.recordings?.length} enregistrement(s) — cliquer pour écouter`}
+            style={{ background: "none", border: "none", color: playerOpen ? "#FF5500" : "#5DC7E5", cursor: "pointer", fontSize: "0.85rem", marginRight: 4 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.75"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
           >
-            🎙
-            {(prospect.recordings?.length ?? 0) > 1 && (
-              <span style={{ fontSize: "0.55rem", verticalAlign: "super", color: "#5DC7E5" }}>{prospect.recordings?.length}</span>
+            🎙{(prospect.recordings?.length ?? 0) > 1 && (
+              <span style={{ fontSize: "0.55rem", verticalAlign: "super" }}>{prospect.recordings?.length}</span>
             )}
           </button>
         )}
@@ -234,6 +253,48 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
         </button>
       </td>
     </tr>
+
+    {/* ── Audio player row ── */}
+    {playerOpen && audioUrls.length > 0 && (
+      <tr style={{ background: "#141414", borderBottom: "1px solid #252525" }}>
+        <td colSpan={13} style={{ padding: "10px 16px" }}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-game text-[9px] tracking-widest" style={{ color: "#5DC7E5" }}>🎙 ENREGISTREMENTS — {prospect.name}</span>
+            <button
+              onClick={() => setPlayerOpen(false)}
+              style={{ background: "none", border: "none", color: "#484848", cursor: "pointer", fontSize: "0.75rem", marginLeft: "auto" }}
+            >✕</button>
+          </div>
+          <div className="space-y-2">
+            {audioUrls.map((item, i) => (
+              <div key={item.key} className="flex items-center gap-3">
+                <span style={{ color: "#484848", fontSize: "0.65rem", fontFamily: "monospace", flexShrink: 0 }}>#{audioUrls.length - i}</span>
+                <audio
+                  controls
+                  src={item.url}
+                  autoPlay={i === audioUrls.length - 1}
+                  style={{ flex: 1, height: 28, accentColor: "#5DC7E5" }}
+                />
+                <button
+                  onClick={() => {
+                    const slug = prospect.name.replace(/\s+/g, "_").replace(/[^a-z0-9_]/gi, "");
+                    playOrDownload(new Blob([], { type: "audio/webm" }), `${slug}_${i + 1}.webm`);
+                    getRecording(item.key).then((blob) => {
+                      if (blob) playOrDownload(blob, `${slug}_${i + 1}.webm`);
+                    });
+                  }}
+                  style={{ background: "none", border: "none", color: "#383838", cursor: "pointer", fontSize: "0.75rem", flexShrink: 0 }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#C0C0C0"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#383838"; }}
+                  title="Télécharger"
+                >⬇</button>
+              </div>
+            ))}
+          </div>
+        </td>
+      </tr>
+    )}
+    </>
   );
 }
 
