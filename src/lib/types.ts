@@ -61,10 +61,10 @@ export interface Prospect {
 export type GameAction =
   | { type: "SETUP_PLAYER"; name: string; email: string }
   | { type: "RESTORE_STATE"; state: GameState }
-  | { type: "LOG_CALL" }
-  | { type: "LOG_CALL_YES" }
-  | { type: "LOG_BOOKING" }
-  | { type: "LOG_CALL_BOOKING" }
+  | { type: "LOG_CALL"; prospectName?: string }
+  | { type: "LOG_CALL_YES"; prospectName?: string }
+  | { type: "LOG_BOOKING"; prospectName?: string }
+  | { type: "LOG_CALL_BOOKING"; prospectName?: string }
   | { type: "UNDO_CALL" }
   | { type: "START_SESSION"; minutes: number }
   | { type: "END_SESSION" }

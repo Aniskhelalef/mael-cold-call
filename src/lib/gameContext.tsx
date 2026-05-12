@@ -363,7 +363,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         newState = { ...newState, weeklyDaysActive: newState.weeklyDaysActive + 1 };
       }
 
-      newState = { ...newState, lastCallType: "no" };
+      newState = { ...newState, lastCallType: "no", lastCalledProspectName: action.prospectName ?? currentState.lastCalledProspectName };
 
       // Achievement check
       const { newAchievements, moneyGain: achMoney } = checkAchievements(newState);
@@ -399,7 +399,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
       newState = updateStreak(newState, today);
-      newState = { ...newState, lastCallType: "yes" };
+      newState = { ...newState, lastCallType: "yes", lastCalledProspectName: action.prospectName ?? currentState.lastCalledProspectName };
 
       if (isFirstCallOfDay) {
         newState = { ...newState, weeklyDaysActive: newState.weeklyDaysActive + 1 };
@@ -498,7 +498,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
       newState = updateStreak(newState, today);
-      newState = { ...newState, lastCallType: "booking" };
+      newState = { ...newState, lastCallType: "booking", lastCalledProspectName: action.prospectName ?? currentState.lastCalledProspectName };
 
       if (isFirstCallOfDay) {
         newState = { ...newState, weeklyDaysActive: newState.weeklyDaysActive + 1 };

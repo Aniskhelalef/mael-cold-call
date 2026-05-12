@@ -226,7 +226,7 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
   function resetCallFlow() { setCallStage("idle"); setCallAnsweredYes(false); }
 
   function handleNon() {
-    dispatch({ type: "LOG_CALL" });
+    dispatch({ type: "LOG_CALL", prospectName: currentProspect?.name });
     if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { reponse: "non" } });
     setCallAnsweredYes(false);
     setCallStage("relance_q");
@@ -242,13 +242,13 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
   }
   function handleBooked() {
     const dur = stopTimer();
-    dispatch({ type: "LOG_CALL_BOOKING" });
+    dispatch({ type: "LOG_CALL_BOOKING", prospectName: currentProspect?.name });
     if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "rdv", reponse: "rdv", callDuration: dur } });
     setProspectIdx((i) => i + 1);
     resetCallFlow();
   }
   function handleNotBooked() {
-    dispatch({ type: "LOG_CALL_YES" });
+    dispatch({ type: "LOG_CALL_YES", prospectName: currentProspect?.name });
     if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { reponse: "oui_non_booké" } });
     setCallStage("pourquoi_q");
   }

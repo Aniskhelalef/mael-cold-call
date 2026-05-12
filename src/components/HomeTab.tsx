@@ -133,7 +133,7 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
             .sort((a, b) => (b.premierContact ?? "").localeCompare(a.premierContact ?? ""))[0];
           return {
             userName:     r.state.playerName,
-            prospectName: lastProspect?.name ?? null,
+            prospectName: lastProspect?.name ?? r.state.lastCalledProspectName ?? null,
             type:         ((r.state.totalBookings ?? 0) > 0 ? "booking" : "call") as "call" | "booking",
             syncedAt:     r.syncedAt,
           };
@@ -176,7 +176,7 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
       {activityLog.length > 0 && (() => {
         const top = activityLog[0];
         return (
-          <div className="rounded-sm mb-3 overflow-hidden" style={{ background: "#1a1a1a", border: "1px solid #2e2e2e" }}>
+          <div className="rounded-sm mb-3" style={{ background: "#1a1a1a", border: "1px solid #2e2e2e" }}>
             {/* Top row */}
             <button
               className="w-full flex items-center gap-2 px-3 py-2 font-game text-[10px] tracking-widest text-left"
