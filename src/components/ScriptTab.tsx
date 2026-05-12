@@ -575,11 +575,89 @@ function VariantsSection({ votes, myVotes, vote }: VoteProps) {
   );
 }
 
+// ── Links section ─────────────────────────────────────────────────────────────
+
+const LINKS = [
+  {
+    label:    "RDV CLOSEUR",
+    sublabel: "Calendly — Audit projet web Theralys",
+    url:      "https://calendly.com/d/ctn4-3gj-rzk/audit-projet-web-theralys",
+    color:    "#5DC7E5",
+    embed:    true,
+  },
+];
+
+function LinksSection() {
+  const [embedOpen, setEmbedOpen] = useState<number | null>(null);
+
+  return (
+    <div className="space-y-3">
+      {LINKS.map((link, i) => (
+        <div key={i} className="rounded-sm overflow-hidden" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+          {/* Header */}
+          <div className="flex items-center justify-between gap-3 p-4 flex-wrap">
+            <div>
+              <div className="font-game text-xs tracking-widest mb-0.5" style={{ color: link.color }}>
+                {link.label}
+              </div>
+              <div style={{ color: "#848484", fontSize: "0.75rem" }}>{link.sublabel}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <CopyBtn text={link.url} />
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                style={{
+                  background: `${link.color}15`,
+                  border:     `1px solid ${link.color}50`,
+                  color:      link.color,
+                  textDecoration: "none",
+                }}
+              >
+                OUVRIR ↗
+              </a>
+              {link.embed && (
+                <button
+                  onClick={() => setEmbedOpen(embedOpen === i ? null : i)}
+                  className="px-3 py-1.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                  style={{
+                    background: embedOpen === i ? "rgba(255,85,0,0.15)" : "rgba(255,255,255,0.04)",
+                    border:     `1px solid ${embedOpen === i ? "rgba(255,85,0,0.5)" : "#383838"}`,
+                    color:      embedOpen === i ? "#FF5500" : "#848484",
+                  }}
+                >
+                  {embedOpen === i ? "FERMER" : "EMBED"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Embed */}
+          {embedOpen === i && (
+            <div style={{ borderTop: `1px solid ${BORDER}` }}>
+              <iframe
+                src={link.url}
+                width="100%"
+                height="700"
+                frameBorder="0"
+                style={{ display: "block" }}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 const SECTIONS = [
   { id: "script",   label: "Script",    icon: "📞", color: "#FF5500" },
   { id: "variants", label: "Variantes", icon: "🎯", color: "#1CE400" },
+  { id: "liens",    label: "Liens",     icon: "🔗", color: "#5DC7E5" },
 ];
 
 export default function ScriptTab() {
@@ -696,6 +774,7 @@ export default function ScriptTab() {
         />
       )}
       {activeSection === "variants" && <VariantsSection votes={votes} myVotes={myVotes} vote={vote} />}
+      {activeSection === "liens"    && <LinksSection />}
     </div>
   );
 }
