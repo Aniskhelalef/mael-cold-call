@@ -390,6 +390,20 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
                         >✕</button>
                         {callableProspects.length > 1 && (
                           <>
+                            <button
+                              onClick={() => {
+                                let bestIdx = -1, bestDate = "";
+                                callableProspects.forEach((p, i) => {
+                                  if (p.premierContact && p.premierContact > bestDate) { bestDate = p.premierContact; bestIdx = i; }
+                                });
+                                if (bestIdx >= 0) setProspectIdx(bestIdx);
+                              }}
+                              className="font-game text-[9px] px-2 py-1 rounded-sm transition-colors"
+                              style={{ color: "#5DC7E5", border: "1px solid rgba(93,199,229,0.3)", background: "transparent" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; e.currentTarget.style.borderColor = "#5DC7E5"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(93,199,229,0.3)"; }}
+                              title="Reprendre au dernier contact"
+                            >↩ REPRENDRE</button>
                             <button onClick={() => setProspectIdx((i) => (i - 1 + callableProspects.length) % callableProspects.length)}
                               className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
                               style={{ color: "#848484", border: "1px solid #383838", background: "transparent" }}
