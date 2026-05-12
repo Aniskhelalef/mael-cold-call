@@ -44,19 +44,45 @@ export async function deleteRecording(key: string): Promise<void> {
 
 // Upload vers Supabase Storage → retourne l'URL publique ou null
 export async function uploadToSupabase(key: string, blob: Blob): Promise<string | null> {
-  if (!supabase) return null;
+  if (!supabase) {
+    console.warn("[recordings] Supabase non configuré — upload ignoré");
+    return null;
+  }
+  try {
+    // Auto-create bucket if needed (silently ignore "already exists" errors)
+    await supabase.storage.createBucket("recordings", { public: true });
+  } catch { /* bucket already exists or no permission — continue anyway */ }
   try {
     const ext  = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "mp4" : "webm";
     const path = `${key}.${ext}`;
     const { error } = await supabase.storage
       .from("recordings")
       .upload(path, blob, { contentType: blob.type, upsert: true });
-    if (error) return null;
+    if (error) {
+      console.error("[recordings] Upload Supabase échoué:", error.message);
+      return null;
+    }
     const { data } = supabase.storage.from("recordings").getPublicUrl(path);
     return data.publicUrl ?? null;
-  } catch {
+  } catch (e) {
+    console.error("[recordings] Upload exception:", e);
     return null;
   }
+}
+
+// Upload toutes les clés IndexedDB locales vers Supabase → retourne map key→URL
+export async function syncAllLocalRecordings(
+  keys: string[]
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  for (const key of keys) {
+    if (key.startsWith("http")) continue;
+    const blob = await getRecording(key);
+    if (!blob) continue;
+    const url = await uploadToSupabase(key, blob);
+    if (url) result.set(key, url);
+  }
+  return result;
 }
 
 // Résout une référence (URL http ou clé IndexedDB) en URL utilisable pour <audio>

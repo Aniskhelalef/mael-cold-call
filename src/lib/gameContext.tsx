@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef } from "react";
 import { GameState, GameAction } from "./types";
 import { syncStateToSupabase, supabase } from "./supabase";
+import { syncAllLocalRecordings } from "./recordings";
 import {
   ACHIEVEMENTS,
   ACHIEVEMENT_MONEY_REWARDS,
@@ -697,6 +698,31 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     supabase?.from("game_state").delete().eq("id", "mael").then(() => {});
   }, []);
+
+  // Auto-sync: upload any local IndexedDB recording keys to Supabase
+  const autoSyncRunning = useRef(false);
+  const localKeySignature = (state.prospects ?? [])
+    .flatMap((p) => (p.recordings ?? []).filter((r) => !r.startsWith("http") && !r.startsWith("data:")))
+    .join(",");
+  useEffect(() => {
+    if (!localKeySignature || autoSyncRunning.current) return;
+    const prospects = state.prospects ?? [];
+    const localKeys = Array.from(new Set(localKeySignature.split(",").filter(Boolean)));
+    autoSyncRunning.current = true;
+    syncAllLocalRecordings(localKeys).then((map) => {
+      if (map.size > 0) {
+        for (const p of prospects) {
+          const recs = p.recordings ?? [];
+          const updated = recs.map((r) => map.get(r) ?? r);
+          if (updated.some((r, i) => r !== recs[i])) {
+            dispatch({ type: "UPDATE_PROSPECT", id: p.id, changes: { recordings: updated } });
+          }
+        }
+      }
+      autoSyncRunning.current = false;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localKeySignature]);
 
   useEffect(() => {
     saveState(state);

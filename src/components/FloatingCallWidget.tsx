@@ -195,8 +195,9 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
   // ── Recording ─────────────────────────────────────────────────────────────
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef        = useRef<Blob[]>([]);
-  const [recording, setRecording] = useState(false);
-  const [recError,  setRecError]  = useState<string | null>(null);
+  const [recording,    setRecording]    = useState(false);
+  const [recError,     setRecError]     = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "ok" | "fail">("idle");
 
   const callableProspects = (state.prospects ?? [])
     .filter((p) => p.status === "a_appeler" || p.status === "rappel")
@@ -256,20 +257,32 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
     const mime = mimeTypeRef.current;
     mr.onstop = async () => {
       const blob = new Blob(chunksRef.current, { type: mime });
-      const key  = `${prospect?.id ?? "unknown"}_${Date.now()}`;
-      // Save locally first (instantané), puis upload Supabase (asynchrone)
-      await saveRecording(key, blob);
-      if (prospect) {
-        const existing = currentProspect?.recordings ?? [];
-        // Stocker la clé locale d'abord, remplacer par l'URL Supabase si upload réussi
-        dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes: { recordings: [...existing, key] } });
-        uploadToSupabase(key, blob).then((url) => {
-          if (url) {
-            const updated = [...existing, url];
-            dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes: { recordings: updated } });
-          }
-        });
+      if (!prospect) {
+        chunksRef.current = [];
+        mediaRecorderRef.current = null;
+        mr.stream.getTracks().forEach((t) => t.stop());
+        return;
       }
+      const existing = currentProspect?.recordings ?? [];
+      setUploadStatus("uploading");
+      // Try Supabase upload first
+      const key = `${prospect.id}_${Date.now()}`;
+      await saveRecording(key, blob);
+      const url = await uploadToSupabase(key, blob);
+      if (url) {
+        dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes: { recordings: [...existing, url] } });
+        setUploadStatus("ok");
+      } else {
+        // Fallback: store as base64 data URL so it syncs via game_state
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes: { recordings: [...existing, dataUrl] } });
+        };
+        reader.readAsDataURL(blob);
+        setUploadStatus("fail");
+      }
+      setTimeout(() => setUploadStatus("idle"), 4000);
       chunksRef.current = [];
       mediaRecorderRef.current = null;
       mr.stream.getTracks().forEach((t) => t.stop());
@@ -654,6 +667,15 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
                   )}
                   {recError && (
                     <span className="font-game text-[9px]" style={{ color: "#f97316" }} title={recError}>🎙 refusé</span>
+                  )}
+                  {uploadStatus === "uploading" && (
+                    <span className="font-game text-[9px]" style={{ color: "#848484" }}>☁ envoi…</span>
+                  )}
+                  {uploadStatus === "ok" && (
+                    <span className="font-game text-[9px]" style={{ color: "#1CE400" }}>☁ ✓</span>
+                  )}
+                  {uploadStatus === "fail" && (
+                    <span className="font-game text-[9px]" style={{ color: "#ef4444" }} title="Upload Supabase échoué — vérifier le bucket recordings">☁ ✗</span>
                   )}
                 </div>
 
