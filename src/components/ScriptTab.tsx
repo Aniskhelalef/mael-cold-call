@@ -131,42 +131,57 @@ function VoteBar({ id, votes, myVotes, vote }: {
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 
+const OPENER_PRESETS = [
+  { id: "pre_1",  name: "POP Classique",         profil: "Défaut — tous profils",                    text: "« POP ! Allô, je suis bien avec le meilleur ostéo de [ville] ? »" },
+  { id: "pre_2",  name: "L'Aveu Direct",          profil: "Profils méfiants, qui filtrent",            text: "« Allô [Prénom] ? Si je vous dit que c'est un appel de prospection, vous me raccrochez au nez ou vous me laissez 10 secondes ? »" },
+  { id: "pre_3",  name: "Trigger Doctolib",       profil: "Profils avec beaucoup d'avis Doctolib",     text: "« Allô [Prénom] ? Vous avez 4.8 étoiles sur 80 avis, c'est solide. Par contre quand je tape «ostéo [ville]» sur Google, vous sortez nulle part. C'est pour ça que je vous appelle, vous me laissez 30 secondes ? »" },
+  { id: "pre_4",  name: "Faux Numéro Confus",     profil: "Cabinets avec secrétariat, surbookés",      text: "« Allô ? Je suis bien chez Dr [Nom] ? L'ostéo ? ... Ah ouf. Bon, je vais être transparent : c'est un appel de prospection. Mais avant que vous raccrochiez, je vous propose un truc : 20 secondes pour expliquer, après c'est vous qui décidez. Deal ? »" },
+  { id: "pre_5",  name: "Curiosité Chirurgicale", profil: "Seniors installés, se croient à l'abri",    text: "« Allô [Prénom] ? Sur 10 nouveaux patients, vous sauriez me dire combien viennent du bouche à oreille, combien de Google, combien de Doctolib ? ... La plupart des ostéos pensaient 80% bouche à oreille — quand on a tracké, c'était 40%. Le reste leur passait sous le nez. C'est pour ça que je vous appelle. 5 minutes ? »" },
+  { id: "pre_6",  name: "Compliment Ultra Ciblé", profil: "Profils premium, nombreux avis",            text: "« Allô [Prénom] ? 4.8 sur 127 avis, tout en haut de [ville], franchement bravo. Mais quand je tape «ostéo [ville]» sur Google, vous sortez en 7e position. Vous avez 5 minutes pour que je vous montre ce que ça pourrait donner ? »" },
+  { id: "pre_7",  name: "J'ai un Cadeau",         profil: "Leads froids qui détestent la vente",       text: "« Allô [Prénom] ? Je vous appelle pas pour vous vendre un truc tout de suite, je vous appelle pour vous offrir quelque chose. J'ai créé un site web complet pour votre cabinet, gratuitement, juste pour vous le montrer. 3 minutes ? »" },
+  { id: "pre_8",  name: "Constat Factuel",         profil: "Ostéo, kiné, dentiste — profils concrets", text: "« Allô [Prénom] ? 30 secondes : j'ai audité les 50 ostéos de [ville], 78% n'apparaissent pas en page 1. Vous, vous êtes en [position], et c'est pas une fatalité, ça se règle. 5 minutes ? »" },
+  { id: "pre_9",  name: "Patient Déçu",            profil: "Psy, hypno, sophro — profils empathiques",  text: "« Allô [Prénom] ? La semaine dernière, ma copine cherchait un ostéo à [ville]. Elle a pris RDV chez le 4e, qui avait un site moche mais référencé. Vous, votre Doctolib est top, mais sur Google vous existez pas. 5 minutes ? »" },
+  { id: "pre_10", name: "Challenge Inversé",       profil: "Profils à ego, chefs de cabinet",           text: "« Allô [Prénom] ? Si je vous dis «Theralys», ça vous dit quelque chose ? On commence à équiper pas mal d'ostéos sur [région]. J'ai 3 questions rapides pour qualifier, ensuite je vous montre le site créé pour vous. Ça vous va ? »" },
+  { id: "pre_11", name: "Le Confrère",             profil: "Dès que tu as un client sur la même zone",  text: "« Allô [Prénom] ? Je viens de finir d'installer le site de [Confrère sur même ville], on a doublé son trafic en 8 semaines. Il m'a dit «appelle [Prénom] aussi». Bon, il vous a pas vraiment recommandé parce que vous êtes concurrents (rire), mais j'ai trouvé que c'était une bonne idée. 5 minutes ? »" },
+];
+
 const SCRIPT_STEPS = [
   {
     tag: "OPENER", color: "#FF5500",
     text: "« Allô, je suis bien avec le meilleur ostéo de [VILLE] ? »",
     note: "(rire / « ah ah pas vraiment »)",
     objIdxs: [9, 3],
+    presets: OPENER_PRESETS,
   },
   {
     tag: "PERMISSION", color: "#5DC7E5",
     text: "« Super. Si je vous dis que c'est un appel de prospection, vous jetez le téléphone par la fenêtre ou vous me laissez 10 petites secondes pour expliquer ? »",
     note: "(attendre la réponse)",
-    objIdxs: [6, 3],
+    objIdxs: [6, 3], presets: [] as typeof OPENER_PRESETS,
   },
   {
     tag: "ACCROCHE", color: "#1CE400",
     text: "« Cool, merci. J'étais en train de me promener sur internet, je cherchais un ostéo sur [VILLE], et j'ai vu que vous n'aviez pas de site web. Je me doute qu'on vous appelle déjà tout le temps pour vous en vendre un, hein ? »",
     note: "(réaction)",
-    objIdxs: [0, 2, 1],
+    objIdxs: [0, 2, 1], presets: [] as typeof OPENER_PRESETS,
   },
   {
     tag: "DIFFÉRENCIATION", color: "#FF9500",
     text: "« Voilà, la grande différence avec les agences classiques, c'est que moi j'ai déjà pris la liberté de vous le créer directement, juste pour que vous voyiez à quoi ça ressemble. Vous avez 5 petites minutes pour y jeter un petit coup d'œil ? »",
     note: null,
-    objIdxs: [4, 7, 3],
+    objIdxs: [4, 7, 3], presets: [] as typeof OPENER_PRESETS,
   },
   {
     tag: "SI OUI ✓", color: "#1CE400",
     text: "→ Tu envoies le lien WhatsApp ou SMS sur l'instant, tu restes au tél.",
     note: null,
-    objIdxs: [] as number[],
+    objIdxs: [] as number[], presets: [] as typeof OPENER_PRESETS,
   },
   {
     tag: "CLOSE RAPPEL", color: "#AE00FC",
     text: "« Top, alors je vous rappelle à 18h, je vous envoie le lien et je prends 5 minutes pour vous le montrer. »",
     note: null,
-    objIdxs: [5, 8],
+    objIdxs: [5, 8], presets: [] as typeof OPENER_PRESETS,
   },
 ];
 
@@ -181,20 +196,6 @@ const OBJECTIONS = [
   { trigger: "« C'est ma secrétaire qui gère »", response: "C'est votre secrétaire qui décide de comment vous remplissez votre agenda et combien vous gagnez à la fin du mois ? (rire) Je vais vous montrer en 2 minutes pour que vous puissiez décider en connaissance de cause, et après vous lui transférerez si vous voulez." },
   { trigger: "« Rappelez-moi dans 6 mois »", response: "Je vais le faire. Mais juste, soyez franc avec moi : pourquoi 6 mois ? Parce que si c'est pour repousser, autant tester gratuitement 7 jours pendant ce temps. Y'a aucun engagement, aucun prélèvement. Ça vous coûte rien." },
   { trigger: "« C'est pas éthique »", response: "Je vous comprends, c'est pour ça que j'ai été cash dès le début. Mais c'est pas plus éthique d'avoir un site bien fait pour qu'un patient qui a mal au dos vous trouve, plutôt que de le laisser aller chez un concurrent moins compétent que vous ? Mon outil sert à ce que les bons thérapeutes soient trouvés." },
-];
-
-const VARIANTS = [
-  { num: 1, name: "POP Classique",       profil: "Défaut — tous profils",                    script: "« POP ! Allô, je suis bien avec le meilleur ostéo de [ville] ? »" },
-  { num: 2, name: "L'Aveu Direct",        profil: "Profils méfiants, qui filtrent",            script: "« Allô [Prénom] ? Si je vous dit que c'est un appel de prospection, vous me raccrochez au nez ou vous me laissez 10 secondes ? »" },
-  { num: 3, name: "Trigger Doctolib",     profil: "Profils avec beaucoup d'avis Doctolib",     script: "« Allô [Prénom] ? Vous avez 4.8 étoiles sur 80 avis, c'est solide. Par contre quand je tape «ostéo [ville]» sur Google, vous sortez nulle part. C'est pour ça que je vous appelle, vous me laissez 30 secondes ? »" },
-  { num: 4, name: "Faux Numéro Confus",   profil: "Cabinets avec secrétariat, surbookés",      script: "« Allô ? Je suis bien chez Dr [Nom] ? L'ostéo ? ... Ah ouf. Bon, je vais être transparent : c'est un appel de prospection. Mais avant que vous raccrochiez, je vous propose un truc : 20 secondes pour expliquer, après c'est vous qui décidez. Deal ? »" },
-  { num: 5, name: "Curiosité Chirurgicale", profil: "Seniors installés, se croient à l'abri", script: "« Allô [Prénom] ? Sur 10 nouveaux patients, vous sauriez me dire combien viennent du bouche à oreille, combien de Google, combien de Doctolib ? ... La plupart des ostéos pensaient 80% bouche à oreille — quand on a tracké, c'était 40%. Le reste leur passait sous le nez. C'est pour ça que je vous appelle. 5 minutes ? »" },
-  { num: 6, name: "Compliment Ultra Ciblé", profil: "Profils premium, nombreux avis",         script: "« Allô [Prénom] ? 4.8 sur 127 avis, tout en haut de [ville], franchement bravo. Mais quand je tape «ostéo [ville]» sur Google, vous sortez en 7e position. Vous avez 5 minutes pour que je vous montre ce que ça pourrait donner ? »" },
-  { num: 7, name: "J'ai un Cadeau",       profil: "Leads froids qui détestent la vente",      script: "« Allô [Prénom] ? Je vous appelle pas pour vous vendre un truc tout de suite, je vous appelle pour vous offrir quelque chose. J'ai créé un site web complet pour votre cabinet, gratuitement, juste pour vous le montrer. 3 minutes ? »" },
-  { num: 8, name: "Constat Factuel",      profil: "Ostéo, kiné, dentiste — profils concrets", script: "« Allô [Prénom] ? 30 secondes : j'ai audité les 50 ostéos de [ville], 78% n'apparaissent pas en page 1. Vous, vous êtes en [position], et c'est pas une fatalité, ça se règle. 5 minutes ? »" },
-  { num: 9, name: "Patient Déçu",        profil: "Psy, hypno, sophro — profils empathiques",  script: "« Allô [Prénom] ? La semaine dernière, ma copine cherchait un ostéo à [ville]. Elle a pris RDV chez le 4e, qui avait un site moche mais référencé. Vous, votre Doctolib est top, mais sur Google vous existez pas. 5 minutes ? »" },
-  { num: 10, name: "Challenge Inversé",  profil: "Profils à ego, chefs de cabinet",           script: "« Allô [Prénom] ? Si je vous dis «Theralys», ça vous dit quelque chose ? On commence à équiper pas mal d'ostéos sur [région]. J'ai 3 questions rapides pour qualifier, ensuite je vous montre le site créé pour vous. Ça vous va ? »" },
-  { num: 11, name: "Le Confrère",        profil: "Dès que tu as un client sur la même zone",  script: "« Allô [Prénom] ? Je viens de finir d'installer le site de [Confrère sur même ville], on a doublé son trafic en 8 semaines. Il m'a dit «appelle [Prénom] aussi». Bon, il vous a pas vraiment recommandé parce que vous êtes concurrents (rire), mais j'ai trouvé que c'était une bonne idée. 5 minutes ? »" },
 ];
 
 // ── Copy button ───────────────────────────────────────────────────────────────
@@ -257,12 +258,14 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
   return (
     <div className="space-y-2">
       {SCRIPT_STEPS.map((step, i) => {
-        const step_id     = `script_${i}`;
-        const activeVarId = activeVariants[step_id];
-        const activeVar   = activeVarId ? variants.find((v) => v.id === activeVarId) : null;
-        const stepVars    = variants.filter((v) => v.step_id === step_id);
-        const displayText = activeVar ? activeVar.text : step.text;
-        const isVarOpen   = openVarFor === i;
+        const step_id      = `script_${i}`;
+        const activeVarId  = activeVariants[step_id];
+        const activePreset = step.presets.find((p) => p.id === activeVarId);
+        const activeComVar = !activePreset && activeVarId ? variants.find((v) => v.id === activeVarId) : null;
+        const activeName   = activePreset?.name ?? activeComVar?.author ?? null;
+        const displayText  = activePreset?.text ?? activeComVar?.text ?? step.text;
+        const stepVars     = variants.filter((v) => v.step_id === step_id);
+        const isVarOpen    = openVarFor === i;
 
         return (
           <div
@@ -271,7 +274,7 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
             style={{
               background:  CARD_BG,
               border:      `1px solid ${BORDER}`,
-              borderLeft:  `3px solid ${activeVar ? authorColor(activeVar.author) : step.color}`,
+              borderLeft:  `3px solid ${activeName ? (activePreset ? step.color : authorColor(activeName)) : step.color}`,
             }}
           >
             {/* Header row */}
@@ -283,12 +286,16 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
                 >
                   {step.tag}
                 </span>
-                {activeVar && (
+                {activeName && (
                   <span
                     className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm flex-shrink-0"
-                    style={{ color: authorColor(activeVar.author), background: `${authorColor(activeVar.author)}18`, border: `1px solid ${authorColor(activeVar.author)}40` }}
+                    style={{
+                      color:      activePreset ? step.color : authorColor(activeName),
+                      background: activePreset ? `${step.color}18` : `${authorColor(activeName)}18`,
+                      border:     `1px solid ${activePreset ? `${step.color}40` : `${authorColor(activeName)}40`}`,
+                    }}
                   >
-                    {activeVar.author}
+                    {activeName}
                   </span>
                 )}
               </div>
@@ -302,7 +309,7 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
             <p style={{ color: "#FFFFFF", fontSize: "0.88rem", lineHeight: 1.7, margin: 0 }}>
               {displayText}
             </p>
-            {!activeVar && step.note && (
+            {!activeName && step.note && (
               <p style={{ color: "#848484", fontSize: "0.72rem", marginTop: "6px", fontStyle: "italic" }}>
                 {step.note}
               </p>
@@ -362,12 +369,50 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
                   className="font-game text-[9px] tracking-widest transition-colors"
                   style={{ color: isVarOpen ? "#FF5500" : "#686868", background: "transparent", border: "none", cursor: "pointer" }}
                 >
-                  {isVarOpen ? "▼" : "▶"} VARIANTES COMMUNAUTAIRES ({stepVars.length})
+                  {isVarOpen ? "▼" : "▶"} VARIANTES ({step.presets.length + stepVars.length})
                 </button>
 
                 {isVarOpen && (
                   <div className="mt-2 space-y-2">
-                    {/* Existing variants */}
+                    {/* Official presets */}
+                    {step.presets.map((p) => {
+                      const isActive = activeVarId === p.id;
+                      return (
+                        <div key={p.id} className="rounded-sm p-3"
+                          style={{ background: isActive ? `${step.color}0a` : "#1a1a1a", border: `1px solid ${isActive ? `${step.color}40` : "#2e2e2e"}` }}
+                        >
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <span className="font-game text-[9px] tracking-widest px-1.5 py-0.5 rounded-sm"
+                              style={{ color: step.color, background: `${step.color}18`, border: `1px solid ${step.color}30` }}>
+                              {p.name}
+                            </span>
+                            <span style={{ color: "#686868", fontSize: "0.65rem", flex: 1 }}>{p.profil}</span>
+                            <div className="flex items-center gap-1.5">
+                              <CopyBtn text={p.text} />
+                              <button
+                                onClick={() => onSetActive(step_id, isActive ? null : p.id)}
+                                className="px-2 py-0.5 rounded-sm font-game text-[9px] tracking-wider transition-all"
+                                style={{
+                                  background: isActive ? `${step.color}20` : "rgba(255,255,255,0.03)",
+                                  border:     `1px solid ${isActive ? `${step.color}60` : "#383838"}`,
+                                  color:      isActive ? step.color : "#848484",
+                                }}
+                              >
+                                {isActive ? "✓ ACTIF" : "UTILISER"}
+                              </button>
+                            </div>
+                          </div>
+                          <p style={{ color: "#C0C0C0", fontSize: "0.82rem", lineHeight: 1.65, margin: 0 }}>{p.text}</p>
+                        </div>
+                      );
+                    })}
+
+                    {/* Community variants */}
+                    {stepVars.length > 0 && (
+                      <div className="font-game text-[9px] tracking-widest pt-1" style={{ color: "#484848" }}>
+                        — COMMUNAUTAIRES —
+                      </div>
+                    )}
                     {stepVars.map((v) => {
                       const isActive = activeVarId === v.id;
                       const col      = authorColor(v.author);
@@ -515,66 +560,6 @@ function ScriptSection({ votes, myVotes, vote, variants, activeVariants, playerN
 }
 
 
-function VariantsSection({ votes, myVotes, vote }: VoteProps) {
-  const [open, setOpen] = useState<number | null>(0);
-
-  return (
-    <div className="space-y-2">
-      {VARIANTS.map((v, i) => (
-        <div
-          key={i}
-          className="rounded-sm overflow-hidden"
-          style={{ border: `1px solid ${open === i ? "rgba(28,228,0,0.3)" : BORDER}` }}
-        >
-          <button
-            className="w-full text-left px-4 py-3 flex items-center gap-3 transition-colors"
-            style={{ background: open === i ? "rgba(28,228,0,0.06)" : CARD_BG }}
-            onClick={() => setOpen(open === i ? null : i)}
-          >
-            <span
-              className="font-game text-xs flex-shrink-0 w-6 h-6 rounded-sm flex items-center justify-center"
-              style={{ background: "rgba(28,228,0,0.12)", color: "#1CE400" }}
-            >
-              {v.num}
-            </span>
-            <div className="flex-1 min-w-0">
-              <div style={{ color: open === i ? "#86efac" : "#FFFFFF", fontSize: "0.875rem", fontWeight: 600 }}>
-                {v.name}
-              </div>
-              <div style={{ color: "#848484", fontSize: "0.68rem", marginTop: "1px" }}>
-                {v.profil}
-              </div>
-            </div>
-            <span style={{ color: "#848484", fontSize: "0.85rem" }}>{open === i ? "▲" : "▼"}</span>
-          </button>
-          {open === i && (
-            <div
-              className="px-4 pb-4 pt-2"
-              style={{ background: "#171717", borderTop: `1px solid ${BORDER}` }}
-            >
-              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                <span
-                  className="font-game text-[9px] tracking-widest px-2 py-0.5 rounded-sm"
-                  style={{ color: "#1CE400", background: "rgba(28,228,0,0.08)" }}
-                >
-                  {v.profil}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <VoteBar id={`var_${v.num}`} votes={votes} myVotes={myVotes} vote={vote} />
-                  <CopyBtn text={v.script} />
-                </div>
-              </div>
-              <p style={{ color: "#D0D0D0", fontSize: "0.875rem", lineHeight: 1.75, margin: 0 }}>
-                {v.script}
-              </p>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ── Links section ─────────────────────────────────────────────────────────────
 
 const LINKS = [
@@ -655,9 +640,8 @@ function LinksSection() {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 const SECTIONS = [
-  { id: "script",   label: "Script",    icon: "📞", color: "#FF5500" },
-  { id: "variants", label: "Variantes", icon: "🎯", color: "#1CE400" },
-  { id: "liens",    label: "Liens",     icon: "🔗", color: "#5DC7E5" },
+  { id: "script", label: "Script", icon: "📞", color: "#FF5500" },
+  { id: "liens",  label: "Liens",  icon: "🔗", color: "#5DC7E5" },
 ];
 
 export default function ScriptTab() {
@@ -773,8 +757,7 @@ export default function ScriptTab() {
           onAdd={handleAddVariant}
         />
       )}
-      {activeSection === "variants" && <VariantsSection votes={votes} myVotes={myVotes} vote={vote} />}
-      {activeSection === "liens"    && <LinksSection />}
+      {activeSection === "liens" && <LinksSection />}
     </div>
   );
 }
