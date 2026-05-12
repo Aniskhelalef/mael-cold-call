@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/gameContext";
 import { getRank, getNextRank, RANK_MONEY_REWARDS } from "@/lib/gameData";
-import { fetchLeaderboard, fetchAllStates, LeaderboardEntry } from "@/lib/supabase";
-
-const MEDAL = ["🥇", "🥈", "🥉"];
+import { fetchAllStates } from "@/lib/supabase";
 
 // ── Custom confirm modal ──────────────────────────────────────────────────────
 
@@ -61,22 +59,11 @@ function ConfirmModal({ title, body, confirmLabel = "CONFIRMER", danger = false,
   );
 }
 
-function getInitials(name: string): string {
-  return name.split(/\s+/).map((n) => n[0]).slice(0, 2).join("").toUpperCase();
-}
-
-
 const CARD_BG = "#232323";
 const BORDER  = "#383838";
 
 export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { state } = useGame();
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
 
   const rank     = getRank(state.totalBookings);
   const nextRank = getNextRank(state.totalBookings);
@@ -118,12 +105,10 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
 
   type ActivityEntry = { userName: string; prospectName: string | null; type: "call" | "booking"; syncedAt: string; };
 
-  const [lbEntries,    setLbEntries]    = useState<LeaderboardEntry[]>([]);
-  const [activityLog,  setActivityLog]  = useState<ActivityEntry[]>([]);
-  const [logOpen,      setLogOpen]      = useState(false);
+  const [activityLog, setActivityLog] = useState<ActivityEntry[]>([]);
+  const [logOpen,     setLogOpen]     = useState(false);
 
   useEffect(() => {
-    fetchLeaderboard().then(setLbEntries).catch(() => {});
     fetchAllStates().then((all) => {
       const entries: ActivityEntry[] = all
         .filter((r) => r.state.totalCalls > 0)
@@ -142,24 +127,6 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
       setActivityLog(entries);
     }).catch(() => {});
   }, []);
-
-  // End-of-month countdown
-  const endOfMonth = (() => {
-    const d = new Date(now);
-    return new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime();
-  })();
-  const msLeft = endOfMonth - now;
-  const daysLeft  = Math.floor(msLeft / 86_400_000);
-  const hoursLeft = Math.floor((msLeft % 86_400_000) / 3_600_000);
-
-  const myEmail = state.playerEmail;
-  const myOnLb  = lbEntries.some((e) => e.email === myEmail || e.name === state.playerName);
-  const localEntry: LeaderboardEntry | null = !myOnLb && state.playerName
-    ? { email: myEmail, name: state.playerName, totalXP: 0, totalCalls: state.totalCalls, totalBookings: state.totalBookings, currentStreak: state.currentStreak, totalSales: 0, updatedAt: new Date().toISOString() }
-    : null;
-  const lbSorted = [...lbEntries, ...(localEntry ? [localEntry] : [])]
-    .sort((a, b) => b.totalBookings - a.totalBookings);
-  const myLbPos = lbSorted.findIndex((e) => e.email === myEmail || e.name === state.playerName) + 1;
 
   function relativeTime(iso: string): string {
     const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -472,111 +439,6 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
             </div>
           )}
 
-          {/* Mini-leaderboard */}
-          {lbSorted.length > 0 && (
-            <div
-              className="rounded-sm overflow-hidden"
-              style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
-            >
-              <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #383838" }}>
-                <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
-                  CLASSEMENT
-                </span>
-                {myLbPos > 0 && (
-                  <span className="font-game text-[10px]" style={{ color: "#FF5500" }}>
-                    #{myLbPos}
-                  </span>
-                )}
-              </div>
-
-              {lbSorted.slice(0, 5).map((entry, idx) => {
-                const isSelf = entry.email === myEmail || entry.name === state.playerName;
-                const entryRankColor = getRank(entry.totalBookings).color;
-                return (
-                  <div
-                    key={entry.email || entry.name}
-                    className="flex items-center gap-2 px-3 py-2"
-                    style={{
-                      borderBottom: idx < Math.min(lbSorted.length, 5) - 1 ? "1px solid #2D2D2D" : "none",
-                      background: isSelf ? "rgba(255,85,0,0.06)" : "transparent",
-                    }}
-                  >
-                    <span className="font-game text-xs w-5 text-center flex-shrink-0" style={{ color: idx < 3 ? "#FF5500" : "#686868" }}>
-                      {idx < 3 ? MEDAL[idx] : `#${idx + 1}`}
-                    </span>
-                    <div
-                      className="w-6 h-6 rounded-full flex items-center justify-center font-game text-[9px] flex-shrink-0"
-                      style={{ background: `${entryRankColor}18`, border: `1.5px solid ${entryRankColor}`, color: entryRankColor }}
-                    >
-                      {getInitials(entry.name)}
-                    </div>
-                    <span
-                      className="font-game text-[10px] truncate flex-1"
-                      style={{ color: isSelf ? "#FF5500" : "#C0C0C0" }}
-                    >
-                      {entry.name.split(" ")[0]}
-                    </span>
-                    <span className="font-game text-[10px] flex-shrink-0" style={{ color: "#1CE400" }}>
-                      {entry.totalBookings} RDV
-                    </span>
-                  </div>
-                );
-              })}
-
-              {/* Show self if outside top 5 */}
-              {myLbPos > 5 && localEntry === null && (() => {
-                const selfEntry = lbSorted[myLbPos - 1];
-                return selfEntry ? (
-                  <>
-                    <div className="px-3 py-1 text-center font-game text-[9px]" style={{ color: "#484848", borderTop: "1px solid #2D2D2D" }}>
-                      ···
-                    </div>
-                    <div
-                      className="flex items-center gap-2 px-3 py-2"
-                      style={{ background: "rgba(255,85,0,0.06)" }}
-                    >
-                      <span className="font-game text-xs w-5 text-center flex-shrink-0" style={{ color: "#848484" }}>
-                        #{myLbPos}
-                      </span>
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center font-game text-[9px] flex-shrink-0"
-                        style={{ background: `${getRank(selfEntry.totalBookings).color}18`, border: `1.5px solid ${getRank(selfEntry.totalBookings).color}`, color: getRank(selfEntry.totalBookings).color }}
-                      >
-                        {getInitials(selfEntry.name)}
-                      </div>
-                      <span className="font-game text-[10px] truncate flex-1" style={{ color: "#FF5500" }}>
-                        {selfEntry.name.split(" ")[0]}
-                      </span>
-                      <span className="font-game text-[10px] flex-shrink-0" style={{ color: "#1CE400" }}>
-                        {selfEntry.totalBookings} RDV
-                      </span>
-                    </div>
-                  </>
-                ) : null;
-              })()}
-            </div>
-          )}
-
-          {/* End-of-month countdown */}
-          <div
-            className="rounded-sm px-4 py-3"
-            style={{ background: CARD_BG, border: "1px solid rgba(246,173,85,0.3)" }}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-game text-[10px] tracking-widest" style={{ color: "#848484" }}>
-                FIN DU MOIS
-              </span>
-              <span className="font-game text-[10px]" style={{ color: "#f6ad55" }}>
-                🏆 BONUS 50€
-              </span>
-            </div>
-            <div className="font-game text-xl leading-none" style={{ color: "#f6ad55" }}>
-              {daysLeft}j {hoursLeft}h
-            </div>
-            <div style={{ color: "#686868", fontSize: "0.6rem", marginTop: "3px" }}>
-              Le #1 du classement remporte 50€ bonus
-            </div>
-          </div>
 
         </div>
 
