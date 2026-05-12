@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useGame } from "@/lib/gameContext";
 import { Prospect, ProspectStatus } from "@/lib/types";
-import { getRecording, playOrDownload } from "@/lib/recordings";
+import { getRecording } from "@/lib/recordings";
 
 const BORDER = "#383838";
 const CARD_BG = "#232323";
@@ -275,19 +275,6 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
                   autoPlay={i === audioUrls.length - 1}
                   style={{ flex: 1, height: 28, accentColor: "#5DC7E5" }}
                 />
-                <button
-                  onClick={() => {
-                    const slug = prospect.name.replace(/\s+/g, "_").replace(/[^a-z0-9_]/gi, "");
-                    playOrDownload(new Blob([], { type: "audio/webm" }), `${slug}_${i + 1}.webm`);
-                    getRecording(item.key).then((blob) => {
-                      if (blob) playOrDownload(blob, `${slug}_${i + 1}.webm`);
-                    });
-                  }}
-                  style={{ background: "none", border: "none", color: "#383838", cursor: "pointer", fontSize: "0.75rem", flexShrink: 0 }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#C0C0C0"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#383838"; }}
-                  title="Télécharger"
-                >⬇</button>
               </div>
             ))}
           </div>

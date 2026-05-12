@@ -256,21 +256,12 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
     const mime = mimeTypeRef.current;
     mr.onstop = async () => {
       const blob = new Blob(chunksRef.current, { type: mime });
-      const ext  = mime.includes("ogg") ? "ogg" : mime.includes("mp4") ? "mp4" : "webm";
-      const date = new Date().toISOString().split("T")[0];
-      const slug = (prospect?.name ?? "appel").replace(/\s+/g, "_").replace(/[^a-z0-9_]/gi, "");
       const key  = `${prospect?.id ?? "unknown"}_${Date.now()}`;
       await saveRecording(key, blob);
       if (prospect) {
         const existing = currentProspect?.recordings ?? [];
         dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes: { recordings: [...existing, key] } });
       }
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement("a");
-      a.href     = url;
-      a.download = `${slug}_${date}.${ext}`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
       chunksRef.current = [];
       mediaRecorderRef.current = null;
       mr.stream.getTracks().forEach((t) => t.stop());
