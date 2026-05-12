@@ -135,6 +135,18 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
           <span style={{ color: "#f1f5f9", fontSize: "0.83rem", fontWeight: 600 }}>{prospect.name}</span>
         )}
       </td>
+      <td style={{ padding: "8px 12px", maxWidth: 160 }}>
+        {prospect.website ? (
+          <a href={prospect.website} target="_blank" rel="noopener noreferrer"
+            style={{ color: "#f97316", fontSize: "0.72rem", textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#fb923c"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#f97316"; }}
+            title={prospect.website}
+          >
+            {prospect.website.replace(/^https?:\/\/(www\.)?/, "")}
+          </a>
+        ) : <span style={{ color: "#383838", fontSize: "0.75rem" }}>—</span>}
+      </td>
       <td style={{ padding: "8px 12px", maxWidth: 200 }}>
         {prospect.email ? (
           <a href={`mailto:${prospect.email}`} style={{ color: "#848484", fontSize: "0.75rem", textDecoration: "none", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
@@ -313,7 +325,7 @@ function PipelinePanel() {
               <TH style={{ width: 36 }}>
                 <input type="checkbox" checked={allChecked} onChange={toggleAll} style={{ accentColor: "#FF5500", cursor: "pointer" }} />
               </TH>
-              <TH>NOM</TH><TH>MAIL</TH><TH>TÉL</TH><TH>1er CONTACT</TH>
+              <TH>NOM</TH><TH>MAIL</TH><TH>SITE</TH><TH>TÉL</TH><TH>1er CONTACT</TH>
               <TH style={{ textAlign: "center" }}>RÉPONSE</TH>
               <TH>STATUT</TH><TH>DATE RELANCE</TH><TH>POURQUOI</TH>
               <TH style={{ textAlign: "center" }}>DURÉE</TH>
@@ -323,7 +335,7 @@ function PipelinePanel() {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={12} style={{ padding: "32px", textAlign: "center", color: "#484848", fontSize: "0.85rem" }}>
+                <td colSpan={13} style={{ padding: "32px", textAlign: "center", color: "#484848", fontSize: "0.85rem" }}>
                   {total === 0 ? "Aucun lead — ajoute-en depuis l'onglet SCRAPER" : "Aucun résultat"}
                 </td>
               </tr>
