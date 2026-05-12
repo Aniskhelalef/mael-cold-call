@@ -4,6 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { useGame } from "@/lib/gameContext";
 
 const BORDER = "#383838";
+
+const QUICK_OBJECTIONS = [
+  { trigger: "Pas le temps",       response: "Je vous prends en dépourvu, c'est de ma faute. Quand est-ce que ça vous arrange ce soir ou demain ? Vers quelle heure ? Si je vous dis 18h c'est bon ou pas ?" },
+  { trigger: "Déjà un site",       response: "Ah bon ? C'est marrant, je l'ai pas trouvé sur Google quand j'ai cherché ostéo [ville]. Vous savez à quelle position vous sortez exactement ? Parce que si vous êtes pas en page 1, c'est comme si vous existiez pas. C'est exactement ça que mon outil règle automatiquement." },
+  { trigger: "Déjà Doctolib",      response: "Doctolib c'est très bien pour la prise de RDV, mais c'est pas votre site, c'est le leur. Vos patients tombent sur une page avec 12 autres ostéos juste à côté de vous. Avec votre propre site, vous captez le patient AVANT qu'il compare. Et nous on est intégré à Doctolib, vous gardez vos habitudes." },
+  { trigger: "Plein de patients",  response: "Top, c'est ce que j'aime entendre. Sérieusement, si je peux vous ramener 5 à 10 nouveaux patients par mois en pilote automatique, vous me dites non ? Un patient qui annule à la dernière minute c'est 60 balles dans le vent. Avoir un peu de marge dans le planning, ça soulage." },
+  { trigger: "C'est cher",         response: "48 euros par mois, c'est UN patient. Si je vous en ramène pas au moins 1 dans le mois, vous résiliez. Mais regardez les avis Trustpilot, on est à 4.9/5 sur 40 et quelques thérapeutes. C'est pas un hasard." },
+  { trigger: "Je veux réfléchir",  response: "Carré, je comprends. Mais juste, qu'est-ce qui empêche de tester gratuitement pendant 7 jours pendant que vous réfléchissez ? Vous parlez à votre associé, vous lui montrez le site en vrai, et au bout de 7 jours vous décidez. Y'a aucun engagement. Ça vous coûte rien." },
+  { trigger: "Envoyez un mail",    response: "Avec plaisir, mais si je vous envoie un PDF générique ça finit dans la corbeille. Donnez-moi 2 minutes là maintenant, je vous envoie le lien direct du site déjà créé pour vous, ça vous prend 30 secondes à regarder, et après vous décidez. C'est plus utile comme ça non ?" },
+  { trigger: "Ma secrétaire",      response: "C'est votre secrétaire qui décide de comment vous remplissez votre agenda et combien vous gagnez à la fin du mois ? (rire) Je vais vous montrer en 2 minutes pour que vous puissiez décider en connaissance de cause, et après vous lui transférerez si vous voulez." },
+  { trigger: "6 mois",             response: "Je vais le faire. Mais juste, soyez franc avec moi : pourquoi 6 mois ? Parce que si c'est pour repousser, autant tester gratuitement 7 jours pendant ce temps. Y'a aucun engagement, aucun prélèvement. Ça vous coûte rien." },
+];
 const STATUS_LABEL: Record<string, string> = {
   a_appeler: "À APPELER", rappel: "RAPPEL", rdv: "RDV", perdu: "PERDU",
 };
@@ -50,6 +62,54 @@ function ConfirmModal({ title, body, confirmLabel = "CONFIRMER", onConfirm, onCa
 const MIN_W = 280;
 const MAX_W = 680;
 const MIN_H = 120;
+
+function ObjPanel() {
+  const [active, setActive] = useState<number | null>(null);
+
+  return (
+    <div className="mb-3">
+      {/* Response box */}
+      {active !== null && (
+        <div
+          className="rounded-sm p-3 mb-2 relative"
+          style={{ background: "rgba(255,85,0,0.08)", border: "1px solid rgba(255,85,0,0.4)" }}
+        >
+          <button
+            onClick={() => setActive(null)}
+            style={{ position: "absolute", top: 6, right: 8, background: "none", border: "none", color: "#848484", cursor: "pointer", fontSize: "0.8rem", lineHeight: 1 }}
+          >✕</button>
+          <div className="font-game text-[9px] tracking-widest mb-1.5" style={{ color: "#FF5500" }}>
+            {QUICK_OBJECTIONS[active].trigger.toUpperCase()}
+          </div>
+          <p style={{ color: "#FFFFFF", fontSize: "0.82rem", lineHeight: 1.65, margin: 0, paddingRight: "12px" }}>
+            {QUICK_OBJECTIONS[active].response}
+          </p>
+        </div>
+      )}
+
+      {/* Chips */}
+      <div
+        className="flex gap-1.5 overflow-x-auto pb-1"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {QUICK_OBJECTIONS.map((obj, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(active === i ? null : i)}
+            className="flex-shrink-0 px-2.5 py-1 rounded-sm font-game text-[9px] tracking-wider transition-all"
+            style={{
+              background: active === i ? "rgba(255,85,0,0.18)" : "rgba(255,255,255,0.04)",
+              border:     `1px solid ${active === i ? "rgba(255,85,0,0.6)" : "#383838"}`,
+              color:      active === i ? "#FF5500" : "#848484",
+            }}
+          >
+            {obj.trigger}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (target: string) => void }) {
   const { state, dispatch } = useGame();
@@ -516,6 +576,10 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
                     {fmtTimer(timerElapsed)}
                   </span>
                 </div>
+
+                {/* ── Objections rapides ── */}
+                <ObjPanel />
+
                 <div className="font-game text-[10px] tracking-widest text-center mb-3" style={{ color: "#848484" }}>
                   LE CALL EST BOOKÉ ?
                 </div>
