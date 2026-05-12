@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useGame } from "@/lib/gameContext";
 import { Prospect, ProspectStatus } from "@/lib/types";
+import { getRecording, playOrDownload } from "@/lib/recordings";
 
 const BORDER = "#383838";
 const CARD_BG = "#232323";
@@ -199,7 +200,31 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
       <td style={{ padding: "8px 12px", minWidth: 180, maxWidth: 260 }}>
         <Cell value={prospect.notes || undefined} onSave={(v) => update({ notes: v })} />
       </td>
-      <td style={{ padding: "8px 12px", textAlign: "center" }}>
+      <td style={{ padding: "8px 12px", textAlign: "center", whiteSpace: "nowrap" }}>
+        {(prospect.recordings?.length ?? 0) > 0 && (
+          <button
+            onClick={async () => {
+              const keys = prospect.recordings ?? [];
+              const key  = keys[keys.length - 1];
+              const blob = await getRecording(key);
+              if (blob) {
+                const slug = prospect.name.replace(/\s+/g, "_").replace(/[^a-z0-9_]/gi, "");
+                playOrDownload(blob, `${slug}_rec.webm`);
+              } else {
+                alert("Enregistrement introuvable (stockage local effacé ?)");
+              }
+            }}
+            title={`${prospect.recordings?.length} enregistrement(s)`}
+            style={{ background: "none", border: "none", color: "#5DC7E5", cursor: "pointer", fontSize: "0.85rem", marginRight: 4 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#93c5fd"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#5DC7E5"; }}
+          >
+            🎙
+            {(prospect.recordings?.length ?? 0) > 1 && (
+              <span style={{ fontSize: "0.55rem", verticalAlign: "super", color: "#5DC7E5" }}>{prospect.recordings?.length}</span>
+            )}
+          </button>
+        )}
         <button
           onClick={() => { if (window.confirm(`Supprimer ${prospect.name} ?`)) dispatch({ type: "DELETE_PROSPECT", id: prospect.id }); }}
           style={{ background: "none", border: "none", color: "#383838", cursor: "pointer", fontSize: "0.9rem" }}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useGame } from "@/lib/gameContext";
+import { saveRecording } from "@/lib/recordings";
 
 const BORDER = "#383838";
 
@@ -244,19 +245,28 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
     }
   }
 
-  function stopRecording(prospectName?: string) {
+  function stopRecording(prospect?: { id: string; name: string }) {
     const mr = mediaRecorderRef.current;
     if (!mr) return;
-    mr.onstop = () => {
+    mr.onstop = async () => {
       const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
       const date = new Date().toISOString().split("T")[0];
-      const slug = (prospectName ?? "appel").replace(/\s+/g, "_").replace(/[^a-z0-9_]/gi, "");
+      const slug = (prospect?.name ?? "appel").replace(/\s+/g, "_").replace(/[^a-z0-9_]/gi, "");
+      const key  = `${prospect?.id ?? "unknown"}_${Date.now()}`;
+      // Save to IndexedDB
+      await saveRecording(key, blob);
+      // Update prospect with recording key
+      if (prospect) {
+        const existing = currentProspect?.recordings ?? [];
+        dispatch({ type: "UPDATE_PROSPECT", id: prospect.id, changes: { recordings: [...existing, key] } });
+      }
+      // Also auto-download as backup
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement("a");
       a.href     = url;
       a.download = `${slug}_${date}.webm`;
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
       chunksRef.current = [];
       mediaRecorderRef.current = null;
       mr.stream.getTracks().forEach((t) => t.stop());
@@ -289,14 +299,14 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
   }
   function handleBooked() {
     const dur = stopTimer();
-    stopRecording(currentProspect?.name);
+    if (currentProspect) stopRecording({ id: currentProspect.id, name: currentProspect.name });
     dispatch({ type: "LOG_CALL_BOOKING", prospectName: currentProspect?.name });
     if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { status: "rdv", reponse: "rdv", callDuration: dur } });
     setProspectIdx((i) => i + 1);
     resetCallFlow();
   }
   function handleNotBooked() {
-    stopRecording(currentProspect?.name);
+    if (currentProspect) stopRecording({ id: currentProspect.id, name: currentProspect.name });
     dispatch({ type: "LOG_CALL_YES", prospectName: currentProspect?.name });
     if (currentProspect) dispatch({ type: "UPDATE_PROSPECT", id: currentProspect.id, changes: { reponse: "oui_non_booké" } });
     setCallStage("pourquoi_q");
