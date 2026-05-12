@@ -44,9 +44,9 @@ function Avatar({ name, color }: { name: string; color: string }) {
   );
 }
 
-// ── Lead row (read-only) ──────────────────────────────────────────────────────
+// ── Lead row ──────────────────────────────────────────────────────────────────
 
-function LeadRow({ prospect, idx }: { prospect: Prospect; idx: number }) {
+function LeadRow({ prospect, idx, onDelete }: { prospect: Prospect; idx: number; onDelete: () => void }) {
   const [playerOpen, setPlayerOpen] = useState(false);
   const [audioUrls,  setAudioUrls]  = useState<{ key: string; url: string }[]>([]);
   const urlsRef = useRef<string[]>([]);
@@ -167,6 +167,13 @@ function LeadRow({ prospect, idx }: { prospect: Prospect; idx: number }) {
               🎙 ÉCOUTER{playableRecs.length > 1 && ` (${playableRecs.length})`}
             </button>
           )}
+          <button
+            onClick={() => { if (window.confirm(`Supprimer ${prospect.name} ?`)) onDelete(); }}
+            style={{ background: "none", border: "none", color: "#383838", cursor: "pointer", fontSize: "0.9rem", marginLeft: hasRec ? 6 : 0 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#ef4444"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#383838"; }}>
+            🗑
+          </button>
         </td>
       </tr>
 
@@ -344,7 +351,14 @@ function StatsSection({ s }: { s: GameState }) {
 
 // ── Pipeline panel ─────────────────────────────────────────────────────────────
 
-function PipelinePanel({ user, color }: { user: UserRow; color: string }) {
+async function deleteProspectInSupabase(userEmail: string, prospectId: string, currentState: GameState) {
+  const { supabase } = await import("@/lib/supabase");
+  if (!supabase) return;
+  const updated = { ...currentState, prospects: (currentState.prospects ?? []).filter((p) => p.id !== prospectId) };
+  await supabase.from("game_state").update({ data: updated, updated_at: new Date().toISOString() }).eq("id", userEmail);
+}
+
+function PipelinePanel({ user, onProspectDeleted, color }: { user: UserRow; onProspectDeleted: (id: string) => void; color: string }) {
   const [search,       setSearch]      = useState("");
   const [filterStatus, setFilterStatus] = useState<ProspectStatus | "all">("all");
   const [archiveOpen,  setArchiveOpen]  = useState(false);
@@ -445,7 +459,10 @@ function PipelinePanel({ user, color }: { user: UserRow; color: string }) {
                 </td>
               </tr>
             ) : filtered.map((p, i) => (
-              <LeadRow key={p.id} prospect={p} idx={i} />
+              <LeadRow key={p.id} prospect={p} idx={i} onDelete={() => {
+                deleteProspectInSupabase(user.email, p.id, user.state);
+                onProspectDeleted(p.id);
+              }} />
             ))}
           </tbody>
         </table>
@@ -606,7 +623,13 @@ export default function DavidPage() {
         )}
 
         {/* Pipeline */}
-        {selectedUser && <PipelinePanel user={selectedUser} color={selectedColor} />}
+        {selectedUser && <PipelinePanel user={selectedUser} color={selectedColor} onProspectDeleted={(id) => {
+          setUsers((prev) => prev.map((u) =>
+            u.email === selectedUser.email
+              ? { ...u, state: { ...u.state, prospects: (u.state.prospects ?? []).filter((p) => p.id !== id) } }
+              : u
+          ));
+        }} />}
 
         {!loading && users.length === 0 && (
           <div style={{ padding: "60px", textAlign: "center", color: "#383838" }}>

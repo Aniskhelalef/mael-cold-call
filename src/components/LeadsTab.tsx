@@ -149,7 +149,7 @@ function LeadRow({ prospect, idx, checked, onToggle }: {
       <td style={{ padding: "8px 12px" }}>
         <input type="checkbox" checked={checked} onChange={onToggle} style={{ accentColor: "#FF5500", cursor: "pointer" }} />
       </td>
-      <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
+      <td style={{ padding: "8px 12px", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={prospect.name}>
         {(prospect.googleMapsUrl || prospect.website) ? (
           <a
             href={prospect.googleMapsUrl || prospect.website}
