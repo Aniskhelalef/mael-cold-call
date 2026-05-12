@@ -31,6 +31,7 @@ export interface GameState {
   prospects: Prospect[];
   ranksRewarded?: string[];
   lastCallType?: "no" | "yes" | "booking";
+  lastCalledProspectName?: string | null;
 }
 
 export type ProspectStatus = "a_appeler" | "rappel" | "rdv" | "perdu";

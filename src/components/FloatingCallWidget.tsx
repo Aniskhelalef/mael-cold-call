@@ -369,42 +369,71 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
             {currentProspect ? (
               <div className="mb-3">
                 <div
-                  className="rounded-sm p-3 flex items-center justify-between gap-2"
+                  className="rounded-sm p-3"
                   style={{ background: "#1A1A1A", border: `1px solid ${col}30` }}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Top row: avatar + info + badges */}
+                  <div className="flex items-start gap-2.5">
                     <div
-                      className="w-9 h-9 rounded-sm flex items-center justify-center font-game text-sm flex-shrink-0"
+                      className="w-9 h-9 rounded-sm flex items-center justify-center font-game text-sm flex-shrink-0 mt-0.5"
                       style={{ background: `${col}18`, border: `1px solid ${col}40`, color: col }}
                     >
                       {currentProspect.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="min-w-0">
-                      {currentProspect.googleMapsUrl ? (
-                        <a
-                          href={currentProspect.googleMapsUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-game text-sm leading-tight truncate block"
-                          style={{ color: "#FFFFFF", textDecoration: "none" }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#FF5500"; }}
-                          onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#FFFFFF"; }}
-                        >
-                          {currentProspect.name} <span style={{ fontSize: "0.6rem", opacity: 0.6 }}>↗</span>
-                        </a>
-                      ) : (
-                        <div className="font-game text-sm text-white leading-tight truncate">{currentProspect.name}</div>
-                      )}
-                      <div style={{ color: "#848484", fontSize: "0.65rem", marginTop: "1px" }}>
-                        {[currentProspect.specialite, currentProspect.ville].filter(Boolean).join(" · ")}
-                        {currentProspect.rappelDate && (
-                          <span style={{ color: "#5DC7E5", marginLeft: "6px" }}>📅 {currentProspect.rappelDate}</span>
-                        )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          {currentProspect.googleMapsUrl ? (
+                            <a
+                              href={currentProspect.googleMapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-game text-sm leading-tight truncate block"
+                              style={{ color: "#FFFFFF", textDecoration: "none" }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#FF5500"; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#FFFFFF"; }}
+                            >
+                              {currentProspect.name} <span style={{ fontSize: "0.6rem", opacity: 0.6 }}>↗</span>
+                            </a>
+                          ) : (
+                            <div className="font-game text-sm text-white leading-tight truncate">{currentProspect.name}</div>
+                          )}
+                          <div style={{ color: "#848484", fontSize: "0.65rem", marginTop: "1px" }}>
+                            {[currentProspect.specialite, currentProspect.ville].filter(Boolean).join(" · ")}
+                            {currentProspect.rappelDate && (
+                              <span style={{ color: "#5DC7E5", marginLeft: "6px" }}>📅 {currentProspect.rappelDate}</span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Badges + delete — top-right corner */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {(currentProspect.relanceCount ?? 0) > 0 && (
+                            <span className="font-game text-[9px] px-1.5 py-0.5 rounded-sm"
+                              style={{ background: "rgba(93,199,229,0.12)", color: "#5DC7E5", border: "1px solid rgba(93,199,229,0.3)" }}>
+                              🔄 {currentProspect.relanceCount}
+                            </span>
+                          )}
+                          <span className="font-game text-[9px] tracking-widest px-1.5 py-0.5 rounded-sm"
+                            style={{ background: `${col}18`, color: col, border: `1px solid ${col}30` }}>
+                            {STATUS_LABEL[currentProspect.status] ?? currentProspect.status}
+                          </span>
+                          {callStage === "idle" && (
+                            <button
+                              onClick={() => setConfirmOpen(true)}
+                              className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
+                              style={{ color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", background: "transparent" }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                              title="Perdre définitivement"
+                            >✕</button>
+                          )}
+                        </div>
                       </div>
+                      {/* Phone & website on their own lines with full width */}
                       {currentProspect.phone && (
                         <a
                           href={`tel:${currentProspect.phone.replace(/\s/g, "")}`}
-                          style={{ color: "#60a5fa", fontSize: "0.68rem", textDecoration: "none", display: "block", marginTop: "2px" }}
+                          style={{ color: "#60a5fa", fontSize: "0.72rem", textDecoration: "none", display: "block", marginTop: "4px" }}
                           onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#93c5fd"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa"; }}
                         >
@@ -416,7 +445,7 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
                           href={currentProspect.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: "#f97316", fontSize: "0.65rem", textDecoration: "none", display: "block", marginTop: "2px", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                          style={{ color: "#f97316", fontSize: "0.68rem", textDecoration: "none", display: "block", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                           onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#fb923c"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = "#f97316"; }}
                           title={currentProspect.website}
@@ -427,60 +456,39 @@ export default function FloatingCallWidget({ onNavigate }: { onNavigate?: (targe
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {(currentProspect.relanceCount ?? 0) > 0 && (
-                      <span className="font-game text-[9px] px-1.5 py-0.5 rounded-sm"
-                        style={{ background: "rgba(93,199,229,0.12)", color: "#5DC7E5", border: "1px solid rgba(93,199,229,0.3)" }}>
-                        🔄 {currentProspect.relanceCount}
-                      </span>
-                    )}
-                    <span className="font-game text-[9px] tracking-widest px-1.5 py-0.5 rounded-sm"
-                      style={{ background: `${col}18`, color: col, border: `1px solid ${col}30` }}>
-                      {STATUS_LABEL[currentProspect.status] ?? currentProspect.status}
-                    </span>
-                    {callStage === "idle" && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setConfirmOpen(true)}
-                          className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
-                          style={{ color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", background: "transparent" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                          title="Perdre définitivement"
-                        >✕</button>
-                        {callableProspects.length > 1 && (
-                          <>
-                            <button
-                              onClick={() => {
-                                let bestIdx = -1, bestDate = "";
-                                callableProspects.forEach((p, i) => {
-                                  if (p.premierContact && p.premierContact > bestDate) { bestDate = p.premierContact; bestIdx = i; }
-                                });
-                                if (bestIdx >= 0) setProspectIdx(bestIdx);
-                              }}
-                              className="font-game text-[9px] px-2 py-1 rounded-sm transition-colors"
-                              style={{ color: "#5DC7E5", border: "1px solid rgba(93,199,229,0.3)", background: "transparent" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; e.currentTarget.style.borderColor = "#5DC7E5"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(93,199,229,0.3)"; }}
-                              title="Reprendre au dernier contact"
-                            >↩ REPRENDRE</button>
-                            <button onClick={() => setProspectIdx((i) => (i - 1 + callableProspects.length) % callableProspects.length)}
-                              className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
-                              style={{ color: "#848484", border: "1px solid #383838", background: "transparent" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF5500"; e.currentTarget.style.color = "#C0C0C0"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
-                            >←</button>
-                            <button onClick={() => setProspectIdx((i) => i + 1)}
-                              className="font-game text-xs px-2 py-1 rounded-sm transition-colors"
-                              style={{ color: "#848484", border: "1px solid #383838", background: "transparent" }}
-                              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF5500"; e.currentTarget.style.color = "#C0C0C0"; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
-                            >→</button>
-                          </>
-                        )}
+                  {/* Navigation row — full width below info */}
+                  {callStage === "idle" && callableProspects.length > 1 && (
+                    <div className="flex items-center gap-1.5 mt-2.5 pt-2" style={{ borderTop: "1px solid #2D2D2D" }}>
+                      <button
+                        onClick={() => {
+                          let bestIdx = -1, bestDate = "";
+                          callableProspects.forEach((p, i) => {
+                            if (p.premierContact && p.premierContact > bestDate) { bestDate = p.premierContact; bestIdx = i; }
+                          });
+                          if (bestIdx >= 0) setProspectIdx(bestIdx);
+                        }}
+                        className="font-game text-[9px] px-2 py-1 rounded-sm transition-colors flex-1"
+                        style={{ color: "#5DC7E5", border: "1px solid rgba(93,199,229,0.3)", background: "transparent" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(93,199,229,0.1)"; e.currentTarget.style.borderColor = "#5DC7E5"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(93,199,229,0.3)"; }}
+                        title="Reprendre au dernier contact"
+                      >↩ REPRENDRE</button>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button onClick={() => setProspectIdx((i) => (i - 1 + callableProspects.length) % callableProspects.length)}
+                          className="font-game text-xs px-3 py-1 rounded-sm transition-colors"
+                          style={{ color: "#848484", border: "1px solid #383838", background: "transparent" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF5500"; e.currentTarget.style.color = "#C0C0C0"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
+                        >←</button>
+                        <button onClick={() => setProspectIdx((i) => i + 1)}
+                          className="font-game text-xs px-3 py-1 rounded-sm transition-colors"
+                          style={{ color: "#848484", border: "1px solid #383838", background: "transparent" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#FF5500"; e.currentTarget.style.color = "#C0C0C0"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#383838"; e.currentTarget.style.color = "#848484"; }}
+                        >→</button>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Notes */}
