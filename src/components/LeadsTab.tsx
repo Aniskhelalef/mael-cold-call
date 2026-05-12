@@ -507,6 +507,7 @@ function ScraperPanel() {
       name: r.title?.trim() || "Sans nom", phone: r.phone ?? "",
       ville: extractCity(r, location), specialite: guessSpecialite(r.categoryName ?? "", searchTerm),
       status: "a_appeler" as ProspectStatus, notes: "", googleMapsUrl: r.url || undefined,
+      website: r.website || undefined,
     }));
     dispatch({ type: "IMPORT_PROSPECTS", data: leads });
     setImported(true);
