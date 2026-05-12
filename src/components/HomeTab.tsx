@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useGame } from "@/lib/gameContext";
 import { getRank, getNextRank, RANK_MONEY_REWARDS } from "@/lib/gameData";
-import { fetchLeaderboard, LeaderboardEntry } from "@/lib/supabase";
+import { fetchLeaderboard, fetchAllStates, LeaderboardEntry } from "@/lib/supabase";
 
 const MEDAL = ["🥇", "🥈", "🥉"];
 
@@ -117,8 +117,19 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
   const tauxConversion = state.totalCalls > 0 ? Math.round((state.totalBookings / state.totalCalls) * 100) : 0;
 
   const [lbEntries, setLbEntries] = useState<LeaderboardEntry[]>([]);
+  const [lastActive, setLastActive] = useState<{ name: string; type: "call" | "booking"; syncedAt: string } | null>(null);
+
   useEffect(() => {
     fetchLeaderboard().then(setLbEntries).catch(() => {});
+    fetchAllStates().then((all) => {
+      const best = all
+        .filter((r) => r.state.totalCalls > 0)
+        .sort((a, b) => new Date(b.syncedAt).getTime() - new Date(a.syncedAt).getTime())[0];
+      if (best) {
+        const hasBooking = (best.state.totalBookings ?? 0) > 0;
+        setLastActive({ name: best.state.playerName, type: hasBooking ? "booking" : "call", syncedAt: best.syncedAt });
+      }
+    }).catch(() => {});
   }, []);
 
   // End-of-month countdown
@@ -139,8 +150,30 @@ export default function HomeTab({ onNavigate }: { onNavigate?: (tab: string) => 
     .sort((a, b) => b.totalBookings - a.totalBookings);
   const myLbPos = lbSorted.findIndex((e) => e.email === myEmail || e.name === state.playerName) + 1;
 
+  function relativeTime(iso: string): string {
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (diff < 60)   return "à l'instant";
+    if (diff < 3600) return `il y a ${Math.floor(diff / 60)}min`;
+    if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
+    return `il y a ${Math.floor(diff / 86400)}j`;
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
+
+      {/* ── Last active banner ─────────────────────────────────────────────── */}
+      {lastActive && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded-sm mb-3 font-game text-[10px] tracking-widest"
+          style={{ background: "#1a1a1a", border: "1px solid #2e2e2e", color: "#848484" }}
+        >
+          <span style={{ fontSize: "0.75rem" }}>{lastActive.type === "booking" ? "🎯" : "📞"}</span>
+          <span>DERNIER {lastActive.type === "booking" ? "BOOKING" : "CALL"}</span>
+          <span style={{ color: "#FF5500" }}>{lastActive.name.toUpperCase()}</span>
+          <span style={{ color: "#484848" }}>·</span>
+          <span>{relativeTime(lastActive.syncedAt)}</span>
+        </div>
+      )}
 
       <div className="lg:grid lg:gap-4" style={{ gridTemplateColumns: "1fr 260px" } as React.CSSProperties}>
 
