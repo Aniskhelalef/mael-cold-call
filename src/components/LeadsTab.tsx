@@ -380,6 +380,7 @@ function ScraperPanel() {
   const [results,      setResults]      = useState<ApifyItem[]>([]);
   const [imported,     setImported]     = useState(false);
   const [cachedAt,     setCachedAt]     = useState<string | null>(null);
+  const [minOneReview, setMinOneReview] = useState(false);
   const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -482,7 +483,7 @@ function ScraperPanel() {
     return NON_PERSONAL_DOMAINS.some((p) => w.includes(p));
   }
   const alreadyKnown  = results.filter((r) => !!r.phone && alreadyInPipeline(r.phone)).length;
-  const displayed     = results.filter((r) => !!r.phone && isTargetable(r.website) && !alreadyInPipeline(r.phone) && !r.temporarilyClosed && !r.permanentlyClosed);
+  const displayed     = results.filter((r) => !!r.phone && isTargetable(r.website) && !alreadyInPipeline(r.phone) && !r.temporarilyClosed && !r.permanentlyClosed && (!minOneReview || (r.reviewsCount ?? 0) >= 1));
 
   function importItems(items: ApifyItem[]) {
     const toImport = items.filter(
@@ -564,6 +565,13 @@ function ScraperPanel() {
             <span className="font-game text-xs" style={{ color: "#848484" }}>{results.length} fiches</span>
             <span style={{ color: "#383838" }}>·</span>
             <span className="font-game text-xs" style={{ color: "#1CE400" }}>{displayed.length} nouveaux</span>
+            <button
+              onClick={() => setMinOneReview((v) => !v)}
+              className="font-game text-xs tracking-wider px-2 py-1 rounded-sm ml-auto"
+              style={{ background: minOneReview ? "rgba(255,85,0,0.15)" : "transparent", border: `1px solid ${minOneReview ? "#FF5500" : "#383838"}`, color: minOneReview ? "#FF5500" : "#484848", cursor: "pointer", flexShrink: 0 }}
+            >
+              ★ min 1 avis
+            </button>
             {alreadyKnown > 0 && (<>
               <span style={{ color: "#383838" }}>·</span>
               <span className="font-game text-xs" style={{ color: "#5DC7E5" }}>{alreadyKnown} déjà en pipeline</span>
