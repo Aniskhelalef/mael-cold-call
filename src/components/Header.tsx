@@ -60,6 +60,7 @@ function ConfirmModal({ title, body, confirmLabel = "CONFIRMER", danger = false,
 const TABS = [
   { id: "home",        label: "Dashboard"  },
   { id: "leads",       label: "Leads"      },
+  { id: "coaching",    label: "Coaching"   },
   { id: "leaderboard", label: "Classement" },
   { id: "rank",        label: "Mon Rank"   },
   { id: "stats",       label: "Stats"      },
@@ -69,6 +70,7 @@ const TABS = [
 const TAB_ICONS: Record<string, string> = {
   home:        "⚡",
   leads:       "👥",
+  coaching:    "🎯",
   leaderboard: "🏆",
   rank:        "🎖",
   stats:       "📊",

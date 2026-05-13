@@ -10,6 +10,7 @@ import RankTab from "./RankTab";
 import ScriptTab from "./ScriptTab";
 import LeaderboardTab from "./LeaderboardTab";
 import LeadsTab from "./LeadsTab";
+import CoachingTab from "./CoachingTab";
 import FloatingCallWidget from "./FloatingCallWidget";
 
 export default function GameApp() {
@@ -45,6 +46,7 @@ export default function GameApp() {
       <main className="max-w-6xl mx-auto px-4 py-5 pb-24">
         {activeTab === "home"         && <HomeTab onNavigate={handleNavigate} />}
         {activeTab === "leads"        && <LeadsTab defaultSub={leadsSubTab} />}
+        {activeTab === "coaching"     && <CoachingTab />}
         {activeTab === "leaderboard"  && <LeaderboardTab />}
         {activeTab === "rank"         && <RankTab />}
         {activeTab === "stats"        && <StatsTab />}
