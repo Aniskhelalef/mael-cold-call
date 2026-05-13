@@ -122,9 +122,9 @@ function LeadRow({ prospect, idx, onDelete }: { prospect: Prospect; idx: number;
             }}>{prospect.reponse}</span>
           ) : <span style={{ color: "#383838", fontSize: "0.75rem" }}>—</span>}
         </td>
-        <td style={{ padding: "8px 12px" }}>
+        <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
           <span className="font-game text-[9px] px-2 py-1 rounded-sm"
-            style={{ background: `${sc.color}18`, border: `1px solid ${sc.color}50`, color: sc.color }}>
+            style={{ background: `${sc.color}18`, border: `1px solid ${sc.color}50`, color: sc.color, whiteSpace: "nowrap" }}>
             {sc.label}
           </span>
         </td>
