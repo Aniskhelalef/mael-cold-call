@@ -199,7 +199,7 @@ async function deleteProspectInSupabase(userEmail: string, prospectId: string, c
 function PipelinePanel({ user, color, onProspectDeleted }: { user: UserRow; color: string; onProspectDeleted: (id: string) => void }) {
   const [search,       setSearch]      = useState("");
   const [filterStatus, setFilterStatus] = useState<ProspectStatus | "all">("all");
-  const [archiveOpen,  setArchiveOpen]  = useState(false);
+  const [archiveOpen,  setArchiveOpen]  = useState(true);
 
   const allProspects      = user.state.prospects ?? [];
   const prospects         = allProspects.filter((p) => !p.archived);

@@ -288,7 +288,7 @@ function PipelinePanel() {
   const [search,       setSearch]       = useState("");
   const [filterStatus, setFilterStatus] = useState<ProspectStatus | "all">("all");
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
-  const [archiveOpen,  setArchiveOpen]  = useState(false);
+  const [archiveOpen,  setArchiveOpen]  = useState(true);
 
   const allProspects     = state.prospects ?? [];
   const prospects        = allProspects.filter((p) => !p.archived);
