@@ -32,6 +32,16 @@ interface ApifyItem {
   categoryName?: string;
   totalScore?: number;
   reviewsCount?: number;
+  reviews?: { publishedAtDate?: string }[];
+}
+
+const ONE_YEAR_AGO = () => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return d; };
+
+function hasRecentReview(item: ApifyItem): boolean {
+  if (!item.reviews?.length) return false;
+  const date = item.reviews[0].publishedAtDate;
+  if (!date) return false;
+  return new Date(date) >= ONE_YEAR_AGO();
 }
 
 function extractCity(item: ApifyItem, fallback: string): string {
@@ -142,7 +152,8 @@ export default function ScraperTab() {
 
   // ── Derived data ─────────────────────────────────────────────────────────
 
-  const displayed     = results.filter((r) => !!r.phone);
+  const displayed     = results.filter((r) => !!r.phone && hasRecentReview(r));
+  const filteredOld   = results.filter((r) => !!r.phone && !hasRecentReview(r)).length;
   const selectedCount = displayed.filter((r) => selected.has(results.indexOf(r))).length;
   const allChecked    = displayed.length > 0 && displayed.every((r) => selected.has(results.indexOf(r)));
 
@@ -287,7 +298,7 @@ export default function ScraperTab() {
         <div style={{ background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: 4, overflow: "hidden" }}>
 
           {/* Stats bar */}
-          <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
+          <div className="flex items-center gap-3 px-4 py-3 flex-wrap" style={{ borderBottom: `1px solid ${BORDER}` }}>
             <span className="font-game text-xs" style={{ color: "#848484" }}>
               {results.length} fiches Google
             </span>
@@ -295,6 +306,14 @@ export default function ScraperTab() {
             <span className="font-game text-xs" style={{ color: "#60a5fa" }}>
               {displayed.length} avec téléphone
             </span>
+            {filteredOld > 0 && (
+              <>
+                <span style={{ color: "#484848" }}>·</span>
+                <span className="font-game text-xs" style={{ color: "#848484" }}>
+                  {filteredOld} ignoré{filteredOld > 1 ? "s" : ""} (avis +1 an)
+                </span>
+              </>
+            )}
           </div>
 
           {/* Table */}

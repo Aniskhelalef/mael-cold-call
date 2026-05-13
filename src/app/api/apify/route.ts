@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
         maxCrawledPlacesPerSearch: Math.min(Number(maxResults) || 100, 500),
         language: "fr",
         exportPlaceUrls: false,
+        maxReviews: 1,
       }),
     }
   );
