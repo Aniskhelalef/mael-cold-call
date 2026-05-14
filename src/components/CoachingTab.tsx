@@ -189,10 +189,13 @@ function LeadRow({ prospect, idx, onDelete }: { prospect: Prospect; idx: number;
 
 // ── Pipeline panel ─────────────────────────────────────────────────────────────
 
-async function deleteProspectInSupabase(userEmail: string, prospectId: string, currentState: GameState) {
-  const { supabase } = await import("@/lib/supabase");
+async function deleteProspectInSupabase(userEmail: string, prospectId: string) {
+  const { supabase, fetchStateFromSupabase } = await import("@/lib/supabase");
   if (!supabase) return;
-  const updated = { ...currentState, prospects: (currentState.prospects ?? []).filter((p) => p.id !== prospectId) };
+  // Always fetch fresh state first to avoid overwriting data with a stale snapshot
+  const fresh = await fetchStateFromSupabase(userEmail);
+  if (!fresh) return;
+  const updated = { ...fresh.state, prospects: (fresh.state.prospects ?? []).filter((p) => p.id !== prospectId) };
   await supabase.from("game_state").update({ data: updated, updated_at: new Date().toISOString() }).eq("id", userEmail);
 }
 
@@ -295,7 +298,7 @@ function PipelinePanel({ user, color, onProspectDeleted }: { user: UserRow; colo
               </tr>
             ) : filtered.map((p, i) => (
               <LeadRow key={p.id} prospect={p} idx={i} onDelete={() => {
-                deleteProspectInSupabase(user.email, p.id, user.state);
+                deleteProspectInSupabase(user.email, p.id);
                 onProspectDeleted(p.id);
               }} />
             ))}
